@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Redirect } from '@nestjs/common';
 import { AppService } from '../services/app.service';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -21,7 +21,11 @@ export class ProxyController {
   constructor(private readonly appService: AppService) {}
 
   @Post()
-  redirectVerse(@Body() verseRequestDto: VerseRequestDto) {
+  @Redirect('https://nestjs.com', 307)
+  redirectVerse(@Body() verseRequest: VerseRequestDto) {
+    if (verseRequest.method !== 'eth_sendRawTransaction') {
+      return { url: 'https://docs.nestjs.com/v5/' };
+    }
     return {};
   }
 }
