@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Redirect } from '@nestjs/common';
-import { AppService } from '../services/app.service';
+import { TransactionService } from '../services/transaction.service';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
 class VerseRequestDto {
@@ -18,7 +18,7 @@ class VerseRequestDto {
 
 @Controller()
 export class ProxyController {
-  constructor(private readonly appService: AppService) {}
+  constructor(private readonly txService: TransactionService) {}
 
   @Post()
   @Redirect('https://nestjs.com', 307)
