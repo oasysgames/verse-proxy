@@ -10,6 +10,6 @@ async function bootstrap() {
     origin: '*',
     allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept',
   });
-  await app.listen(3000);
+  await app.listen(process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
 }
 bootstrap();

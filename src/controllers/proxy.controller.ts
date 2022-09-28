@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Redirect } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TransactionService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -18,16 +19,20 @@ class VerseRequestDto {
 
 @Controller()
 export class ProxyController {
-  constructor(private readonly txService: TransactionService) {}
+  constructor(
+    private configService: ConfigService,
+    private readonly txService: TransactionService,
+  ) {}
 
   @Post()
-  @Redirect('https://nestjs.com', 307)
+  @Redirect('http://localhost:8545', 307)
   redirectVerse(@Body() verseRequest: VerseRequestDto) {
+    const verseUrl = this.configService.get<string>('verseUrl');
     if (verseRequest.method !== 'eth_sendRawTransaction') {
-      return { url: 'https://nestjs.com' };
+      return { url: verseUrl };
     }
     const rawTx = verseRequest.params[0];
     this.txService.allowCheck(rawTx);
-    return { url: 'https://nestjs.com' };
+    return { url: verseUrl };
   }
 }
