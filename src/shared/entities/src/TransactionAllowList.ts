@@ -1,12 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
+export interface TransactionAllow {
+  from: string;
+  to: string;
+}
+
 @Injectable()
 export class TransactionAllowList {
-  public fromList: Array<string>;
-  public toList: Array<string>;
+  public list: Array<TransactionAllow>;
 
   constructor() {
-    this.fromList = ['*'];
-    this.toList = ['*'];
+    this.list = [
+      {
+        from: '*',
+        to: '*',
+      },
+    ];
   }
 }

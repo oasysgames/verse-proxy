@@ -16,17 +16,18 @@ export class TransactionService {
     const to = tx.to;
 
     if (!from || !to) throw new ForbiddenException('transaction is invalid');
-    const fromCheck = this.txAllowList.fromList.some((condition) => {
-      return this.allowCheckService.isAllowedString(condition, from);
-    });
-    const toCheck = this.txAllowList.toList.some((condition) => {
-      return this.allowCheckService.isAllowedString(condition, to);
+
+    const isAllow = this.txAllowList.list.some((condition) => {
+      const fromCheck = this.allowCheckService.isAllowedString(
+        condition.from,
+        from,
+      );
+      const toCheck = this.allowCheckService.isAllowedString(condition.to, to);
+
+      return fromCheck && toCheck;
     });
 
-    if (!fromCheck)
-      throw new ForbiddenException('transaction_from_parameter is invalid');
-    if (!toCheck)
-      throw new ForbiddenException('transaction_to_parameter is invalid');
+    if (!isAllow) throw new ForbiddenException('transaction is not allowed');
     return;
   }
 
