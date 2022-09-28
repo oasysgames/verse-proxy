@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
-import { ProxyController } from './controllers/proxy.controller';
-import { TransactionService } from './services/transaction.service';
+import { ProxyController } from './controllers';
+import { TransactionService } from './services';
+import { SharedModule } from './shared/shared.module';
+import { AllowCheckService } from './shared/services/src';
+import { TransactionAllowList } from './shared/entities/src';
 
 @Module({
-  imports: [],
+  imports: [SharedModule],
   controllers: [ProxyController],
-  providers: [TransactionService],
+  providers: [TransactionService, AllowCheckService, TransactionAllowList],
 })
 export class AppModule {}

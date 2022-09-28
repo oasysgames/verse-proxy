@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Redirect } from '@nestjs/common';
-import { TransactionService } from '../services/transaction.service';
+import { TransactionService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
 class VerseRequestDto {
@@ -13,7 +13,7 @@ class VerseRequestDto {
   method: string;
 
   @IsArray({ message: 'expected params array of at least 1 argument' })
-  params: [];
+  params: Array<any>;
 }
 
 @Controller()
@@ -24,8 +24,10 @@ export class ProxyController {
   @Redirect('https://nestjs.com', 307)
   redirectVerse(@Body() verseRequest: VerseRequestDto) {
     if (verseRequest.method !== 'eth_sendRawTransaction') {
-      return { url: 'https://docs.nestjs.com/v5/' };
+      return { url: 'https://nestjs.com' };
     }
-    return {};
+    const rawTx = verseRequest.params[0];
+    this.txService.allowCheck(rawTx);
+    return { url: 'https://nestjs.com' };
   }
 }
