@@ -67,3 +67,11 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+## Deploy
+```bash
+# create image
+docker build . --tag verse-layer-proxy
+# create container
+docker run --name verse-layer-proxy -d -p 3000:3000 verse-layer-proxy
+```
