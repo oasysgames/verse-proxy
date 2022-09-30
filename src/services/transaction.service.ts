@@ -20,58 +20,17 @@ export class TransactionService {
 
     let isAllow = false;
     for (const condition of this.txAllowList.list) {
-      const fromCheck = condition.fromList.some((allowedFrom) => {
-        return this.allowCheckService.isAllowedString(allowedFrom, from);
-      });
-      const toCheck = condition.toList.some((allowedTo) => {
-        return this.allowCheckService.isAllowedString(allowedTo, to);
-      });
+      const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
+      const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const valueCondition = condition.value;
-      if (!valueCondition && fromCheck && toCheck) {
+      const valueCheck = valueCondition
+        ? this.allowCheckService.isAllowedValue(valueCondition, value)
+        : true;
+
+      if (fromCheck && toCheck && valueCheck) {
         isAllow = true;
         break;
-      }
-
-      if (!valueCondition) {
-        if (fromCheck && toCheck) {
-          isAllow = true;
-          break;
-        }
-      } else {
-        let valueCheck = true;
-        for (const key in valueCondition) {
-          switch (key) {
-            case 'eq':
-              if (valueCondition.eq && value !== valueCondition.eq)
-                valueCheck = false;
-              break;
-            case 'neq':
-              if (valueCondition.neq && value === valueCondition.neq)
-                valueCheck = false;
-              break;
-            case 'gt':
-              if (valueCondition.gt && value <= valueCondition.gt)
-                valueCheck = false;
-              break;
-            case 'gte':
-              if (valueCondition.gte && value < valueCondition.gte)
-                valueCheck = false;
-              break;
-            case 'lt':
-              if (valueCondition.lt && value >= valueCondition.lt)
-                valueCheck = false;
-              break;
-            case 'lte':
-              if (valueCondition.lte && value > valueCondition.lte)
-                valueCheck = false;
-              break;
-          }
-        }
-        if (valueCheck && fromCheck && toCheck) {
-          isAllow = true;
-          break;
-        }
       }
     }
 

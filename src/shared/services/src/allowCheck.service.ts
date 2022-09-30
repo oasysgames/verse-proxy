@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { TransactionAllow, ComparisonOperation } from 'src/shared/entities/src';
 
 @Injectable()
 export class AllowCheckService {
@@ -7,5 +8,47 @@ export class AllowCheckService {
       return false;
     if (allowPattern === '*' || allowPattern === input) return true;
     return false;
+  }
+
+  isAllowedFrom(condition: TransactionAllow, from: string): boolean {
+    const isAllow = condition.fromList.some((allowedFrom) => {
+      return this.isAllowedString(allowedFrom, from);
+    });
+    return isAllow;
+  }
+
+  isAllowedTo(condition: TransactionAllow, to: string): boolean {
+    const isAllow = condition.toList.some((allowedTo) => {
+      return this.isAllowedString(allowedTo, to);
+    });
+    return isAllow;
+  }
+
+  isAllowedValue(valueCondition: ComparisonOperation, value: number): boolean {
+    let isAllow = true;
+    for (const key in valueCondition) {
+      switch (key) {
+        case 'eq':
+          if (valueCondition.eq && value !== valueCondition.eq) isAllow = false;
+          break;
+        case 'neq':
+          if (valueCondition.neq && value === valueCondition.neq)
+            isAllow = false;
+          break;
+        case 'gt':
+          if (valueCondition.gt && value <= valueCondition.gt) isAllow = false;
+          break;
+        case 'gte':
+          if (valueCondition.gte && value < valueCondition.gte) isAllow = false;
+          break;
+        case 'lt':
+          if (valueCondition.lt && value >= valueCondition.lt) isAllow = false;
+          break;
+        case 'lte':
+          if (valueCondition.lte && value > valueCondition.lte) isAllow = false;
+          break;
+      }
+    }
+    return isAllow;
   }
 }
