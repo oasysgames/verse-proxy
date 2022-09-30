@@ -9,20 +9,20 @@ set allow list at src/shared/entities/src/TransactionAllowList.ts.
 // elements contained in the array are allowed to be transacted.
 this.list = [
   {
-    from: '0xaf395754eB6F542742784cE7702940C60465A46a',
-    to: '0xaf395754eB6F542742784cE7702940C60465A46a',
+    fromList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
+    toList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
   },
   {
-    from: '0xaf395754eB6F542742784cE7702940C60465A46c',
-    to: '0xaf395754eB6F542742784cE7702940C60465A46c',
+    fromList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
+    toList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
   },
 ];
 
 // '*' is wildcard.
 this.list = [
   {
-    from: '*',
-    to: '*',
+    fromList: ['*'],
+    toList: ['*'],
   },
 ];
 
@@ -30,8 +30,8 @@ this.list = [
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
 this.list = [
   {
-    from: '!0xaf395754eB6F542742784cE7702940C60465A46a',
-    to: '!0xaf395754eB6F542742784cE7702940C60465A46a',
+    fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+    toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
   },
 ];
 ```

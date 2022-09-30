@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 export interface TransactionAllow {
-  from: string;
-  to: string;
+  fromList: Array<string>;
+  toList: Array<string>;
 }
 
 @Injectable()
@@ -12,8 +12,8 @@ export class TransactionAllowList {
   constructor() {
     this.list = [
       {
-        from: '*',
-        to: '*',
+        fromList: ['*'],
+        toList: ['*'],
       },
     ];
   }
