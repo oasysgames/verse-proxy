@@ -1,11 +1,7 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Redirect,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Controller, Post, Body, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HttpService } from '@nestjs/axios';
+import { lastValueFrom, map } from 'rxjs';
 import { TransactionService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -26,14 +22,15 @@ class VerseRequestDto {
 @Controller()
 export class ProxyController {
   constructor(
+    private readonly httpService: HttpService,
     private configService: ConfigService,
     private readonly txService: TransactionService,
   ) {}
 
   @Post()
-  @Redirect('http://localhost:8545', 307)
-  redirectVerse(@Body() verseRequest: VerseRequestDto) {
-    const verseUrl = this.configService.get<string>('verseUrl');
+  async redirectVerse(@Body() verseRequest: VerseRequestDto) {
+    const verseUrl =
+      this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
     const method = verseRequest.method;
     const allowedMethods =
       this.configService.get<RegExp>('allowedMethods') ??
@@ -41,11 +38,23 @@ export class ProxyController {
     if (!allowedMethods.test(method))
       throw new ForbiddenException('rpc method is not whitelisted');
 
+    const body = {
+      jsonrpc: verseRequest.jsonrpc,
+      id: verseRequest.id,
+      method: verseRequest.method,
+      params: verseRequest.params,
+    };
     if (method !== 'eth_sendRawTransaction') {
-      return { url: verseUrl };
+      const data = await lastValueFrom(
+        this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
+      );
+      return data;
     }
     const rawTx = verseRequest.params[0];
     this.txService.allowCheck(rawTx);
-    return { url: verseUrl };
+    const data = await lastValueFrom(
+      this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
+    );
+    return data;
   }
 }

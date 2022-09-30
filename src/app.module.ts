@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
 import { TransactionService } from './services';
 import { SharedModule } from './shared/shared.module';
@@ -11,6 +12,7 @@ import configuration from './config/configuration';
     ConfigModule.forRoot({
       load: [configuration],
     }),
+    HttpModule,
     SharedModule,
   ],
   controllers: [ProxyController],
