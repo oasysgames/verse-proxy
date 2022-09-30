@@ -1,14 +1,15 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ethers } from 'ethers';
-import { TransactionAllowList } from 'src/shared/entities/src';
+import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
+import getTxAllowList from 'src/config/transactionAllowList';
 
 @Injectable()
 export class TransactionService {
-  constructor(
-    private allowCheckService: AllowCheckService,
-    private txAllowList: TransactionAllowList,
-  ) {}
+  private txAllowList: Array<TransactionAllow>;
+  constructor(private allowCheckService: AllowCheckService) {
+    this.txAllowList = getTxAllowList();
+  }
 
   allowCheck(rawTx: string): void {
     const tx = this.parseRawTx(rawTx);
@@ -19,7 +20,7 @@ export class TransactionService {
     if (!from || !to) throw new ForbiddenException('transaction is invalid');
 
     let isAllow = false;
-    for (const condition of this.txAllowList.list) {
+    for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 

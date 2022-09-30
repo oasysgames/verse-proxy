@@ -3,7 +3,7 @@ This is verse-layer's proxy to control access allow list.<br>
 Verse-layer-proxy is made by [Nest](https://github.com/nestjs/nest).
 
 ## Set up transaction allow list
-You can set allow list at src/shared/entities/src/TransactionAllowList.ts.
+You can set allow list at src/config/transactionAllowList.ts.
 
 ### from, to
 You can controls the from and to of a transaction.

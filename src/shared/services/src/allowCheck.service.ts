@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionAllow, ComparisonOperation } from 'src/shared/entities/src';
+import { TransactionAllow, ComparisonOperation } from 'src/shared/entities';
 
 @Injectable()
 export class AllowCheckService {

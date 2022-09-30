@@ -4,7 +4,6 @@ import { ProxyController } from './controllers';
 import { TransactionService } from './services';
 import { SharedModule } from './shared/shared.module';
 import { AllowCheckService } from './shared/services/src';
-import { TransactionAllowList } from './shared/entities/src';
 import configuration from './config/configuration';
 
 @Module({
@@ -15,6 +14,6 @@ import configuration from './config/configuration';
     SharedModule,
   ],
   controllers: [ProxyController],
-  providers: [TransactionService, AllowCheckService, TransactionAllowList],
+  providers: [TransactionService, AllowCheckService],
 })
 export class AppModule {}
