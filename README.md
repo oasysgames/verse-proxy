@@ -3,7 +3,10 @@ This is verse-layer's proxy to control access allow list.<br>
 Verse-layer-proxy is made by [Nest](https://github.com/nestjs/nest).
 
 ## Set up transaction allow list
-set allow list at src/shared/entities/src/TransactionAllowList.ts.
+You can set allow list at src/shared/entities/src/TransactionAllowList.ts.
+
+### from, to
+You can controls the from and to of a transaction.
 
 ```typescript
 // elements contained in the array are allowed to be transacted.
@@ -35,6 +38,29 @@ this.list = [
   },
 ];
 ```
+
+### Value
+You can controls the token value of a transaction.
+
+```typescript
+// Only transactions with more than 10000000000000000000000000000unit values are allowed.
+this.list = [
+  {
+    fromList: ['*'],
+    toList: ['*'],
+    value: { gt: 1000000000000000000 },
+  }
+];
+```
+
+| value's key  |  Comparison Operation  |
+| ---- | ---- |
+|  eq  |  txValue == condition is allowed  |
+|  neq  |  txValue != condition is allowed  |
+|  gt  |  txValue > condition is allowed  |
+|  gte  |  txValue >= condition is allowed  |
+|  lt  |  txValue < condition is allowed  |
+|  lte  |  txValue <= condition is allowed  |
 
 ## Installation
 

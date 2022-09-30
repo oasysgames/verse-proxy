@@ -14,6 +14,7 @@ export class TransactionService {
     const tx = this.parseRawTx(rawTx);
     const from = tx.from;
     const to = tx.to;
+    const value = tx.value.toNumber();
 
     if (!from || !to) throw new ForbiddenException('transaction is invalid');
 
@@ -26,9 +27,51 @@ export class TransactionService {
         return this.allowCheckService.isAllowedString(allowedTo, to);
       });
 
-      if (fromCheck && toCheck) {
+      const valueCondition = condition.value;
+      if (!valueCondition && fromCheck && toCheck) {
         isAllow = true;
         break;
+      }
+
+      if (!valueCondition) {
+        if (fromCheck && toCheck) {
+          isAllow = true;
+          break;
+        }
+      } else {
+        let valueCheck = true;
+        for (const key in valueCondition) {
+          switch (key) {
+            case 'eq':
+              if (valueCondition.eq && value !== valueCondition.eq)
+                valueCheck = false;
+              break;
+            case 'neq':
+              if (valueCondition.neq && value === valueCondition.neq)
+                valueCheck = false;
+              break;
+            case 'gt':
+              if (valueCondition.gt && value <= valueCondition.gt)
+                valueCheck = false;
+              break;
+            case 'gte':
+              if (valueCondition.gte && value < valueCondition.gte)
+                valueCheck = false;
+              break;
+            case 'lt':
+              if (valueCondition.lt && value >= valueCondition.lt)
+                valueCheck = false;
+              break;
+            case 'lte':
+              if (valueCondition.lte && value > valueCondition.lte)
+                valueCheck = false;
+              break;
+          }
+        }
+        if (valueCheck && fromCheck && toCheck) {
+          isAllow = true;
+          break;
+        }
       }
     }
 
