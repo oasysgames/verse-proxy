@@ -2,15 +2,24 @@
 This is verse-layer's proxy to control access allow list.<br>
 Verse-layer-proxy is made by [Nest](https://github.com/nestjs/nest).
 
-## Set up transaction allow list
-You can set allow list at src/config/transactionAllowList.ts.
+## Set allowed methods
+You can set allowed methods by modifying allowedMethods at src/config/configuration.ts.
+```typescript
+export default () => ({
+  ...
+  allowedMethods: /^eth_(get.*|sendRawTransaction)$/, 
+});
+```
+
+## Set transaction allow list
+You can set allowed transaction list at src/config/transactionAllowList.ts.
 
 ### from, to
 You can controls the from and to of a transaction.
 
 ```typescript
 // elements contained in the array are allowed to be transacted.
-this.list = [
+return [
   {
     fromList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
     toList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
@@ -20,18 +29,22 @@ this.list = [
     toList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
   },
 ];
+```
 
+```typescript
 // '*' is wildcard.
-this.list = [
+return [
   {
     fromList: ['*'],
     toList: ['*'],
   },
 ];
+```
 
+```typescript
 // ! is denial.
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
-this.list = [
+return [
   {
     fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
     toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
@@ -44,7 +57,7 @@ You can controls the token value of a transaction.
 
 ```typescript
 // Only transactions with more than 10000000000000000000000000000unit values are allowed.
-this.list = [
+return [
   {
     fromList: ['*'],
     toList: ['*'],

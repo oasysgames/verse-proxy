@@ -35,7 +35,9 @@ export class ProxyController {
   redirectVerse(@Body() verseRequest: VerseRequestDto) {
     const verseUrl = this.configService.get<string>('verseUrl');
     const method = verseRequest.method;
-    const allowedMethods = /^eth_(get.*|sendRawTransaction)$/;
+    const allowedMethods =
+      this.configService.get<RegExp>('allowedMethods') ??
+      /^eth_(get.*|sendRawTransaction)$/;
     if (!allowedMethods.test(method))
       throw new ForbiddenException('rpc method is not whitelisted');
 
