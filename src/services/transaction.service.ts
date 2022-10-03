@@ -1,7 +1,7 @@
-import { Injectable, ForbiddenException, HttpException } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map, catchError } from 'rxjs';
+import { lastValueFrom, map } from 'rxjs';
 import { ethers } from 'ethers';
 import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
@@ -54,18 +54,28 @@ export class TransactionService {
     const tx = this.parseRawTx(rawTx);
     const from = tx.from;
     const to = tx.to;
-    const gas = tx.maxFeePerGas?._hex;
-    const gasPrice = tx.gasPrice?._hex;
+    const maxFeePerGas = tx.maxFeePerGas?._hex;
+    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas?._hex;
     const value = tx.value._hex;
     const data = tx.data;
 
     const verseUrl =
       this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
-    const params = [{ from, to, gas, gasPrice, value, data }];
+    const params = [
+      {
+        from,
+        to,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        value,
+        data,
+      },
+      'latest',
+    ];
     const body = {
       jsonrpc: jsonrpc,
       id: id,
-      method: 'eth_estimateGas',
+      method: 'eth_call',
       params: params,
     };
 
