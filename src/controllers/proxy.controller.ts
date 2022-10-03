@@ -51,7 +51,12 @@ export class ProxyController {
       return data;
     }
     const rawTx = verseRequest.params[0];
-    this.txService.allowCheck(rawTx);
+    this.txService.checkAllowedRawTx(rawTx);
+    await this.txService.checkAllowedGasFromRawTx(
+      rawTx,
+      verseRequest.jsonrpc,
+      verseRequest.id,
+    );
     const data = await lastValueFrom(
       this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
     );
