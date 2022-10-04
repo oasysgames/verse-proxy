@@ -32,11 +32,8 @@ export class ProxyController {
     const verseUrl =
       this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
     const method = verseRequest.method;
-    const allowedMethods =
-      this.configService.get<RegExp>('allowedMethods') ??
-      /^eth_(get.*|sendRawTransaction)$/;
-    if (!allowedMethods.test(method))
-      throw new ForbiddenException('rpc method is not whitelisted');
+
+    this.checkMethod(method);
 
     const body = {
       jsonrpc: verseRequest.jsonrpc,
@@ -61,5 +58,16 @@ export class ProxyController {
       this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
     );
     return data;
+  }
+
+  private checkMethod(method: string) {
+    const allowedMethods = this.configService.get<RegExp[]>(
+      'allowedMethods',
+    ) ?? [/^.*$/];
+    const checkMethod = allowedMethods.some((allowedMethod) => {
+      return allowedMethod.test(method);
+    });
+    if (!checkMethod)
+      throw new ForbiddenException('rpc method is not whitelisted');
   }
 }
