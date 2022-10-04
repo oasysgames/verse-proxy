@@ -1,10 +1,10 @@
 export interface ComparisonOperation {
-  eq?: number; // txValue == condition is allowed
-  neq?: number; // txValue != condition is allowed
-  gt?: number; // txValue > condition is allowed
-  gte?: number; // txValue >= condition is allowed
-  lt?: number; // txValue < condition is allowed
-  lte?: number; // txValue <= condition is allowed
+  eq?: string; // txValue == condition is allowed
+  neq?: string; // txValue != condition is allowed
+  gt?: string; // txValue > condition is allowed
+  gte?: string; // txValue >= condition is allowed
+  lt?: string; // txValue < condition is allowed
+  lte?: string; // txValue <= condition is allowed
 }
 
 export interface TransactionAllow {

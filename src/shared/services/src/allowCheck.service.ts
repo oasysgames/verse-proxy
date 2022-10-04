@@ -27,7 +27,7 @@ export class AllowCheckService {
     return isAllow;
   }
 
-  isAllowedValue(valueCondition: ComparisonOperation, value: number): boolean {
+  isAllowedValue(valueCondition: ComparisonOperation, value: string): boolean {
     let isAllow = true;
     for (const key in valueCondition) {
       switch (key) {

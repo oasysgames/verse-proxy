@@ -56,12 +56,12 @@ return [
 You can controls the token value of a transaction.
 
 ```typescript
-// Only transactions with more than 10000000000000000000000000000unit values are allowed.
+// Only transactions with more than 1000000000000000000unit values are allowed.
 return [
   {
     fromList: ['*'],
     toList: ['*'],
-    value: { gt: 1000000000000000000 },
+    value: { gt: '1000000000000000000' },
   }
 ];
 ```

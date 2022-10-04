@@ -22,7 +22,7 @@ export class TransactionService {
     const tx = this.parseRawTx(rawTx);
     const from = tx.from;
     const to = tx.to;
-    const value = tx.value.toNumber();
+    const value = tx.value.toString();
 
     if (!from || !to) throw new ForbiddenException('transaction is invalid');
 
