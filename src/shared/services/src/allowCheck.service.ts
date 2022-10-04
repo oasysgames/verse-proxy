@@ -12,14 +12,17 @@ export class AllowCheckService {
 
   isAllowedFrom(condition: TransactionAllow, from: string): boolean {
     const isAllow = condition.fromList.some((allowedFrom) => {
-      return this.isAllowedString(allowedFrom, from);
+      return this.isAllowedString(
+        allowedFrom.toLowerCase(),
+        from.toLowerCase(),
+      );
     });
     return isAllow;
   }
 
   isAllowedTo(condition: TransactionAllow, to: string): boolean {
     const isAllow = condition.toList.some((allowedTo) => {
-      return this.isAllowedString(allowedTo, to);
+      return this.isAllowedString(allowedTo.toLowerCase(), to.toLowerCase());
     });
     return isAllow;
   }
