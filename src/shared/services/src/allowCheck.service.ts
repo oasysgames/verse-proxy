@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionAllow, ComparisonOperation } from 'src/shared/entities';
+import { BigNumber } from 'ethers';
 
 @Injectable()
 export class AllowCheckService {
@@ -27,27 +28,35 @@ export class AllowCheckService {
     return isAllow;
   }
 
-  isAllowedValue(valueCondition: ComparisonOperation, value: string): boolean {
+  isAllowedValue(
+    valueCondition: ComparisonOperation,
+    value: BigNumber,
+  ): boolean {
     let isAllow = true;
     for (const key in valueCondition) {
       switch (key) {
         case 'eq':
-          if (valueCondition.eq && value !== valueCondition.eq) isAllow = false;
+          if (valueCondition.eq && !value.eq(valueCondition.eq))
+            isAllow = false;
           break;
         case 'nq':
-          if (valueCondition.nq && value === valueCondition.nq) isAllow = false;
+          if (valueCondition.nq && value.eq(valueCondition.nq)) isAllow = false;
           break;
         case 'gt':
-          if (valueCondition.gt && value <= valueCondition.gt) isAllow = false;
+          if (valueCondition.gt && value.lte(valueCondition.gt))
+            isAllow = false;
           break;
         case 'gte':
-          if (valueCondition.gte && value < valueCondition.gte) isAllow = false;
+          if (valueCondition.gte && value.lt(valueCondition.gte))
+            isAllow = false;
           break;
         case 'lt':
-          if (valueCondition.lt && value >= valueCondition.lt) isAllow = false;
+          if (valueCondition.lt && value.gte(valueCondition.lt))
+            isAllow = false;
           break;
         case 'lte':
-          if (valueCondition.lte && value > valueCondition.lte) isAllow = false;
+          if (valueCondition.lte && value.gt(valueCondition.lte))
+            isAllow = false;
           break;
       }
     }
