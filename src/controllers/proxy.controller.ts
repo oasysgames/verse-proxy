@@ -56,7 +56,6 @@ export class ProxyController {
     const checkMethod = allowedMethods.some((allowedMethod) => {
       return allowedMethod.test(method);
     });
-    if (!checkMethod)
-      throw new ForbiddenException('rpc method is not whitelisted');
+    if (!checkMethod) throw new ForbiddenException(`${method} is not allowed`);
   }
 }
