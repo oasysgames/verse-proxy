@@ -1,6 +1,6 @@
 export interface ComparisonOperation {
   eq?: string; // txValue == condition is allowed
-  neq?: string; // txValue != condition is allowed
+  nq?: string; // txValue != condition is allowed
   gt?: string; // txValue > condition is allowed
   gte?: string; // txValue >= condition is allowed
   lt?: string; // txValue < condition is allowed

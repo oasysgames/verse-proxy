@@ -34,9 +34,8 @@ export class AllowCheckService {
         case 'eq':
           if (valueCondition.eq && value !== valueCondition.eq) isAllow = false;
           break;
-        case 'neq':
-          if (valueCondition.neq && value === valueCondition.neq)
-            isAllow = false;
+        case 'nq':
+          if (valueCondition.nq && value === valueCondition.nq) isAllow = false;
           break;
         case 'gt':
           if (valueCondition.gt && value <= valueCondition.gt) isAllow = false;

@@ -88,7 +88,7 @@ return [
 | value's key  |  Comparison Operation  |
 | ---- | ---- |
 |  eq  |  txValue == condition is allowed  |
-|  neq  |  txValue != condition is allowed  |
+|  nq  |  txValue != condition is allowed  |
 |  gt  |  txValue > condition is allowed  |
 |  gte  |  txValue >= condition is allowed  |
 |  lt  |  txValue < condition is allowed  |
