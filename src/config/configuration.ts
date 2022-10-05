@@ -14,4 +14,5 @@ export default () => ({
     /^eth_feeHistory$/,
     /^eth_.*Filter$/,
   ],
+  inheritHostHeader: true,
 });

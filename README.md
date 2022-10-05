@@ -11,7 +11,7 @@ export default () => ({
 });
 ```
 
-## Set  allowed verse request methods
+## Set allowed verse request methods
 You can set allowed verse request methods by regex at src/config/configuration.ts.
 ```typescript
 allowedMethods: [
@@ -93,6 +93,12 @@ return [
 |  gte  |  txValue >= condition is allowed  |
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
+
+## Set allowed verse request methods
+You can set whether you inherit proxy request's host header on verse request at src/config/configuration.ts.
+```typescript
+inheritHostHeader: true,
+```
 
 ## Installation
 

@@ -41,6 +41,8 @@ export class ProxyController {
   ) {
     const verseUrl =
       this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
+    const inheritHostHeader =
+      this.configService.get<boolean>('inheritHostHeader') ?? false;
     const method = verseRequest.method;
 
     this.checkMethod(method);
@@ -51,6 +53,9 @@ export class ProxyController {
       if (key.slice(0, 2) === 'x-' && typeof value === 'string') {
         headers[key] = value;
       }
+    }
+    if (inheritHostHeader && request.headers['host']) {
+      headers['host'] = request.headers['host'];
     }
     const axiosConfig = { headers };
     const body = {
