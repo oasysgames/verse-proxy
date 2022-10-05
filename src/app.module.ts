@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
-import { TransactionService } from './services';
+import { TransactionService, VerseService } from './services';
 import { SharedModule } from './shared/shared.module';
 import { AllowCheckService } from './shared/services/src';
 import configuration from './config/configuration';
@@ -16,6 +16,6 @@ import configuration from './config/configuration';
     SharedModule,
   ],
   controllers: [ProxyController],
-  providers: [TransactionService, AllowCheckService],
+  providers: [VerseService, TransactionService, AllowCheckService],
 })
 export class AppModule {}

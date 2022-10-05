@@ -6,13 +6,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
 import { Request } from 'express';
-import { TransactionService } from '../services';
+import { TransactionService, VerseService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
-class VerseRequestDto {
+class RequestBody {
   @IsString({ message: 'invalid JSON-RPC version' })
   jsonrpc: string;
 
@@ -29,61 +27,25 @@ class VerseRequestDto {
 @Controller()
 export class ProxyController {
   constructor(
-    private readonly httpService: HttpService,
     private configService: ConfigService,
+    private verseService: VerseService,
     private readonly txService: TransactionService,
   ) {}
 
   @Post()
-  async redirectVerse(
-    @Req() request: Request,
-    @Body() verseRequest: VerseRequestDto,
-  ) {
-    const verseUrl =
-      this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
-    const inheritHostHeader =
-      this.configService.get<boolean>('inheritHostHeader') ?? false;
-    const method = verseRequest.method;
-
+  async requestVerse(@Req() request: Request, @Body() body: RequestBody) {
+    const method = body.method;
     this.checkMethod(method);
 
-    const headers: Record<string, string> = {};
-    for (const key in request.headers) {
-      const value = request.headers[key];
-      if (key.slice(0, 2) === 'x-' && typeof value === 'string') {
-        headers[key] = value;
-      }
-    }
-    if (inheritHostHeader && request.headers['host']) {
-      headers['host'] = request.headers['host'];
-    }
-    const axiosConfig = { headers };
-    const body = {
-      jsonrpc: verseRequest.jsonrpc,
-      id: verseRequest.id,
-      method: verseRequest.method,
-      params: verseRequest.params,
-    };
     if (method !== 'eth_sendRawTransaction') {
-      const data = await lastValueFrom(
-        this.httpService
-          .post(verseUrl, body, axiosConfig)
-          .pipe(map((res) => res.data)),
-      );
+      const data = await this.verseService.post(request, body);
       return data;
     }
-    const rawTx = verseRequest.params[0];
+
+    const rawTx = body.params[0];
     this.txService.checkAllowedRawTx(rawTx);
-    await this.txService.checkAllowedGasFromRawTx(
-      rawTx,
-      verseRequest.jsonrpc,
-      verseRequest.id,
-    );
-    const data = await lastValueFrom(
-      this.httpService
-        .post(verseUrl, body, axiosConfig)
-        .pipe(map((res) => res.data)),
-    );
+    await this.txService.checkAllowedGasFromRawTx(rawTx, body.jsonrpc, body.id);
+    const data = await this.verseService.post(request, body);
     return data;
   }
 
