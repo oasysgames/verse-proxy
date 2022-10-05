@@ -1,7 +1,14 @@
-import { Controller, Post, Body, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Req,
+  Body,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, map } from 'rxjs';
+import { Request } from 'express';
 import { TransactionService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -28,13 +35,24 @@ export class ProxyController {
   ) {}
 
   @Post()
-  async redirectVerse(@Body() verseRequest: VerseRequestDto) {
+  async redirectVerse(
+    @Req() request: Request,
+    @Body() verseRequest: VerseRequestDto,
+  ) {
     const verseUrl =
       this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
     const method = verseRequest.method;
 
     this.checkMethod(method);
 
+    const headers: Record<string, string> = {};
+    for (const key in request.headers) {
+      const value = request.headers[key];
+      if (key.slice(0, 2) === 'x-' && typeof value === 'string') {
+        headers[key] = value;
+      }
+    }
+    const axiosConfig = { headers };
     const body = {
       jsonrpc: verseRequest.jsonrpc,
       id: verseRequest.id,
@@ -43,7 +61,9 @@ export class ProxyController {
     };
     if (method !== 'eth_sendRawTransaction') {
       const data = await lastValueFrom(
-        this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
+        this.httpService
+          .post(verseUrl, body, axiosConfig)
+          .pipe(map((res) => res.data)),
       );
       return data;
     }
@@ -55,7 +75,9 @@ export class ProxyController {
       verseRequest.id,
     );
     const data = await lastValueFrom(
-      this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
+      this.httpService
+        .post(verseUrl, body, axiosConfig)
+        .pipe(map((res) => res.data)),
     );
     return data;
   }
