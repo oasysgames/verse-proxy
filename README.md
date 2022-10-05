@@ -11,6 +11,25 @@ export default () => ({
 });
 ```
 
+## Set  allowed verse request methods
+You can set allowed verse request methods by regex at src/config/configuration.ts.
+```typescript
+allowedMethods: [
+  /^net_version$/,
+  /^web3_clientVersion$/,
+  /^eth_get.*$/,
+  /^eth_sendRawTransaction$/,
+  /^eth_chainId$/,
+  /^eth_blockNumber$/,
+  /^eth_call$/,
+  /^eth_estimateGas$/,
+  /^eth_gasPrice$/,
+  /^eth_maxPriorityFeePerGas$/,
+  /^eth_feeHistory$/,
+  /^eth_.*Filter$/,
+],
+```
+
 ## Set transaction allow list
 You can set allowed transaction list at src/config/transactionAllowList.ts.
 
