@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, map } from 'rxjs';
-import { ethers, BigNumber } from 'ethers';
+import { ethers, BigNumber, Transaction } from 'ethers';
 import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import getTxAllowList from 'src/config/transactionAllowList';
@@ -18,8 +18,7 @@ export class TransactionService {
     this.txAllowList = getTxAllowList();
   }
 
-  checkAllowedRawTx(rawTx: string): void {
-    const tx = this.parseRawTx(rawTx);
+  checkAllowedTx(tx: Transaction): void {
     const from = tx.from;
     const to = tx.to;
     const value = tx.value;
@@ -46,12 +45,11 @@ export class TransactionService {
     return;
   }
 
-  async checkAllowedGasFromRawTx(
-    rawTx: string,
+  async checkAllowedGas(
+    tx: Transaction,
     jsonrpc: string,
     id: number,
   ): Promise<void> {
-    const tx = this.parseRawTx(rawTx);
     const type = BigNumber.from(tx.type).toHexString();
     const nonce = BigNumber.from(tx.nonce).toHexString();
     const from = tx.from;
