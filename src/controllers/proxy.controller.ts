@@ -43,8 +43,9 @@ export class ProxyController {
     }
 
     const rawTx = body.params[0];
-    this.txService.checkAllowedRawTx(rawTx);
-    await this.txService.checkAllowedGasFromRawTx(rawTx, body.jsonrpc, body.id);
+    const tx = this.txService.parseRawTx(rawTx);
+    this.txService.checkAllowedTx(tx);
+    await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const data = await this.verseService.post(request, body);
     return data;
   }
