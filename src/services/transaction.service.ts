@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, map } from 'rxjs';
-import { ethers } from 'ethers';
+import { ethers, BigNumber } from 'ethers';
 import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import getTxAllowList from 'src/config/transactionAllowList';
@@ -52,23 +52,35 @@ export class TransactionService {
     id: number,
   ): Promise<void> {
     const tx = this.parseRawTx(rawTx);
+    const type = BigNumber.from(tx.type).toHexString();
+    const nonce = BigNumber.from(tx.nonce).toHexString();
     const from = tx.from;
     const to = tx.to;
-    const maxFeePerGas = tx.maxFeePerGas?._hex;
-    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas?._hex;
-    const value = tx.value._hex;
-    const data = tx.data;
+    const gas = tx.gasLimit.toHexString();
+    const value = tx.value.toHexString();
+    const input = tx.data;
+    const gasPrice = tx.gasPrice?.toHexString();
+    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas?.toHexString();
+    const maxFeePerGas = tx.maxFeePerGas?.toHexString();
+    const accessList = tx.accessList;
+    const chainId = BigNumber.from(tx.chainId).toHexString();
 
     const verseUrl =
       this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
     const params = [
       {
+        type,
+        nonce,
         from,
         to,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
+        gas,
         value,
-        data,
+        input,
+        gasPrice,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        accessList,
+        chainId,
       },
       'latest',
     ];
