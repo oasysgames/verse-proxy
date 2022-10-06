@@ -5,7 +5,7 @@ import { lastValueFrom, map } from 'rxjs';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
-import getTxAllowList from 'src/config/transactionAllowList';
+import { getTxAllowList } from 'src/config/transactionAllowList';
 
 @Injectable()
 export class TransactionService {
