@@ -35,10 +35,11 @@ export class ProxyController {
   @Post()
   async requestVerse(@Req() request: Request, @Body() body: RequestBody) {
     const method = body.method;
+    const headers = request.headers;
     this.checkMethod(method);
 
     if (method !== 'eth_sendRawTransaction') {
-      const data = await this.verseService.post(request, body);
+      const data = await this.verseService.post(headers, body);
       return data;
     }
 
@@ -46,7 +47,7 @@ export class ProxyController {
     const tx = this.txService.parseRawTx(rawTx);
     this.txService.checkAllowedTx(tx);
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const data = await this.verseService.post(request, body);
+    const data = await this.verseService.post(headers, body);
     return data;
   }
 

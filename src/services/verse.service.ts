@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, map } from 'rxjs';
-import { Request } from 'express';
+import { IncomingHttpHeaders } from 'http';
 
 interface VerseRequestBody {
   jsonrpc: string;
@@ -25,18 +25,21 @@ export class VerseService {
       this.configService.get<boolean>('inheritHostHeader') ?? false;
   }
 
-  async post(proxyRequest: Request, body: VerseRequestBody): Promise<any> {
-    const headers: Record<string, string> = {};
-    for (const key in proxyRequest.headers) {
-      const value = proxyRequest.headers[key];
+  async post(
+    headers: IncomingHttpHeaders,
+    body: VerseRequestBody,
+  ): Promise<any> {
+    const verseHeaders: Record<string, string> = {};
+    for (const key in headers) {
+      const value = headers[key];
       if (key.slice(0, 2) === 'x-' && typeof value === 'string') {
-        headers[key] = value;
+        verseHeaders[key] = value;
       }
     }
-    if (this.inheritHostHeader && proxyRequest.headers['host']) {
-      headers['host'] = proxyRequest.headers['host'];
+    if (this.inheritHostHeader && headers['host']) {
+      verseHeaders['host'] = headers['host'];
     }
-    const axiosConfig = { headers };
+    const axiosConfig = { headers: verseHeaders };
 
     const data = await lastValueFrom(
       this.httpService
