@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
-import { HttpService } from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { of } from 'rxjs';
 import { TransactionService } from '../transaction.service';
+import { VerseService } from '../verse.service';
 import { AllowCheckService } from '../../shared/services/src';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -10,9 +10,8 @@ import { AccessList } from 'ethers/lib/utils';
 import { ForbiddenException } from '@nestjs/common';
 
 describe('TransactionService', () => {
-  let httpService: HttpService;
-  let configService: ConfigService;
-  const allowCheckService = new AllowCheckService();
+  let verseService: VerseService;
+  let allowCheckService: AllowCheckService;
   const transactionAllowListMock = jest.spyOn(
     transactionAllowList,
     'getTxAllowList',
@@ -38,38 +37,32 @@ describe('TransactionService', () => {
     '0x743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
   const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-  describe('checkAllowedTx', () => {
-    beforeEach(async () => {
-      jest.resetAllMocks();
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          {
-            provide: HttpService,
-            useValue: {
-              post: jest.fn(() =>
-                of({
-                  data: {
-                    jsonrpc: '2.0',
-                    id: 1,
-                    result: '0x',
-                  },
-                }),
-              ),
-            },
-          },
-          {
-            provide: ConfigService,
-            useValue: {
-              get: jest.fn(() => {
-                return 'http://localhost:8545';
-              }),
-            },
-          },
-        ],
-      }).compile();
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [HttpModule],
+      providers: [
+        ConfigService,
+        VerseService,
+        AllowCheckService,
+        TransactionService,
+      ],
+    })
+      .useMocker((token) => {
+        if (token === VerseService) {
+          return {
+            post: jest.fn(),
+          };
+        }
+      })
+      .compile();
 
-      httpService = moduleRef.get<HttpService>(HttpService);
-      configService = moduleRef.get<ConfigService>(ConfigService);
+    verseService = moduleRef.get<VerseService>(VerseService);
+    allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
+  });
+
+  describe('checkAllowedTx', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
     it('transaction does not have from', () => {
@@ -81,8 +74,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -118,8 +110,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -155,8 +146,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -194,8 +184,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -235,8 +224,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -274,8 +262,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -313,8 +300,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
 
@@ -348,35 +334,11 @@ describe('TransactionService', () => {
     });
 
     it('eth_call is successful', async () => {
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          {
-            provide: HttpService,
-            useValue: {
-              post: jest.fn(() =>
-                of({
-                  data: {
-                    jsonrpc: '2.0',
-                    id: 1,
-                    result: '0x',
-                  },
-                }),
-              ),
-            },
-          },
-          {
-            provide: ConfigService,
-            useValue: {
-              get: jest.fn(() => {
-                return 'http://localhost:8545';
-              }),
-            },
-          },
-        ],
-      }).compile();
-
-      httpService = moduleRef.get<HttpService>(HttpService);
-      configService = moduleRef.get<ConfigService>(ConfigService);
+      jest.spyOn(verseService, 'post').mockResolvedValue({
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x',
+      });
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -386,10 +348,10 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
+
       const jsonrpc = '2.0';
       const id = 1;
       const tx = {
@@ -418,38 +380,14 @@ describe('TransactionService', () => {
 
     it('eth_call is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          {
-            provide: HttpService,
-            useValue: {
-              post: jest.fn(() =>
-                of({
-                  data: {
-                    jsonrpc: '2.0',
-                    id: 1,
-                    error: {
-                      code: -32000,
-                      message: errMsg,
-                    },
-                  },
-                }),
-              ),
-            },
-          },
-          {
-            provide: ConfigService,
-            useValue: {
-              get: jest.fn(() => {
-                return 'http://localhost:8545';
-              }),
-            },
-          },
-        ],
-      }).compile();
-
-      httpService = moduleRef.get<HttpService>(HttpService);
-      configService = moduleRef.get<ConfigService>(ConfigService);
+      jest.spyOn(verseService, 'post').mockResolvedValue({
+        jsonrpc: '2.0',
+        id: 1,
+        error: {
+          code: -32000,
+          message: errMsg,
+        },
+      });
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -459,10 +397,10 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
-        httpService,
-        configService,
+        verseService,
         allowCheckService,
       );
+
       const jsonrpc = '2.0';
       const id = 1;
       const tx = {

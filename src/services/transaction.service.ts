@@ -1,18 +1,15 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import { TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import { getTxAllowList } from 'src/config/transactionAllowList';
+import { VerseService } from './verse.service';
 
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
   constructor(
-    private readonly httpService: HttpService,
-    private configService: ConfigService,
+    private verseService: VerseService,
     private allowCheckService: AllowCheckService,
   ) {
     this.txAllowList = getTxAllowList();
@@ -63,8 +60,6 @@ export class TransactionService {
     const accessList = tx.accessList;
     const chainId = BigNumber.from(tx.chainId).toHexString();
 
-    const verseUrl =
-      this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
     const params = [
       {
         type,
@@ -82,6 +77,7 @@ export class TransactionService {
       },
       'latest',
     ];
+    const headers = {};
     const body = {
       jsonrpc: jsonrpc,
       id: id,
@@ -89,9 +85,7 @@ export class TransactionService {
       params: params,
     };
 
-    const res = await lastValueFrom(
-      this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
-    );
+    const res = await this.verseService.post(headers, body);
     if (res.error) {
       throw new ForbiddenException(res.error.message);
     }
