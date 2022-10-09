@@ -1,12 +1,12 @@
 import {
   Controller,
   Post,
-  Req,
+  Headers,
   Body,
   ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
+import { IncomingHttpHeaders } from 'http';
 import { TransactionService, VerseService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -33,9 +33,11 @@ export class ProxyController {
   ) {}
 
   @Post()
-  async requestVerse(@Req() request: Request, @Body() body: RequestBody) {
+  async requestVerse(
+    @Headers() headers: IncomingHttpHeaders,
+    @Body() body: RequestBody,
+  ) {
     const method = body.method;
-    const headers = request.headers;
     this.checkMethod(method);
 
     if (method !== 'eth_sendRawTransaction') {
@@ -51,7 +53,7 @@ export class ProxyController {
     return data;
   }
 
-  private checkMethod(method: string) {
+  checkMethod(method: string) {
     const allowedMethods = this.configService.get<RegExp[]>(
       'allowedMethods',
     ) ?? [/^.*$/];
