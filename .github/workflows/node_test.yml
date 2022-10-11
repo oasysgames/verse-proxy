@@ -1,12 +1,12 @@
-name: pull_request
+name: node_test
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  pull_request:
-    name: node.js ci
+  node_test:
+    name: run node test
     runs-on: ubuntu-latest
 
     steps:
