@@ -1,15 +1,65 @@
 import { Test } from '@nestjs/testing';
-import { HttpService } from '@nestjs/axios';
+import { HttpModule, HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
+import { AxiosResponse } from 'axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from '../verse.service';
+
+const verseUrl = 'http://localhost:8545';
 
 describe('VerseService', () => {
   let httpService: HttpService;
   let configService: ConfigService;
   let verseService: VerseService;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [HttpModule],
+      providers: [ConfigService],
+    })
+      .useMocker((token) => {
+        switch (token) {
+          case HttpService:
+            return {
+              post: jest.fn(),
+            };
+          case ConfigService:
+            return {
+              get: jest.fn(),
+            };
+        }
+      })
+      .compile();
+
+    httpService = moduleRef.get<HttpService>(HttpService);
+    configService = moduleRef.get<ConfigService>(ConfigService);
+
+    const responseData = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x',
+    };
+    const res: AxiosResponse = {
+      status: 201,
+      data: responseData,
+      statusText: '',
+      headers: {},
+      config: {},
+    };
+    const inheritHostHeader = true;
+
+    jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      switch (key) {
+        case 'verseUrl':
+          return verseUrl;
+        case 'inheritHostHeader':
+          return inheritHostHeader;
+      }
+    });
+  });
 
   describe('post', () => {
     const verseUrl = 'http://localhost:8545';
@@ -60,10 +110,17 @@ describe('VerseService', () => {
       params: [tx, 'latest'],
     };
 
-    const verseRes = {
+    const responseData = {
       jsonrpc: '2.0',
       id: 1,
       result: '0x',
+    };
+    const res: AxiosResponse = {
+      status: 201,
+      data: responseData,
+      statusText: '',
+      headers: {},
+      config: {},
     };
 
     beforeEach(async () => {
@@ -71,42 +128,23 @@ describe('VerseService', () => {
     });
 
     it('inheritHostHeader is true', async () => {
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          {
-            provide: HttpService,
-            useValue: {
-              post: jest.fn(() =>
-                of({
-                  data: verseRes,
-                }),
-              ),
-            },
-          },
-          {
-            provide: ConfigService,
-            useValue: {
-              get: jest.fn((key: string) => {
-                switch (key) {
-                  case 'verseUrl':
-                    return verseUrl;
-                  case 'inheritHostHeader':
-                    return true;
-                }
-              }),
-            },
-          },
-        ],
-      }).compile();
-
-      httpService = moduleRef.get<HttpService>(HttpService);
-      configService = moduleRef.get<ConfigService>(ConfigService);
-      verseService = new VerseService(httpService, configService);
+      const inheritHostHeader = true;
 
       const postMock = jest.spyOn(httpService, 'post');
+      postMock.mockImplementation(() => of(res));
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseUrl':
+            return verseUrl;
+          case 'inheritHostHeader':
+            return inheritHostHeader;
+        }
+      });
+
+      verseService = new VerseService(httpService, configService);
+
       const host = 'localhost';
       const xContentTypeOptions = 'nosniff';
-
       const proxyRequestHeaders = {
         host: host,
         'x-content-type-options': xContentTypeOptions,
@@ -122,46 +160,26 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(verseRes);
+      expect(result).toBe(responseData);
     });
 
     it('inheritHostHeader is false', async () => {
-      const moduleRef = await Test.createTestingModule({
-        providers: [
-          {
-            provide: HttpService,
-            useValue: {
-              post: jest.fn(() =>
-                of({
-                  data: verseRes,
-                }),
-              ),
-            },
-          },
-          {
-            provide: ConfigService,
-            useValue: {
-              get: jest.fn((key: string) => {
-                switch (key) {
-                  case 'verseUrl':
-                    return verseUrl;
-                  case 'inheritHostHeader':
-                    return false;
-                }
-              }),
-            },
-          },
-        ],
-      }).compile();
-
-      httpService = moduleRef.get<HttpService>(HttpService);
-      configService = moduleRef.get<ConfigService>(ConfigService);
-      verseService = new VerseService(httpService, configService);
+      const inheritHostHeader = false;
 
       const postMock = jest.spyOn(httpService, 'post');
+      postMock.mockImplementation(() => of(res));
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseUrl':
+            return verseUrl;
+          case 'inheritHostHeader':
+            return inheritHostHeader;
+        }
+      });
+      verseService = new VerseService(httpService, configService);
+
       const host = 'localhost';
       const xContentTypeOptions = 'nosniff';
-
       const proxyRequestHeaders = {
         host: host,
         'x-content-type-options': xContentTypeOptions,
@@ -176,7 +194,7 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(verseRes);
+      expect(result).toBe(responseData);
     });
   });
 });
