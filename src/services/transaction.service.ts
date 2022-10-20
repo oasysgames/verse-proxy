@@ -47,18 +47,26 @@ export class TransactionService {
     jsonrpc: string,
     id: number,
   ): Promise<void> {
-    const type = BigNumber.from(tx.type).toHexString();
-    const nonce = BigNumber.from(tx.nonce).toHexString();
+    const type = tx.type
+      ? ethers.utils.hexValue(BigNumber.from(tx.type))
+      : undefined;
+    const nonce = ethers.utils.hexValue(BigNumber.from(tx.nonce));
     const from = tx.from;
     const to = tx.to;
-    const gas = tx.gasLimit.toHexString();
-    const value = tx.value.toHexString();
+    const gas = ethers.utils.hexValue(tx.gasLimit);
+    const value = ethers.utils.hexValue(tx.value);
     const input = tx.data;
-    const gasPrice = tx.gasPrice?.toHexString();
-    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas?.toHexString();
-    const maxFeePerGas = tx.maxFeePerGas?.toHexString();
+    const gasPrice = tx.gasPrice
+      ? ethers.utils.hexValue(tx.gasPrice)
+      : undefined;
+    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas
+      ? ethers.utils.hexValue(tx.maxPriorityFeePerGas)
+      : undefined;
+    const maxFeePerGas = tx.maxFeePerGas
+      ? ethers.utils.hexValue(tx.maxFeePerGas)
+      : undefined;
     const accessList = tx.accessList;
-    const chainId = BigNumber.from(tx.chainId).toHexString();
+    const chainId = ethers.utils.hexValue(BigNumber.from(tx.chainId));
 
     const params = [
       {
