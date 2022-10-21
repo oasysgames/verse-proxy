@@ -42,7 +42,7 @@ describe('VerseService', () => {
       result: '0x',
     };
     const res: AxiosResponse = {
-      status: 201,
+      status: 200,
       data: responseData,
       statusText: '',
       headers: {},
@@ -110,17 +110,23 @@ describe('VerseService', () => {
       params: [tx, 'latest'],
     };
 
+    const responseStatus = 200;
     const responseData = {
       jsonrpc: '2.0',
       id: 1,
       result: '0x',
     };
     const res: AxiosResponse = {
-      status: 201,
+      status: responseStatus,
       data: responseData,
       statusText: '',
       headers: {},
       config: {},
+    };
+
+    const responseResult = {
+      status: responseStatus,
+      data: responseData,
     };
 
     beforeEach(async () => {
@@ -160,7 +166,7 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(responseData);
+      expect(result).toEqual(responseResult);
     });
 
     it('inheritHostHeader is false', async () => {
@@ -194,7 +200,7 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(responseData);
+      expect(result).toEqual(responseResult);
     });
   });
 });

@@ -384,11 +384,18 @@ describe('TransactionService', () => {
     });
 
     it('eth_call is successful', async () => {
-      jest.spyOn(verseService, 'post').mockResolvedValue({
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
         result: '0x',
-      });
+      };
+      const verseResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -430,14 +437,21 @@ describe('TransactionService', () => {
 
     it('eth_call is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      jest.spyOn(verseService, 'post').mockResolvedValue({
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
         error: {
           code: -32000,
           message: errMsg,
         },
-      });
+      };
+      const verseResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
 
       transactionAllowListMock.mockReturnValue([
         {

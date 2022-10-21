@@ -4,6 +4,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
+import { Response } from 'express';
 import { TransactionService, VerseService } from 'src/services';
 import { ProxyController } from '../proxy.controller';
 import { AllowCheckService } from 'src/shared/services/src';
@@ -102,18 +103,30 @@ describe('ProxyController', () => {
         method: method,
         params: [tx, 'latest'],
       };
-      const res = {
+
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
         result: '0x',
       };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+      const res = {
+        send: (result: any) => {
+          expect(result).toBe(verseData); // when it call res.status.send, check verse request data.
+        },
+        status: (code: number) => res,
+      } as Response;
+
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-      jest.spyOn(verseService, 'post').mockResolvedValue(res);
+      jest.spyOn(verseService, 'post').mockResolvedValue(postResponse);
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
-      const result = await controller.requestVerse(headers, body);
-      expect(result).toBe(res);
+      await controller.requestVerse(headers, body, res);
       expect(jest.spyOn(txService, 'parseRawTx')).not.toHaveBeenCalled();
       expect(jest.spyOn(txService, 'checkAllowedTx')).not.toHaveBeenCalled();
       expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
@@ -131,13 +144,15 @@ describe('ProxyController', () => {
           '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
         ],
       };
+      const res = {} as Response;
+
       const errMsg = `${method} is not allowed`;
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
       try {
-        await controller.requestVerse(headers, body);
+        await controller.requestVerse(headers, body, res);
       } catch (e) {
         const forbiddenError = new ForbiddenException(errMsg);
         expect(e).toEqual(forbiddenError);
@@ -159,6 +174,7 @@ describe('ProxyController', () => {
         method: method,
         params: [rawTx],
       };
+      const res = {} as Response;
       const errMsg = 'transaction is invalid';
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
       jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
@@ -169,7 +185,7 @@ describe('ProxyController', () => {
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
       try {
-        await controller.requestVerse(headers, body);
+        await controller.requestVerse(headers, body, res);
       } catch (e) {
         const forbiddenError = new ForbiddenException(errMsg);
         expect(e).toEqual(forbiddenError);
@@ -193,6 +209,7 @@ describe('ProxyController', () => {
         method: method,
         params: [rawTx],
       };
+      const res = {} as Response;
       const errMsg = 'insufficient balance for transfer';
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
       jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
@@ -203,7 +220,7 @@ describe('ProxyController', () => {
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
       try {
-        await controller.requestVerse(headers, body);
+        await controller.requestVerse(headers, body, res);
       } catch (e) {
         const forbiddenError = new ForbiddenException(errMsg);
         expect(e).toEqual(forbiddenError);
@@ -229,19 +246,29 @@ describe('ProxyController', () => {
           '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239',
         ],
       };
-      const res = {
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
         result: '0x',
       };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+      const res = {
+        send: (result: any) => {
+          expect(result).toBe(verseData); // when it call res.status.send, check verse request data.
+        },
+        status: (code: number) => res,
+      } as Response;
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
       jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest.spyOn(verseService, 'post').mockResolvedValue(res);
+      jest.spyOn(verseService, 'post').mockResolvedValue(postResponse);
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
-      const result = await controller.requestVerse(headers, body);
-      expect(result).toBe(res);
+      await controller.requestVerse(headers, body, res);
     });
   });
 

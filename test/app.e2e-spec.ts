@@ -109,7 +109,7 @@ describe('AppController (e2e)', () => {
         result: '0x',
       };
       const res: AxiosResponse = {
-        status: 201,
+        status: 200,
         data: responseData,
         statusText: '',
         headers: {},
@@ -130,7 +130,7 @@ describe('AppController (e2e)', () => {
       return await request(app.getHttpServer())
         .post('/')
         .send(body)
-        .expect(201)
+        .expect(200)
         .expect(responseData);
     });
 
@@ -253,7 +253,7 @@ describe('AppController (e2e)', () => {
         },
       };
       const res: AxiosResponse = {
-        status: 201,
+        status: 200,
         data: responseData,
         statusText: '',
         headers: {},
@@ -313,7 +313,7 @@ describe('AppController (e2e)', () => {
         result: '0x',
       };
       const res: AxiosResponse = {
-        status: 201,
+        status: 200,
         data: responseData,
         statusText: '',
         headers: {},
@@ -335,7 +335,7 @@ describe('AppController (e2e)', () => {
       return await request(app.getHttpServer())
         .post('/')
         .send(body)
-        .expect(201)
+        .expect(200)
         .expect(responseData);
     });
   });

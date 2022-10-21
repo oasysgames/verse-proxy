@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
+import { lastValueFrom } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
 
 interface VerseRequestBody {
@@ -9,6 +9,11 @@ interface VerseRequestBody {
   id: number;
   method: string;
   params: Array<any>;
+}
+
+interface VerseRequestResponse {
+  status: number;
+  data: any;
 }
 
 @Injectable()
@@ -28,7 +33,7 @@ export class VerseService {
   async post(
     headers: IncomingHttpHeaders,
     body: VerseRequestBody,
-  ): Promise<any> {
+  ): Promise<VerseRequestResponse> {
     const verseHeaders: Record<string, string> = {};
     for (const key in headers) {
       const value = headers[key];
@@ -41,11 +46,12 @@ export class VerseService {
     }
     const axiosConfig = { headers: verseHeaders };
 
-    const data = await lastValueFrom(
-      this.httpService
-        .post(this.verseUrl, body, axiosConfig)
-        .pipe(map((res) => res.data)),
+    const res = await lastValueFrom(
+      this.httpService.post(this.verseUrl, body, axiosConfig),
     );
-    return data;
+    return {
+      status: res.status,
+      data: res.data,
+    };
   }
 }

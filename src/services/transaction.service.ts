@@ -103,9 +103,9 @@ export class TransactionService {
       params: params,
     };
 
-    const res = await this.verseService.post(headers, body);
-    if (res.error) {
-      throw new ForbiddenException(res.error.message);
+    const { data } = await this.verseService.post(headers, body);
+    if (data.error) {
+      throw new ForbiddenException(data.error.message);
     }
   }
 

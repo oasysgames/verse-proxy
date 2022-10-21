@@ -4,9 +4,11 @@ import {
   Headers,
   Body,
   ForbiddenException,
+  Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IncomingHttpHeaders } from 'http';
+import { Response } from 'express';
 import { TransactionService, VerseService } from '../services';
 import { IsString, IsInt, IsArray } from 'class-validator';
 
@@ -36,21 +38,23 @@ export class ProxyController {
   async requestVerse(
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: RequestBody,
+    @Res() res: Response,
   ) {
     const method = body.method;
     this.checkMethod(method);
 
     if (method !== 'eth_sendRawTransaction') {
-      const data = await this.verseService.post(headers, body);
-      return data;
+      const { status, data } = await this.verseService.post(headers, body);
+      res.status(status).send(data);
+      return;
     }
 
     const rawTx = body.params[0];
     const tx = this.txService.parseRawTx(rawTx);
     this.txService.checkAllowedTx(tx);
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const data = await this.verseService.post(headers, body);
-    return data;
+    const { status, data } = await this.verseService.post(headers, body);
+    res.status(status).send(data);
   }
 
   checkMethod(method: string) {
