@@ -8,3 +8,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     },
   ];
 };
+
+export const getDeployAllowList = (): Array<string> => {
+  return [''];
+};

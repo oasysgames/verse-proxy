@@ -20,8 +20,18 @@ export class TransactionService {
     const to = tx.to;
     const value = tx.value;
 
-    if (!from || !to) throw new ForbiddenException('transaction is invalid');
+    if (!from) throw new ForbiddenException('transaction is invalid');
 
+    // Check for deploy transactions
+    if (!to) {
+      if (this.allowCheckService.isAllowedDeploy(from)) {
+        return;
+      } else {
+        throw new ForbiddenException('deploy transaction is not allowed');
+      }
+    }
+
+    // Check for transactions other than deploy
     let isAllow = false;
     for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);

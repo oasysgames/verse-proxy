@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { TransactionAllow, ComparisonOperation } from 'src/shared/entities';
 import { BigNumber } from 'ethers';
+import { getDeployAllowList } from 'src/config/transactionAllowList';
 
 @Injectable()
 export class AllowCheckService {
+  private deployAllowList: Array<string>;
+  constructor() {
+    this.deployAllowList = getDeployAllowList();
+  }
+
   isAllowedString(allowPattern: string, input: string): boolean {
     if (allowPattern[0] === '!' && allowPattern.slice(1) === input)
       return false;
@@ -24,6 +30,13 @@ export class AllowCheckService {
   isAllowedTo(condition: TransactionAllow, to: string): boolean {
     const isAllow = condition.toList.some((allowedTo) => {
       return this.isAllowedString(allowedTo.toLowerCase(), to.toLowerCase());
+    });
+    return isAllow;
+  }
+
+  isAllowedDeploy(from: string): boolean {
+    const isAllow = this.deployAllowList.some((allowedFrom) => {
+      return allowedFrom.toLowerCase() === from.toLowerCase();
     });
     return isAllow;
   }

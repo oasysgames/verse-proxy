@@ -66,6 +66,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction does not have from', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -101,7 +103,9 @@ describe('TransactionService', () => {
       );
     });
 
-    it('transaction does not have to', () => {
+    it('deploy transaction(it does not have to) and is not allowed', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -133,11 +137,49 @@ describe('TransactionService', () => {
       };
 
       expect(() => transactionService.checkAllowedTx(tx)).toThrow(
-        'transaction is invalid',
+        'deploy transaction is not allowed',
       );
     });
 
+    it('deploy transaction(it does not have to) and is allowed', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(true);
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        verseService,
+        allowCheckService,
+      );
+
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+
+      expect(() => transactionService.checkAllowedTx(tx)).not.toThrow();
+    });
+
     it('transaction has allowed_from and allowed_to', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -173,6 +215,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has not_allowed_from', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: [
@@ -213,6 +257,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has not_allowed_to', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -253,6 +299,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has allowed_from and allowed_to, but does not have allowed_value', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -291,6 +339,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has allowed_from and allowed_to, allowed_value', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],

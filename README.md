@@ -34,55 +34,63 @@ allowedMethods: [
 You can set allowed transaction list at src/config/transactionAllowList.ts.
 
 ### from, to
-You can controls the from and to of a transaction.
+You can control the from and to of a transaction.
 
 ```typescript
 // elements contained in the array are allowed to be transacted.
-return [
-  {
-    fromList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
-    toList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
-  },
-  {
-    fromList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
-    toList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
+      toList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
+    },
+    {
+      fromList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
+      toList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
+    },
+  ];
+};
 ```
 
 ```typescript
 // '*' is wildcard.
-return [
-  {
-    fromList: ['*'],
-    toList: ['*'],
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+    },
+  ];
+}
 ```
 
 ```typescript
 // ! is denial.
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
-return [
-  {
-    fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
-    toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+      toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+    },
+  ];
+};
 ```
 
 ### Value
-You can controls the token value of a transaction.
+You can control the token value of a transaction.
 
 ```typescript
 // Only transactions with more than 1000000000000000000unit values are allowed.
-return [
-  {
-    fromList: ['*'],
-    toList: ['*'],
-    value: { gt: '1000000000000000000' },
-  }
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      value: { gt: '1000000000000000000' },
+    }
+  ];
+};
 ```
 
 | value's key  |  Comparison Operation  |
@@ -93,6 +101,16 @@ return [
 |  gte  |  txValue >= condition is allowed  |
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
+
+### Deployer
+You can control deployer of a verse.
+
+```typescript
+// Only 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+export const getDeployAllowList = (): Array<string> => {
+  return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
+};
+```
 
 ## Set allowed verse request methods
 You can set whether you inherit proxy request's host header on verse request at src/config/configuration.ts.
