@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom } from 'rxjs';
+import { lastValueFrom, catchError } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
 
 interface VerseRequestBody {
@@ -47,7 +47,11 @@ export class VerseService {
     const axiosConfig = { headers: verseHeaders };
 
     const res = await lastValueFrom(
-      this.httpService.post(this.verseUrl, body, axiosConfig),
+      this.httpService.post(this.verseUrl, body, axiosConfig).pipe(
+        catchError((e) => {
+          throw new HttpException(e.response.data, e.response.status);
+        }),
+      ),
     );
     return {
       status: res.status,
