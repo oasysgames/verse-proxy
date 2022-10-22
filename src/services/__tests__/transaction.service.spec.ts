@@ -383,12 +383,12 @@ describe('TransactionService', () => {
       jest.resetAllMocks();
     });
 
-    it('eth_call is successful', async () => {
+    it('eth_estimateGas is successful', async () => {
       const verseStatus = 200;
       const verseData = {
         jsonrpc: '2.0',
         id: 1,
-        result: '0x',
+        result: '0x5208',
       };
       const verseResponse = {
         status: verseStatus,
@@ -435,7 +435,7 @@ describe('TransactionService', () => {
       ).not.toThrow();
     });
 
-    it('eth_call is not successful', async () => {
+    it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
       const verseStatus = 200;
       const verseData = {

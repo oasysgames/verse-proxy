@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
-import { TransactionAllow } from 'src/shared/entities';
+import { TransactionAllow, EthEstimateGasParams } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import { getTxAllowList } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
@@ -57,49 +57,34 @@ export class TransactionService {
     jsonrpc: string,
     id: number,
   ): Promise<void> {
-    const type = tx.type
-      ? ethers.utils.hexValue(BigNumber.from(tx.type))
-      : undefined;
-    const nonce = ethers.utils.hexValue(BigNumber.from(tx.nonce));
-    const from = tx.from;
-    const to = tx.to;
-    const gas = ethers.utils.hexValue(tx.gasLimit);
-    const value = ethers.utils.hexValue(tx.value);
-    const input = tx.data;
-    const gasPrice = tx.gasPrice
-      ? ethers.utils.hexValue(tx.gasPrice)
-      : undefined;
-    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas
-      ? ethers.utils.hexValue(tx.maxPriorityFeePerGas)
-      : undefined;
-    const maxFeePerGas = tx.maxFeePerGas
-      ? ethers.utils.hexValue(tx.maxFeePerGas)
-      : undefined;
-    const accessList = tx.accessList;
-    const chainId = ethers.utils.hexValue(BigNumber.from(tx.chainId));
+    const ethCallParams: EthEstimateGasParams = {
+      nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
+      gas: ethers.utils.hexValue(tx.gasLimit),
+      value: ethers.utils.hexValue(tx.value),
+      input: tx.data,
+      chainId: ethers.utils.hexValue(BigNumber.from(tx.chainId)),
+    };
 
-    const params = [
-      {
-        type,
-        nonce,
-        from,
-        to,
-        gas,
-        value,
-        input,
-        gasPrice,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        accessList,
-        chainId,
-      },
-      'latest',
-    ];
+    if (tx.type)
+      ethCallParams['type'] = ethers.utils.hexValue(BigNumber.from(tx.type));
+    if (tx.from) ethCallParams['from'] = tx.from;
+    if (tx.to) ethCallParams['to'] = tx.to;
+    if (tx.gasPrice)
+      ethCallParams['gasPrice'] = ethers.utils.hexValue(tx.gasPrice);
+    if (tx.maxPriorityFeePerGas)
+      ethCallParams['maxPriorityFeePerGas'] = ethers.utils.hexValue(
+        tx.maxPriorityFeePerGas,
+      );
+    if (tx.maxFeePerGas)
+      ethCallParams['maxFeePerGas'] = ethers.utils.hexValue(tx.maxFeePerGas);
+    if (tx.accessList) ethCallParams['accessList'] = tx.accessList;
+
+    const params = [ethCallParams];
     const headers = {};
     const body = {
       jsonrpc: jsonrpc,
       id: id,
-      method: 'eth_call',
+      method: 'eth_estimateGas',
       params: params,
     };
 
