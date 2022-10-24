@@ -3,13 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, catchError } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
-
-interface VerseRequestBody {
-  jsonrpc: string;
-  id: number;
-  method: string;
-  params: Array<any>;
-}
+import { JsonrpcRequestBody } from 'src/shared/entities';
 
 interface VerseRequestResponse {
   status: number;
@@ -32,7 +26,7 @@ export class VerseService {
 
   async post(
     headers: IncomingHttpHeaders,
-    body: VerseRequestBody,
+    body: JsonrpcRequestBody,
   ): Promise<VerseRequestResponse> {
     const verseHeaders: Record<string, string> = {};
     for (const key in headers) {

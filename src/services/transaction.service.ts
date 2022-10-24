@@ -1,6 +1,12 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
-import { TransactionAllow, EthEstimateGasParams } from 'src/shared/entities';
+import {
+  TransactionAllow,
+  EthEstimateGasParams,
+  JsonrpcRequestBody,
+  JsonrpcId,
+  JsonrpcVersion,
+} from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import { getTxAllowList } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
@@ -54,8 +60,8 @@ export class TransactionService {
 
   async checkAllowedGas(
     tx: Transaction,
-    jsonrpc: string,
-    id: number,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
   ): Promise<void> {
     const ethCallParams: EthEstimateGasParams = {
       nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
@@ -81,7 +87,7 @@ export class TransactionService {
 
     const params = [ethCallParams];
     const headers = {};
-    const body = {
+    const body: JsonrpcRequestBody = {
       jsonrpc: jsonrpc,
       id: id,
       method: 'eth_estimateGas',

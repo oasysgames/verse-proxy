@@ -9,15 +9,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
+import { IsString, IsArray, Validate } from 'class-validator';
 import { TransactionService, VerseService } from '../services';
-import { IsString, IsInt, IsArray } from 'class-validator';
+import { StringOrNumber } from './customValidation';
 
 class RequestBody {
   @IsString({ message: 'invalid JSON-RPC version' })
   jsonrpc: string;
 
-  @IsInt({ message: 'invalid ID' })
-  id: number;
+  @Validate(StringOrNumber, { message: 'invalid ID' })
+  id: string | number;
 
   @IsString({ message: 'rpc method is not string' })
   method: string;
