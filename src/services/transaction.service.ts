@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import {
   TransactionAllow,
@@ -6,6 +6,7 @@ import {
   JsonrpcRequestBody,
   JsonrpcId,
   JsonrpcVersion,
+  JsonrpcError,
 } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import { getTxAllowList } from 'src/config/transactionAllowList';
@@ -26,14 +27,14 @@ export class TransactionService {
     const to = tx.to;
     const value = tx.value;
 
-    if (!from) throw new ForbiddenException('transaction is invalid');
+    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
 
     // Check for deploy transactions
     if (!to) {
       if (this.allowCheckService.isAllowedDeploy(from)) {
         return;
       } else {
-        throw new ForbiddenException('deploy transaction is not allowed');
+        throw new JsonrpcError('deploy transaction is not allowed', -32602);
       }
     }
 
@@ -54,7 +55,7 @@ export class TransactionService {
       }
     }
 
-    if (!isAllow) throw new ForbiddenException('transaction is not allowed');
+    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
     return;
   }
 
@@ -96,7 +97,7 @@ export class TransactionService {
 
     const { data } = await this.verseService.post(headers, body);
     if (data.error) {
-      throw new ForbiddenException(data.error.message);
+      throw new JsonrpcError(data.error.message, -32602);
     }
   }
 

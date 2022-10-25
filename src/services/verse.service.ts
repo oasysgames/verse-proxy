@@ -1,9 +1,13 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, catchError } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
-import { JsonrpcRequestBody, VerseRequestResponse } from 'src/shared/entities';
+import {
+  JsonrpcRequestBody,
+  VerseRequestResponse,
+  JsonrpcError,
+} from 'src/shared/entities';
 
 @Injectable()
 export class VerseService {
@@ -38,7 +42,7 @@ export class VerseService {
     const res = await lastValueFrom(
       this.httpService.post(this.verseUrl, body, axiosConfig).pipe(
         catchError((e) => {
-          throw new HttpException(e.response.data, e.response.status);
+          throw new JsonrpcError(e.response.data, -32603);
         }),
       ),
     );
