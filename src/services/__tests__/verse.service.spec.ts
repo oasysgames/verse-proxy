@@ -6,7 +6,7 @@ import { AxiosResponse } from 'axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from '../verse.service';
-import { HttpException, ForbiddenException } from '@nestjs/common';
+import { JsonrpcError } from 'src/shared/entities';
 
 const verseUrl = 'http://localhost:8545';
 
@@ -223,10 +223,12 @@ describe('VerseService', () => {
 
     it('request is failed', async () => {
       const inheritHostHeader = false;
+      const errMsg = 'Access is not allowed';
+      const errCode = -32603;
 
       const postMock = jest.spyOn(httpService, 'post');
       postMock.mockImplementation(() => {
-        throw new ForbiddenException('Access is not allowed');
+        throw new Error(errMsg);
       });
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         switch (key) {
@@ -249,8 +251,8 @@ describe('VerseService', () => {
       try {
         await verseService.post(proxyRequestHeaders, body);
       } catch (e) {
-        const forbiddenError = new HttpException('Access is not allowed', 403);
-        expect(e).toEqual(forbiddenError);
+        const error = new JsonrpcError(errMsg, errCode);
+        expect(e).toEqual(error);
       }
     });
   });
