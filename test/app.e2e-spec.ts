@@ -75,268 +75,682 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/ (Post)', () => {
-    it('tx method is not eth_sendRawTransaction and successful', async () => {
-      const inheritHostHeader = true;
-      const allowedMethods = [/^.*$/];
-      const method = 'eth_call';
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-        from,
-      };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [tx, 'latest'],
-      };
-      const responseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '0x',
-      };
-      const res: AxiosResponse = {
-        status: 200,
-        data: responseData,
-        statusText: '',
-        headers: {},
-        config: {},
-      };
-      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-        switch (key) {
-          case 'verseUrl':
-            return verseUrl;
-          case 'inheritHostHeader':
-            return inheritHostHeader;
-          case 'allowedMethods':
-            return allowedMethods;
-        }
-      });
-      jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+    describe('single request', () => {
+      it('tx method is not eth_sendRawTransaction and successful', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_call';
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [tx, 'latest'],
+        };
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x',
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
 
-      return await request(app.getHttpServer())
-        .post('/')
-        .send(body)
-        .expect(200)
-        .expect(responseData);
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('tx method is not allowed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^eth_call$/];
+        const method = 'eth_getTransactionReceipt';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const errMsg = `${method} is not allowed`;
+        const errCode = -32601;
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('tx method is eth_sendRawTransaction and but is not allowed tx', async () => {
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        // this tx doesn't have from.
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+        };
+        const errMsg = 'transaction is invalid';
+        const errCode = -32602;
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('tx method is eth_sendRawTransaction and but is not allowed gas', async () => {
+        const jsonrpc = '2.0';
+        const id = 1;
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const body = {
+          jsonrpc: jsonrpc,
+          id: id,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const errMsg = 'insufficient balance for transfer';
+        const errCode = -32602;
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('tx method is not eth_sendRawTransaction and successful', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x',
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
     });
 
-    it('tx method is not allowed', async () => {
-      const inheritHostHeader = true;
-      const allowedMethods = [/^eth_call$/];
-      const method = 'eth_getTransactionReceipt';
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-      const errMsg = `${method} is not allowed`;
-      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-        switch (key) {
-          case 'verseUrl':
-            return verseUrl;
-          case 'inheritHostHeader':
-            return inheritHostHeader;
-          case 'allowedMethods':
-            return allowedMethods;
-        }
+    describe('batch request', () => {
+      it('tx method is not eth_sendRawTransaction and successful', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const body = [
+          {
+            jsonrpc: '2.0',
+            method: 'net_version',
+            params: [],
+            id: 1,
+          },
+          {
+            jsonrpc: '2.0',
+            method: 'net_version',
+            params: [],
+            id: 1,
+          },
+        ];
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '999999',
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const results = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '999999',
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '999999',
+          },
+        ];
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(results);
       });
 
-      const result = await request(app.getHttpServer()).post('/').send(body);
-      expect(result.status).toEqual(403);
-      expect(JSON.parse(result.text).message).toEqual(errMsg);
+      it('tx method is not allowed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^eth_call$/];
+        const method = 'eth_getTransactionReceipt';
+        const body = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [
+              '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+            ],
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [
+              '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+            ],
+          },
+        ];
+        const errMsg = `${method} is not allowed`;
+        const errCode = -32601;
+        const results = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+        ];
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(results);
+      });
+
+      it('tx method is eth_sendRawTransaction and but is not allowed tx', async () => {
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const body = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          },
+        ];
+        // this tx doesn't have from.
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+        };
+        const errMsg = 'transaction is invalid';
+        const errCode = -32602;
+        const results = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+        ];
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(results);
+      });
+
+      it('tx method is eth_sendRawTransaction and but is not allowed gas', async () => {
+        const jsonrpc = '2.0';
+        const id = 1;
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const body = [
+          {
+            jsonrpc: jsonrpc,
+            id: id,
+            method: method,
+            params: [rawTx],
+          },
+          {
+            jsonrpc: jsonrpc,
+            id: id,
+            method: method,
+            params: [rawTx],
+          },
+        ];
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const errMsg = 'insufficient balance for transfer';
+        const errCode = -32602;
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const results = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          },
+        ];
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(results);
+      });
+
+      it('tx method is not eth_sendRawTransaction and successful', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          },
+        ];
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x',
+        };
+        const res: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const results = [
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+        ];
+        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+          switch (key) {
+            case 'verseUrl':
+              return verseUrl;
+            case 'inheritHostHeader':
+              return inheritHostHeader;
+            case 'allowedMethods':
+              return allowedMethods;
+          }
+        });
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(results);
+      });
     });
 
-    it('tx method is eth_sendRawTransaction and but is not allowed tx', async () => {
-      const rawTx =
-        '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-      const inheritHostHeader = true;
-      const allowedMethods = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [rawTx],
-      };
-      // this tx doesn't have from.
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-      };
-      const errMsg = 'transaction is invalid';
-      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-        switch (key) {
-          case 'verseUrl':
-            return verseUrl;
-          case 'inheritHostHeader':
-            return inheritHostHeader;
-          case 'allowedMethods':
-            return allowedMethods;
-        }
+    describe('invalid request', () => {
+      it('request is not jsonrpc', async () => {
+        const body = {};
+        const errMsg = 'invalid request';
+
+        const result = await request(app.getHttpServer()).post('/').send(body);
+        expect(result.status).toEqual(403);
+        expect(JSON.parse(result.text).message).toEqual(errMsg);
       });
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-
-      const result = await request(app.getHttpServer()).post('/').send(body);
-      expect(result.status).toEqual(403);
-      expect(JSON.parse(result.text).message).toEqual(errMsg);
-    });
-
-    it('tx method is eth_sendRawTransaction and but is not allowed gas', async () => {
-      const jsonrpc = '2.0';
-      const id = 1;
-      const rawTx =
-        '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-      const inheritHostHeader = true;
-      const allowedMethods = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
-      const body = {
-        jsonrpc: jsonrpc,
-        id: id,
-        method: method,
-        params: [rawTx],
-      };
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-        from,
-      };
-      const errMsg = 'insufficient balance for transfer';
-      const responseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        error: {
-          code: -32000,
-          message: errMsg,
-        },
-      };
-      const res: AxiosResponse = {
-        status: 200,
-        data: responseData,
-        statusText: '',
-        headers: {},
-        config: {},
-      };
-      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-        switch (key) {
-          case 'verseUrl':
-            return verseUrl;
-          case 'inheritHostHeader':
-            return inheritHostHeader;
-          case 'allowedMethods':
-            return allowedMethods;
-        }
-      });
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
-
-      const result = await request(app.getHttpServer()).post('/').send(body);
-      expect(result.status).toEqual(403);
-      expect(JSON.parse(result.text).message).toEqual(errMsg);
-    });
-
-    it('tx method is not eth_sendRawTransaction and successful', async () => {
-      const inheritHostHeader = true;
-      const allowedMethods = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
-      const rawTx =
-        '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [rawTx],
-      };
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-        from,
-      };
-      const responseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '0x',
-      };
-      const res: AxiosResponse = {
-        status: 200,
-        data: responseData,
-        statusText: '',
-        headers: {},
-        config: {},
-      };
-      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-        switch (key) {
-          case 'verseUrl':
-            return verseUrl;
-          case 'inheritHostHeader':
-            return inheritHostHeader;
-          case 'allowedMethods':
-            return allowedMethods;
-        }
-      });
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
-
-      return await request(app.getHttpServer())
-        .post('/')
-        .send(body)
-        .expect(200)
-        .expect(responseData);
     });
   });
 });
