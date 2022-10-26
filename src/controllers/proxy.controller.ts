@@ -20,7 +20,7 @@ export class ProxyController {
   ) {}
 
   @Post()
-  async requestVerse(
+  async post(
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
@@ -33,7 +33,8 @@ export class ProxyController {
       await this.proxyService.handleBatchRequest(headers, body, callback);
     } else if (this.jsonrpcCheckService.isJsonrcp(body)) {
       await this.proxyService.handleSingleRequest(headers, body, callback);
+    } else {
+      throw new ForbiddenException(`invalid request`);
     }
-    throw new ForbiddenException(`invalid request`);
   }
 }
