@@ -4,7 +4,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
 import { ProxyService, TransactionService, VerseService } from './services';
 import { SharedModule } from './shared/shared.module';
-import { AllowCheckService } from './shared/services/src';
+import { AllowCheckService, JsonrpcCheckService } from './shared/services/src';
 import configuration from './config/configuration';
 
 @Module({
@@ -21,6 +21,7 @@ import configuration from './config/configuration';
     TransactionService,
     ProxyService,
     AllowCheckService,
+    JsonrpcCheckService,
   ],
 })
 export class AppModule {}

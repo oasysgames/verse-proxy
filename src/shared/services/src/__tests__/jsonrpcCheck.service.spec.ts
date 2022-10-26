@@ -1,4 +1,6 @@
-import { isJsonrcp, isJsonrcpArray } from '../proxy.validation';
+import { JsonrpcCheckService } from '../jsonrpcCheck.service';
+
+const jsonrpcCheckService = new JsonrpcCheckService();
 
 describe('isJsonrcp', () => {
   it('body is JsonrpcRequestBody', () => {
@@ -10,7 +12,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(isJsonrcp(body)).toBe(true);
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
   });
 
   it('body.jsonrpc is not string', () => {
@@ -22,7 +24,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(isJsonrcp(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
   });
 
   it('body.id is not string or number', () => {
@@ -34,7 +36,7 @@ describe('isJsonrcp', () => {
       ],
       id: true,
     };
-    expect(isJsonrcp(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
   });
 
   it('body.method is not string', () => {
@@ -46,7 +48,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(isJsonrcp(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
   });
 
   it('body.params is not Array', () => {
@@ -56,7 +58,7 @@ describe('isJsonrcp', () => {
       params: true,
       id: 1,
     };
-    expect(isJsonrcp(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
   });
 });
 
@@ -78,7 +80,7 @@ describe('isJsonrcp', () => {
         id: 1,
       },
     ];
-    expect(isJsonrcpArray(body)).toBe(true);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(true);
   });
 
   it('body is not array', () => {
@@ -90,7 +92,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(isJsonrcpArray(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
   });
 
   it('body does not have string jsonrpc', () => {
@@ -110,7 +112,7 @@ describe('isJsonrcp', () => {
         id: 1,
       },
     ];
-    expect(isJsonrcpArray(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
   });
 
   it('body does not have id which is string or number', () => {
@@ -130,7 +132,7 @@ describe('isJsonrcp', () => {
         id: 1,
       },
     ];
-    expect(isJsonrcpArray(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
   });
 
   it('body does not have string method', () => {
@@ -150,7 +152,7 @@ describe('isJsonrcp', () => {
         id: 1,
       },
     ];
-    expect(isJsonrcpArray(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
   });
 
   it('body does not have array params', () => {
@@ -168,6 +170,6 @@ describe('isJsonrcp', () => {
         id: 1,
       },
     ];
-    expect(isJsonrcpArray(body)).toBe(false);
+    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
   });
 });

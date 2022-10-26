@@ -9,12 +9,15 @@ import {
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
 import { ProxyService } from 'src/services';
-import { isJsonrcp, isJsonrcpArray } from 'src/validation';
 import { VerseRequestResponse } from 'src/shared/entities';
+import { JsonrpcCheckService } from 'src/shared/services/src';
 
 @Controller()
 export class ProxyController {
-  constructor(private readonly proxyService: ProxyService) {}
+  constructor(
+    private readonly jsonrpcCheckService: JsonrpcCheckService,
+    private readonly proxyService: ProxyService,
+  ) {}
 
   @Post()
   async requestVerse(
@@ -26,9 +29,9 @@ export class ProxyController {
       const { status, data } = result;
       res.status(status).send(data);
     };
-    if (isJsonrcpArray(body)) {
+    if (this.jsonrpcCheckService.isJsonrcpArray(body)) {
       await this.proxyService.handleBatchRequest(headers, body, callback);
-    } else if (isJsonrcp(body)) {
+    } else if (this.jsonrpcCheckService.isJsonrcp(body)) {
       await this.proxyService.handleSingleRequest(headers, body, callback);
     }
     throw new ForbiddenException(`invalid request`);

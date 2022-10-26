@@ -75,8 +75,7 @@
     },
     "collectCoverageFrom": [
       "**/*.controller.ts",
-      "**/*.service.ts",
-      "**/*.validation.ts"
+      "**/*.service.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
