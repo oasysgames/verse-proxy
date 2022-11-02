@@ -45,9 +45,10 @@ export class TransactionService {
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const valueCondition = condition.value;
-      const valueCheck = valueCondition
-        ? this.allowCheckService.isAllowedValue(valueCondition, value)
-        : true;
+      const valueCheck = this.allowCheckService.isAllowedValue(
+        valueCondition,
+        value,
+      );
 
       if (fromCheck && toCheck && valueCheck) {
         isAllow = true;
