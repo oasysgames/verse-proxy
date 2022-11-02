@@ -69,7 +69,7 @@ export class TransactionService {
       nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
       gas: ethers.utils.hexValue(tx.gasLimit),
       value: ethers.utils.hexValue(tx.value),
-      input: tx.data,
+      data: tx.data,
       chainId: ethers.utils.hexValue(BigNumber.from(tx.chainId)),
     };
 

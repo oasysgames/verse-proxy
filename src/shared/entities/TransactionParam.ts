@@ -7,7 +7,7 @@ export interface EthEstimateGasParams {
   to?: string;
   gas: string;
   value: string;
-  input: string;
+  data: string;
   gasPrice?: string;
   maxPriorityFeePerGas?: string;
   maxFeePerGas?: string;
