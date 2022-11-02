@@ -74,6 +74,9 @@ export class AllowCheckService {
           if (valueCondition.lte && value.gt(valueCondition.lte))
             isAllow = false;
           break;
+        default: // key is not invalid(e.g. leq)
+          isAllow = false;
+          break;
       }
     }
     return isAllow;
