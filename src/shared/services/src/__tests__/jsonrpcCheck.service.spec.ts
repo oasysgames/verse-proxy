@@ -62,7 +62,7 @@ describe('isJsonrcp', () => {
   });
 });
 
-describe('isJsonrcp', () => {
+describe('isJsonrcpArray', () => {
   it('body is JsonrpcRequestBodyArray', () => {
     const body = [
       {
