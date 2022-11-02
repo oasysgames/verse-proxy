@@ -82,6 +82,10 @@ allowedMethods: [
 ],
 ```
 
+Default allowedMethods feature are following.  
+- It allows methods that may be requested by users
+- It prohibits the methods of executing a transaction with the authority of verse-geth(e.g. eth_sendTransaction)
+
 ### Set transaction allow list
 You can set allowed transaction list at `src/config/transactionAllowList.ts`.
 
