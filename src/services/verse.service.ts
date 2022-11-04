@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
-import { Request } from 'express';
-
-interface VerseRequestBody {
-  jsonrpc: string;
-  id: number;
-  method: string;
-  params: Array<any>;
-}
+import { lastValueFrom, catchError } from 'rxjs';
+import { IncomingHttpHeaders } from 'http';
+import {
+  JsonrpcRequestBody,
+  VerseRequestResponse,
+  JsonrpcError,
+} from 'src/shared/entities';
 
 @Injectable()
 export class VerseService {
@@ -25,24 +23,32 @@ export class VerseService {
       this.configService.get<boolean>('inheritHostHeader') ?? false;
   }
 
-  async post(proxyRequest: Request, body: VerseRequestBody): Promise<any> {
-    const headers: Record<string, string> = {};
-    for (const key in proxyRequest.headers) {
-      const value = proxyRequest.headers[key];
+  async post(
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody | Array<JsonrpcRequestBody>,
+  ): Promise<VerseRequestResponse> {
+    const verseHeaders: Record<string, string> = {};
+    for (const key in headers) {
+      const value = headers[key];
       if (key.slice(0, 2) === 'x-' && typeof value === 'string') {
-        headers[key] = value;
+        verseHeaders[key] = value;
       }
     }
-    if (this.inheritHostHeader && proxyRequest.headers['host']) {
-      headers['host'] = proxyRequest.headers['host'];
+    if (this.inheritHostHeader && headers['host']) {
+      verseHeaders['host'] = headers['host'];
     }
-    const axiosConfig = { headers };
+    const axiosConfig = { headers: verseHeaders };
 
-    const data = await lastValueFrom(
-      this.httpService
-        .post(this.verseUrl, body, axiosConfig)
-        .pipe(map((res) => res.data)),
+    const res = await lastValueFrom(
+      this.httpService.post(this.verseUrl, body, axiosConfig).pipe(
+        catchError((e) => {
+          throw new JsonrpcError(e.response.data, -32603);
+        }),
+      ),
     );
-    return data;
+    return {
+      status: res.status,
+      data: res.data,
+    };
   }
 }

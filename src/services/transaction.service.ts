@@ -1,40 +1,54 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { lastValueFrom, map } from 'rxjs';
-import { ethers, BigNumber } from 'ethers';
-import { TransactionAllow } from 'src/shared/entities';
+import { Injectable } from '@nestjs/common';
+import { ethers, BigNumber, Transaction } from 'ethers';
+import {
+  TransactionAllow,
+  EthEstimateGasParams,
+  JsonrpcRequestBody,
+  JsonrpcId,
+  JsonrpcVersion,
+  JsonrpcError,
+} from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
-import getTxAllowList from 'src/config/transactionAllowList';
+import { getTxAllowList } from 'src/config/transactionAllowList';
+import { VerseService } from './verse.service';
 
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
   constructor(
-    private readonly httpService: HttpService,
-    private configService: ConfigService,
+    private verseService: VerseService,
     private allowCheckService: AllowCheckService,
   ) {
     this.txAllowList = getTxAllowList();
   }
 
-  checkAllowedRawTx(rawTx: string): void {
-    const tx = this.parseRawTx(rawTx);
+  checkAllowedTx(tx: Transaction): void {
     const from = tx.from;
     const to = tx.to;
     const value = tx.value;
 
-    if (!from || !to) throw new ForbiddenException('transaction is invalid');
+    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
 
+    // Check for deploy transactions
+    if (!to) {
+      if (this.allowCheckService.isAllowedDeploy(from)) {
+        return;
+      } else {
+        throw new JsonrpcError('deploy transaction is not allowed', -32602);
+      }
+    }
+
+    // Check for transactions other than deploy
     let isAllow = false;
     for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const valueCondition = condition.value;
-      const valueCheck = valueCondition
-        ? this.allowCheckService.isAllowedValue(valueCondition, value)
-        : true;
+      const valueCheck = this.allowCheckService.isAllowedValue(
+        valueCondition,
+        value,
+      );
 
       if (fromCheck && toCheck && valueCheck) {
         isAllow = true;
@@ -42,60 +56,49 @@ export class TransactionService {
       }
     }
 
-    if (!isAllow) throw new ForbiddenException('transaction is not allowed');
+    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
     return;
   }
 
-  async checkAllowedGasFromRawTx(
-    rawTx: string,
-    jsonrpc: string,
-    id: number,
+  async checkAllowedGas(
+    tx: Transaction,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
   ): Promise<void> {
-    const tx = this.parseRawTx(rawTx);
-    const type = BigNumber.from(tx.type).toHexString();
-    const nonce = BigNumber.from(tx.nonce).toHexString();
-    const from = tx.from;
-    const to = tx.to;
-    const gas = tx.gasLimit.toHexString();
-    const value = tx.value.toHexString();
-    const input = tx.data;
-    const gasPrice = tx.gasPrice?.toHexString();
-    const maxPriorityFeePerGas = tx.maxPriorityFeePerGas?.toHexString();
-    const maxFeePerGas = tx.maxFeePerGas?.toHexString();
-    const accessList = tx.accessList;
-    const chainId = BigNumber.from(tx.chainId).toHexString();
+    const ethCallParams: EthEstimateGasParams = {
+      nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
+      gas: ethers.utils.hexValue(tx.gasLimit),
+      value: ethers.utils.hexValue(tx.value),
+      data: tx.data,
+      chainId: ethers.utils.hexValue(BigNumber.from(tx.chainId)),
+    };
 
-    const verseUrl =
-      this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
-    const params = [
-      {
-        type,
-        nonce,
-        from,
-        to,
-        gas,
-        value,
-        input,
-        gasPrice,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        accessList,
-        chainId,
-      },
-      'latest',
-    ];
-    const body = {
+    if (tx.type)
+      ethCallParams['type'] = ethers.utils.hexValue(BigNumber.from(tx.type));
+    if (tx.from) ethCallParams['from'] = tx.from;
+    if (tx.to) ethCallParams['to'] = tx.to;
+    if (tx.gasPrice)
+      ethCallParams['gasPrice'] = ethers.utils.hexValue(tx.gasPrice);
+    if (tx.maxPriorityFeePerGas)
+      ethCallParams['maxPriorityFeePerGas'] = ethers.utils.hexValue(
+        tx.maxPriorityFeePerGas,
+      );
+    if (tx.maxFeePerGas)
+      ethCallParams['maxFeePerGas'] = ethers.utils.hexValue(tx.maxFeePerGas);
+    if (tx.accessList) ethCallParams['accessList'] = tx.accessList;
+
+    const params = [ethCallParams];
+    const headers = {};
+    const body: JsonrpcRequestBody = {
       jsonrpc: jsonrpc,
       id: id,
-      method: 'eth_call',
+      method: 'eth_estimateGas',
       params: params,
     };
 
-    const res = await lastValueFrom(
-      this.httpService.post(verseUrl, body).pipe(map((res) => res.data)),
-    );
-    if (res.error) {
-      throw new ForbiddenException(res.error.message);
+    const { data } = await this.verseService.post(headers, body);
+    if (data.error) {
+      throw new JsonrpcError(data.error.message, -32602);
     }
   }
 

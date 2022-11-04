@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { AllowCheckService } from './src';
+import { AllowCheckService, JsonrpcCheckService } from './src';
 
 @Module({
-  providers: [AllowCheckService],
+  providers: [AllowCheckService, JsonrpcCheckService],
 })
 export class ServiceModule {}

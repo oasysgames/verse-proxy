@@ -60,6 +60,9 @@
     "typescript": "^4.7.4"
   },
   "jest": {
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    },
     "moduleFileExtensions": [
       "js",
       "json",
@@ -71,7 +74,8 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.controller.ts",
+      "**/*.service.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"

@@ -1,61 +1,40 @@
 import {
   Controller,
   Post,
-  Req,
+  Headers,
   Body,
   ForbiddenException,
+  Res,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
-import { TransactionService, VerseService } from '../services';
-import { IsString, IsInt, IsArray } from 'class-validator';
-
-class RequestBody {
-  @IsString({ message: 'invalid JSON-RPC version' })
-  jsonrpc: string;
-
-  @IsInt({ message: 'invalid ID' })
-  id: number;
-
-  @IsString({ message: 'rpc method is not string' })
-  method: string;
-
-  @IsArray({ message: 'expected params array of at least 1 argument' })
-  params: Array<any>;
-}
+import { IncomingHttpHeaders } from 'http';
+import { Response } from 'express';
+import { ProxyService } from 'src/services';
+import { VerseRequestResponse } from 'src/shared/entities';
+import { JsonrpcCheckService } from 'src/shared/services/src';
 
 @Controller()
 export class ProxyController {
   constructor(
-    private configService: ConfigService,
-    private verseService: VerseService,
-    private readonly txService: TransactionService,
+    private readonly jsonrpcCheckService: JsonrpcCheckService,
+    private readonly proxyService: ProxyService,
   ) {}
 
   @Post()
-  async requestVerse(@Req() request: Request, @Body() body: RequestBody) {
-    const method = body.method;
-    this.checkMethod(method);
-
-    if (method !== 'eth_sendRawTransaction') {
-      const data = await this.verseService.post(request, body);
-      return data;
+  async post(
+    @Headers() headers: IncomingHttpHeaders,
+    @Body() body: any,
+    @Res() res: Response,
+  ) {
+    const callback = (result: VerseRequestResponse) => {
+      const { status, data } = result;
+      res.status(status).send(data);
+    };
+    if (this.jsonrpcCheckService.isJsonrcpArray(body)) {
+      await this.proxyService.handleBatchRequest(headers, body, callback);
+    } else if (this.jsonrpcCheckService.isJsonrcp(body)) {
+      await this.proxyService.handleSingleRequest(headers, body, callback);
+    } else {
+      throw new ForbiddenException(`invalid request`);
     }
-
-    const rawTx = body.params[0];
-    this.txService.checkAllowedRawTx(rawTx);
-    await this.txService.checkAllowedGasFromRawTx(rawTx, body.jsonrpc, body.id);
-    const data = await this.verseService.post(request, body);
-    return data;
-  }
-
-  private checkMethod(method: string) {
-    const allowedMethods = this.configService.get<RegExp[]>(
-      'allowedMethods',
-    ) ?? [/^.*$/];
-    const checkMethod = allowedMethods.some((allowedMethod) => {
-      return allowedMethod.test(method);
-    });
-    if (!checkMethod) throw new ForbiddenException(`${method} is not allowed`);
   }
 }

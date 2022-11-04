@@ -1,6 +1,6 @@
 import { TransactionAllow } from 'src/shared/entities';
 
-const getTxAllowList = (): Array<TransactionAllow> => {
+export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
       fromList: ['*'],
@@ -9,4 +9,6 @@ const getTxAllowList = (): Array<TransactionAllow> => {
   ];
 };
 
-export default getTxAllowList;
+export const getDeployAllowList = (): Array<string> => {
+  return [''];
+};
