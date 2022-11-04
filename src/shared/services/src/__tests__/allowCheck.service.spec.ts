@@ -1,10 +1,11 @@
 import { BigNumber } from 'ethers';
 import { ComparisonOperation, TransactionAllow } from 'src/shared/entities';
 import { AllowCheckService } from '../allowCheck.service';
-
-const allowCheckService = new AllowCheckService();
+import * as transactionAllowList from 'src/config/transactionAllowList';
 
 describe('isAllowedString', () => {
+  const allowCheckService = new AllowCheckService();
+
   test('allowPattern equals input', () => {
     const allowPattern = '0xaf395754eB6F542742784cE7702940C60465A46a';
     const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
@@ -47,6 +48,8 @@ describe('isAllowedString', () => {
 });
 
 describe('isAllowedFrom', () => {
+  const allowCheckService = new AllowCheckService();
+
   test('fromList is wildcard', () => {
     const condition: TransactionAllow = {
       fromList: ['*'],
@@ -88,6 +91,8 @@ describe('isAllowedFrom', () => {
 });
 
 describe('isAllowedTo', () => {
+  const allowCheckService = new AllowCheckService();
+
   test('toList is wildcard', () => {
     const condition: TransactionAllow = {
       fromList: ['*'],
@@ -128,7 +133,49 @@ describe('isAllowedTo', () => {
   });
 });
 
+describe('isAllowedDeploy', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  test('deploy is not allowed', () => {
+    const getDeployAllowListMock = jest.spyOn(
+      transactionAllowList,
+      'getDeployAllowList',
+    );
+    getDeployAllowListMock.mockReturnValue([
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+      '0xaf395754eB6F542742784cE7702940C60465A46d',
+    ]);
+
+    const allowCheckService = new AllowCheckService();
+
+    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    const result = allowCheckService.isAllowedDeploy(from);
+    expect(result).toBe(false);
+  });
+
+  test('deploy is allowed', () => {
+    const getDeployAllowListMock = jest.spyOn(
+      transactionAllowList,
+      'getDeployAllowList',
+    );
+    getDeployAllowListMock.mockReturnValue([
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+      '0xaf395754eB6F542742784cE7702940C60465A46c',
+    ]);
+
+    const allowCheckService = new AllowCheckService();
+
+    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    const result = allowCheckService.isAllowedDeploy(from);
+    expect(result).toBe(true);
+  });
+});
+
 describe('isAllowedValue', () => {
+  const allowCheckService = new AllowCheckService();
+
   test('value == eq', () => {
     const valueCondition: ComparisonOperation = {
       eq: '1000000000000000000',
@@ -287,5 +334,31 @@ describe('isAllowedValue', () => {
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
+  });
+
+  test('valueCondition has invalid key', () => {
+    const valueCondition = {
+      leq: '900000000000000000',
+    } as ComparisonOperation;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value is empty object', () => {
+    const valueCondition = {};
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value is not set', () => {
+    const valueCondition = undefined;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ import { AllowCheckService } from '../../shared/services/src';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';
-import { ForbiddenException } from '@nestjs/common';
+import { JsonrpcError } from 'src/shared/entities';
 
 describe('TransactionService', () => {
   let verseService: VerseService;
@@ -66,6 +66,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction does not have from', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -101,7 +103,9 @@ describe('TransactionService', () => {
       );
     });
 
-    it('transaction does not have to', () => {
+    it('deploy transaction(it does not have to) and is not allowed', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -133,11 +137,49 @@ describe('TransactionService', () => {
       };
 
       expect(() => transactionService.checkAllowedTx(tx)).toThrow(
-        'transaction is invalid',
+        'deploy transaction is not allowed',
       );
     });
 
+    it('deploy transaction(it does not have to) and is allowed', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(true);
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        verseService,
+        allowCheckService,
+      );
+
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+
+      expect(() => transactionService.checkAllowedTx(tx)).not.toThrow();
+    });
+
     it('transaction has allowed_from and allowed_to', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -173,6 +215,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has not_allowed_from', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: [
@@ -213,6 +257,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has not_allowed_to', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -253,6 +299,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has allowed_from and allowed_to, but does not have allowed_value', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -291,6 +339,8 @@ describe('TransactionService', () => {
     });
 
     it('transaction has allowed_from and allowed_to, allowed_value', () => {
+      jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
+
       transactionAllowListMock.mockReturnValue([
         {
           fromList: ['*'],
@@ -333,12 +383,19 @@ describe('TransactionService', () => {
       jest.resetAllMocks();
     });
 
-    it('eth_call is successful', async () => {
-      jest.spyOn(verseService, 'post').mockResolvedValue({
+    it('eth_estimateGas is successful', async () => {
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
-        result: '0x',
-      });
+        result: '0x5208',
+      };
+      const verseResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -378,16 +435,24 @@ describe('TransactionService', () => {
       ).not.toThrow();
     });
 
-    it('eth_call is not successful', async () => {
+    it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      jest.spyOn(verseService, 'post').mockResolvedValue({
+      const errCode = -32602;
+      const verseStatus = 200;
+      const verseData = {
         jsonrpc: '2.0',
         id: 1,
         error: {
           code: -32000,
           message: errMsg,
         },
-      });
+      };
+      const verseResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -425,8 +490,8 @@ describe('TransactionService', () => {
       try {
         await transactionService.checkAllowedGas(tx, jsonrpc, id);
       } catch (e) {
-        const forbiddenError = new ForbiddenException(errMsg);
-        expect(e).toEqual(forbiddenError);
+        const error = new JsonrpcError(errMsg, errCode);
+        expect(e).toEqual(error);
       }
     });
   });

@@ -6,6 +6,7 @@ import { AxiosResponse } from 'axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from '../verse.service';
+import { JsonrpcError } from 'src/shared/entities';
 
 const verseUrl = 'http://localhost:8545';
 
@@ -42,7 +43,7 @@ describe('VerseService', () => {
       result: '0x',
     };
     const res: AxiosResponse = {
-      status: 201,
+      status: 200,
       data: responseData,
       statusText: '',
       headers: {},
@@ -110,25 +111,30 @@ describe('VerseService', () => {
       params: [tx, 'latest'],
     };
 
-    const responseData = {
-      jsonrpc: '2.0',
-      id: 1,
-      result: '0x',
-    };
-    const res: AxiosResponse = {
-      status: 201,
-      data: responseData,
-      statusText: '',
-      headers: {},
-      config: {},
-    };
-
     beforeEach(async () => {
       jest.resetAllMocks();
     });
 
     it('inheritHostHeader is true', async () => {
       const inheritHostHeader = true;
+      const responseStatus = 200;
+      const responseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x',
+      };
+      const res: AxiosResponse = {
+        status: responseStatus,
+        data: responseData,
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+
+      const responseResult = {
+        status: responseStatus,
+        data: responseData,
+      };
 
       const postMock = jest.spyOn(httpService, 'post');
       postMock.mockImplementation(() => of(res));
@@ -160,11 +166,29 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(responseData);
+      expect(result).toEqual(responseResult);
     });
 
     it('inheritHostHeader is false', async () => {
       const inheritHostHeader = false;
+      const responseStatus = 200;
+      const responseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x',
+      };
+      const res: AxiosResponse = {
+        status: responseStatus,
+        data: responseData,
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+
+      const responseResult = {
+        status: responseStatus,
+        data: responseData,
+      };
 
       const postMock = jest.spyOn(httpService, 'post');
       postMock.mockImplementation(() => of(res));
@@ -194,7 +218,42 @@ describe('VerseService', () => {
 
       const result = await verseService.post(proxyRequestHeaders, body);
       expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
-      expect(result).toBe(responseData);
+      expect(result).toEqual(responseResult);
+    });
+
+    it('request is failed', async () => {
+      const inheritHostHeader = false;
+      const errMsg = 'Access is not allowed';
+      const errCode = -32603;
+
+      const postMock = jest.spyOn(httpService, 'post');
+      postMock.mockImplementation(() => {
+        throw new Error(errMsg);
+      });
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseUrl':
+            return verseUrl;
+          case 'inheritHostHeader':
+            return inheritHostHeader;
+        }
+      });
+      verseService = new VerseService(httpService, configService);
+
+      const host = 'localhost';
+      const xContentTypeOptions = 'nosniff';
+      const proxyRequestHeaders = {
+        host: host,
+        'x-content-type-options': xContentTypeOptions,
+        'user-agent': 'PostmanRuntime/7.29.0',
+      };
+
+      try {
+        await verseService.post(proxyRequestHeaders, body);
+      } catch (e) {
+        const error = new JsonrpcError(errMsg, errCode);
+        expect(e).toEqual(error);
+      }
     });
   });
 });
