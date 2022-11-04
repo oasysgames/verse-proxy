@@ -7,7 +7,7 @@ import { AllowCheckService } from '../../shared/services/src';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';
-import { ForbiddenException } from '@nestjs/common';
+import { JsonrpcError } from 'src/shared/entities';
 
 describe('TransactionService', () => {
   let verseService: VerseService;
@@ -437,6 +437,7 @@ describe('TransactionService', () => {
 
     it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
+      const errCode = -32602;
       const verseStatus = 200;
       const verseData = {
         jsonrpc: '2.0',
@@ -489,8 +490,8 @@ describe('TransactionService', () => {
       try {
         await transactionService.checkAllowedGas(tx, jsonrpc, id);
       } catch (e) {
-        const forbiddenError = new ForbiddenException(errMsg);
-        expect(e).toEqual(forbiddenError);
+        const error = new JsonrpcError(errMsg, errCode);
+        expect(e).toEqual(error);
       }
     });
   });

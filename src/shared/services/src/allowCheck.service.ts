@@ -42,9 +42,12 @@ export class AllowCheckService {
   }
 
   isAllowedValue(
-    valueCondition: ComparisonOperation,
+    valueCondition: ComparisonOperation | undefined,
     value: BigNumber,
   ): boolean {
+    if (valueCondition === undefined) return true;
+    if (Object.keys(valueCondition).length === 0) return true;
+
     let isAllow = true;
     for (const key in valueCondition) {
       switch (key) {
@@ -70,6 +73,9 @@ export class AllowCheckService {
         case 'lte':
           if (valueCondition.lte && value.gt(valueCondition.lte))
             isAllow = false;
+          break;
+        default: // key is not invalid(e.g. leq)
+          isAllow = false;
           break;
       }
     }

@@ -335,4 +335,30 @@ describe('isAllowedValue', () => {
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
   });
+
+  test('valueCondition has invalid key', () => {
+    const valueCondition = {
+      leq: '900000000000000000',
+    } as ComparisonOperation;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value is empty object', () => {
+    const valueCondition = {};
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value is not set', () => {
+    const valueCondition = undefined;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 });

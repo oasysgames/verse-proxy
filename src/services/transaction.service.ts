@@ -1,6 +1,13 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
-import { TransactionAllow, EthEstimateGasParams } from 'src/shared/entities';
+import {
+  TransactionAllow,
+  EthEstimateGasParams,
+  JsonrpcRequestBody,
+  JsonrpcId,
+  JsonrpcVersion,
+  JsonrpcError,
+} from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import { getTxAllowList } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
@@ -20,14 +27,14 @@ export class TransactionService {
     const to = tx.to;
     const value = tx.value;
 
-    if (!from) throw new ForbiddenException('transaction is invalid');
+    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
 
     // Check for deploy transactions
     if (!to) {
       if (this.allowCheckService.isAllowedDeploy(from)) {
         return;
       } else {
-        throw new ForbiddenException('deploy transaction is not allowed');
+        throw new JsonrpcError('deploy transaction is not allowed', -32602);
       }
     }
 
@@ -38,9 +45,10 @@ export class TransactionService {
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const valueCondition = condition.value;
-      const valueCheck = valueCondition
-        ? this.allowCheckService.isAllowedValue(valueCondition, value)
-        : true;
+      const valueCheck = this.allowCheckService.isAllowedValue(
+        valueCondition,
+        value,
+      );
 
       if (fromCheck && toCheck && valueCheck) {
         isAllow = true;
@@ -48,20 +56,20 @@ export class TransactionService {
       }
     }
 
-    if (!isAllow) throw new ForbiddenException('transaction is not allowed');
+    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
     return;
   }
 
   async checkAllowedGas(
     tx: Transaction,
-    jsonrpc: string,
-    id: number,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
   ): Promise<void> {
     const ethCallParams: EthEstimateGasParams = {
       nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
       gas: ethers.utils.hexValue(tx.gasLimit),
       value: ethers.utils.hexValue(tx.value),
-      input: tx.data,
+      data: tx.data,
       chainId: ethers.utils.hexValue(BigNumber.from(tx.chainId)),
     };
 
@@ -81,7 +89,7 @@ export class TransactionService {
 
     const params = [ethCallParams];
     const headers = {};
-    const body = {
+    const body: JsonrpcRequestBody = {
       jsonrpc: jsonrpc,
       id: id,
       method: 'eth_estimateGas',
@@ -90,7 +98,7 @@ export class TransactionService {
 
     const { data } = await this.verseService.post(headers, body);
     if (data.error) {
-      throw new ForbiddenException(data.error.message);
+      throw new JsonrpcError(data.error.message, -32602);
     }
   }
 

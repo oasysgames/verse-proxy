@@ -2,54 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ForbiddenException } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { BigNumber } from 'ethers';
-import { AccessList } from 'ethers/lib/utils';
 import { Response } from 'express';
-import { TransactionService, VerseService } from 'src/services';
+import { TransactionService, VerseService, ProxyService } from 'src/services';
 import { ProxyController } from '../proxy.controller';
-import { AllowCheckService } from 'src/shared/services/src';
-
-const type = 2;
-const chainId = 5;
-const nonce = 3;
-const maxPriorityFeePerGas = BigNumber.from('1500000000');
-const maxFeePerGas = BigNumber.from('1500000018');
-const gasPrice = undefined;
-const gasLimit = BigNumber.from('21000');
-const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
-const value = BigNumber.from('1000000000000');
-const data = '0x';
-const accessList = [] as AccessList;
-const hash =
-  '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
-const v = 0;
-const r = '0x79448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd028';
-const s = '0x743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-const tx = {
-  type,
-  chainId,
-  nonce,
-  maxPriorityFeePerGas,
-  maxFeePerGas,
-  gasPrice,
-  gasLimit,
-  to,
-  value,
-  data,
-  accessList,
-  hash,
-  v,
-  r,
-  s,
-  from,
-};
+import {
+  AllowCheckService,
+  JsonrpcCheckService,
+} from 'src/shared/services/src';
 
 describe('ProxyController', () => {
-  let configService: ConfigService;
-  let verseService: VerseService;
-  let txService: TransactionService;
+  let jsonrpcCheckService: JsonrpcCheckService;
+  let proxyService: ProxyService;
   let moduleRef: TestingModule;
 
   beforeAll(async () => {
@@ -61,31 +24,29 @@ describe('ProxyController', () => {
         VerseService,
         TransactionService,
         AllowCheckService,
+        JsonrpcCheckService,
+        ProxyService,
       ],
     })
       .useMocker((token) => {
         switch (token) {
-          case ConfigService:
+          case JsonrpcCheckService:
             return {
-              get: jest.fn(),
+              isJsonrcpArray: jest.fn(),
+              isJsonrcp: jest.fn(),
             };
-          case VerseService:
+          case ProxyService:
             return {
-              post: jest.fn(),
-            };
-          case TransactionService:
-            return {
-              parseRawTx: jest.fn(),
-              checkAllowedTx: jest.fn(),
-              checkAllowedGas: jest.fn(),
+              handleBatchRequest: jest.fn(),
+              handleSingleRequest: jest.fn(),
             };
         }
       })
       .compile();
 
-    configService = moduleRef.get<ConfigService>(ConfigService);
-    verseService = moduleRef.get<VerseService>(VerseService);
-    txService = moduleRef.get<TransactionService>(TransactionService);
+    jsonrpcCheckService =
+      moduleRef.get<JsonrpcCheckService>(JsonrpcCheckService);
+    proxyService = moduleRef.get<ProxyService>(ProxyService);
   });
 
   describe('post', () => {
@@ -93,210 +54,110 @@ describe('ProxyController', () => {
       jest.resetAllMocks();
     });
 
-    it('tx method is not eth_sendRawTransaction and successful', async () => {
-      const allowedMethods: RegExp[] = [/^.*$/];
-      const method = 'eth_call';
+    it('body is JsonrpcArray', () => {
       const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [tx, 'latest'],
-      };
-
-      const verseStatus = 200;
-      const verseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '0x',
-      };
-      const postResponse = {
-        status: verseStatus,
-        data: verseData,
-      };
+      const body = [
+        {
+          jsonrpc: '2.0',
+          method: 'eth_sendRawTransaction',
+          params: [
+            '0xf8620180825208948626f6940e2eb28930efb4cef49b2d1f2c9c11998080831e84a2a06c33b39c89e987ad08bc2cab79243dbb2a44955d2539d4f5d58001ae9ab0a2caa06943316733bd0fd81a0630a9876f6f07db970b93f367427404aabd0621ea5ec1',
+          ],
+          id: 1,
+        },
+        {
+          jsonrpc: '2.0',
+          method: 'net_version',
+          params: [],
+          id: 1,
+        },
+      ];
       const res = {
-        send: (result: any) => {
-          expect(result).toBe(verseData); // when it call res.status.send, check verse request data.
+        send: () => {
+          return;
         },
         status: (code: number) => res,
       } as Response;
 
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-      jest.spyOn(verseService, 'post').mockResolvedValue(postResponse);
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      await controller.requestVerse(headers, body, res);
-      expect(jest.spyOn(txService, 'parseRawTx')).not.toHaveBeenCalled();
-      expect(jest.spyOn(txService, 'checkAllowedTx')).not.toHaveBeenCalled();
-      expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
-    });
-
-    it('tx method is not allowed', async () => {
-      const allowedMethods: RegExp[] = [/^eth_call$/];
-      const method = 'eth_getTransactionReceipt';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-      const res = {} as Response;
-
-      const errMsg = `${method} is not allowed`;
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      try {
-        await controller.requestVerse(headers, body, res);
-      } catch (e) {
-        const forbiddenError = new ForbiddenException(errMsg);
-        expect(e).toEqual(forbiddenError);
-      }
-      expect(jest.spyOn(txService, 'parseRawTx')).not.toHaveBeenCalled();
-      expect(jest.spyOn(txService, 'checkAllowedTx')).not.toHaveBeenCalled();
-      expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
-    });
-
-    it('tx method is eth_sendRawTransaction and checkAllowedTx is failed', async () => {
-      const rawTx =
-        '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-      const allowedMethods: RegExp[] = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [rawTx],
-      };
-      const res = {} as Response;
-      const errMsg = 'transaction is invalid';
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest.spyOn(txService, 'checkAllowedTx').mockImplementation(() => {
-        throw new ForbiddenException(errMsg);
-      });
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      try {
-        await controller.requestVerse(headers, body, res);
-      } catch (e) {
-        const forbiddenError = new ForbiddenException(errMsg);
-        expect(e).toEqual(forbiddenError);
-      }
-      expect(jest.spyOn(txService, 'parseRawTx')).toHaveBeenCalledWith(rawTx);
-      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(tx);
-      expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
-    });
-
-    it('tx method is eth_sendRawTransaction and checkAllowedGas is failed', async () => {
-      const jsonrpc = '2.0';
-      const id = 1;
-      const rawTx =
-        '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-      const allowedMethods: RegExp[] = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: jsonrpc,
-        id: id,
-        method: method,
-        params: [rawTx],
-      };
-      const res = {} as Response;
-      const errMsg = 'insufficient balance for transfer';
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest
-        .spyOn(txService, 'checkAllowedGas')
-        .mockRejectedValue(new ForbiddenException(errMsg));
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      try {
-        await controller.requestVerse(headers, body, res);
-      } catch (e) {
-        const forbiddenError = new ForbiddenException(errMsg);
-        expect(e).toEqual(forbiddenError);
-      }
-      expect(jest.spyOn(txService, 'parseRawTx')).toHaveBeenCalledWith(rawTx);
-      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(tx);
-      expect(jest.spyOn(txService, 'checkAllowedGas')).toHaveBeenCalledWith(
-        tx,
-        jsonrpc,
-        id,
+      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(true);
+      const handleBatchRequestMock = jest.spyOn(
+        proxyService,
+        'handleBatchRequest',
       );
+      const handleSingleRequestMock = jest.spyOn(
+        proxyService,
+        'handleSingleRequest',
+      );
+
+      const controller = moduleRef.get<ProxyController>(ProxyController);
+      expect(async () => controller.post(headers, body, res)).not.toThrow();
+      expect(handleBatchRequestMock).toHaveBeenCalled();
+      expect(handleSingleRequestMock).not.toHaveBeenCalled();
     });
 
-    it('tx method is not eth_sendRawTransaction and successful', async () => {
-      const allowedMethods: RegExp[] = [/^.*$/];
-      const method = 'eth_sendRawTransaction';
+    it('body is Jsonrpc', () => {
       const headers = { host: 'localhost' };
       const body = {
         jsonrpc: '2.0',
+        method: 'net_version',
+        params: [],
         id: 1,
-        method: method,
-        params: [
-          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239',
-        ],
-      };
-      const verseStatus = 200;
-      const verseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '0x',
-      };
-      const postResponse = {
-        status: verseStatus,
-        data: verseData,
       };
       const res = {
-        send: (result: any) => {
-          expect(result).toBe(verseData); // when it call res.status.send, check verse request data.
+        send: () => {
+          return;
         },
         status: (code: number) => res,
       } as Response;
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-      jest.spyOn(verseService, 'post').mockResolvedValue(postResponse);
 
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      await controller.requestVerse(headers, body, res);
-    });
-  });
-
-  describe('checkMethod', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('All methods are allowed', () => {
-      const allowedMethods: RegExp[] = [/^.*$/];
-      const method = 'eth_getTransactionReceipt';
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      expect(() => controller.checkMethod(method)).not.toThrow();
-    });
-
-    it('Tx method is not allowed', () => {
-      const allowedMethods: RegExp[] = [/^eth_call$/];
-      const method = 'eth_getTransactionReceipt';
-      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
-
-      const controller = moduleRef.get<ProxyController>(ProxyController);
-
-      expect(() => controller.checkMethod(method)).toThrow(
-        `${method} is not allowed`,
+      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(false);
+      jest.spyOn(jsonrpcCheckService, 'isJsonrcp').mockReturnValue(true);
+      const handleBatchRequestMock = jest.spyOn(
+        proxyService,
+        'handleBatchRequest',
       );
+      const handleSingleRequestMock = jest.spyOn(
+        proxyService,
+        'handleSingleRequest',
+      );
+
+      const controller = moduleRef.get<ProxyController>(ProxyController);
+      expect(async () => controller.post(headers, body, res)).not.toThrow();
+      expect(handleBatchRequestMock).not.toHaveBeenCalled();
+      expect(handleSingleRequestMock).toHaveBeenCalled();
+    });
+
+    it('body is not Jsonrpc or JsonrpcArray', async () => {
+      const headers = { host: 'localhost' };
+      const body = {};
+      const res = {
+        send: () => {
+          return;
+        },
+        status: (code: number) => res,
+      } as Response;
+      const errMsg = 'invalid request';
+
+      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(false);
+      jest.spyOn(jsonrpcCheckService, 'isJsonrcp').mockReturnValue(false);
+      const handleBatchRequestMock = jest.spyOn(
+        proxyService,
+        'handleBatchRequest',
+      );
+      const handleSingleRequestMock = jest.spyOn(
+        proxyService,
+        'handleSingleRequest',
+      );
+
+      const controller = moduleRef.get<ProxyController>(ProxyController);
+      try {
+        await controller.post(headers, body, res);
+      } catch (e) {
+        const error = new ForbiddenException(errMsg);
+        expect(e).toEqual(error);
+      }
+      expect(handleBatchRequestMock).not.toHaveBeenCalled();
+      expect(handleSingleRequestMock).not.toHaveBeenCalled();
     });
   });
 });
