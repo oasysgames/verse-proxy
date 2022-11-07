@@ -54,11 +54,21 @@ $ npm run test:cov
 ```
 
 ### Deploy
+#### 1. Set PORT
 ```bash
-# create image
-docker build . --tag verse-layer-proxy
+export PORT=[YOUR_PROXY_PORT]
+```
+
+#### 2. Set allow list config
+You have to download your allow list config to `$PWD/src/config`.
+
+#### 3. Start container
+```bash
+# chose image version and pull image
+docker pull ghcr.io/oasysgames/verse-proxy:v1.0.0
+
 # create container
-docker run --name verse-layer-proxy -d -p 3000:3000 verse-layer-proxy
+docker run --name verse-proxy -d -p $PORT:$PORT -v $PWD/src/config:/usr/src/app/src/config verse-proxy
 ```
 
 ## Control items
