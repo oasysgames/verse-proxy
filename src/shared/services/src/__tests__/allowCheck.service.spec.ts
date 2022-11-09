@@ -1,5 +1,8 @@
 import { BigNumber } from 'ethers';
-import { ComparisonOperation, TransactionAllow } from 'src/shared/entities';
+import {
+  TransactionAllow,
+  ComparisonOperation,
+} from 'src/config/transactionAllowList';
 import { AllowCheckService } from '../allowCheck.service';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 
