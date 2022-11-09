@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import {
-  TransactionAllow,
   EthEstimateGasParams,
   JsonrpcRequestBody,
   JsonrpcId,
@@ -9,7 +8,10 @@ import {
   JsonrpcError,
 } from 'src/shared/entities';
 import { AllowCheckService } from 'src/shared/services/src';
-import { getTxAllowList } from 'src/config/transactionAllowList';
+import {
+  TransactionAllow,
+  getTxAllowList,
+} from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 
 @Injectable()

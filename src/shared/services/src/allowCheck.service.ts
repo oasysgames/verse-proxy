@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { TransactionAllow, ComparisonOperation } from 'src/shared/entities';
+import {
+  TransactionAllow,
+  ComparisonOperation,
+} from 'src/config/transactionAllowList';
 import { BigNumber } from 'ethers';
 import { getDeployAllowList } from 'src/config/transactionAllowList';
 
