@@ -141,7 +141,7 @@ describe('isAllowedDeploy', () => {
     jest.resetAllMocks();
   });
 
-  test('deploy is not allowed', () => {
+  test('from is not included in deployAllowList', () => {
     const getDeployAllowListMock = jest.spyOn(
       transactionAllowList,
       'getDeployAllowList',
@@ -158,15 +158,46 @@ describe('isAllowedDeploy', () => {
     expect(result).toBe(false);
   });
 
-  test('deploy is allowed', () => {
+  test('from is not allowed in deployAllowList', () => {
     const getDeployAllowListMock = jest.spyOn(
       transactionAllowList,
       'getDeployAllowList',
     );
     getDeployAllowListMock.mockReturnValue([
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
       '0xaf395754eB6F542742784cE7702940C60465A46a',
-      '0xaf395754eB6F542742784cE7702940C60465A46c',
     ]);
+
+    const allowCheckService = new AllowCheckService();
+
+    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    const result = allowCheckService.isAllowedDeploy(from);
+    expect(result).toBe(false);
+  });
+
+  test('from is allowed in deployAllowList', () => {
+    const getDeployAllowListMock = jest.spyOn(
+      transactionAllowList,
+      'getDeployAllowList',
+    );
+    getDeployAllowListMock.mockReturnValue([
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+    ]);
+
+    const allowCheckService = new AllowCheckService();
+
+    const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
+    const result = allowCheckService.isAllowedDeploy(from);
+    expect(result).toBe(true);
+  });
+
+  test('deployAllowList has wildcard', () => {
+    const getDeployAllowListMock = jest.spyOn(
+      transactionAllowList,
+      'getDeployAllowList',
+    );
+    getDeployAllowListMock.mockReturnValue(['*']);
 
     const allowCheckService = new AllowCheckService();
 
