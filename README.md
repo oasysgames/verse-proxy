@@ -176,6 +176,20 @@ You can control deployer of a verse.
 export const getDeployAllowList = (): Array<string> => {
   return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
 };
+
+// Everyone can deploy
+export const getDeployAllowList = (): Array<string> => {
+  return ['*'];
+};
+
+// 0xaf395754eB6F542742784cE7702940C60465A46c cannot deploy,
+// 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+export const getDeployAllowList = (): Array<string> => {
+  return [
+    '!0xaf395754eB6F542742784cE7702940C60465A46c',
+    '0xaf395754eB6F542742784cE7702940C60465A46a',
+  ];
+};
 ```
 
 ### Set allowed header

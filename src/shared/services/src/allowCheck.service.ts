@@ -39,7 +39,10 @@ export class AllowCheckService {
 
   isAllowedDeploy(from: string): boolean {
     const isAllow = this.deployAllowList.some((allowedFrom) => {
-      return allowedFrom.toLowerCase() === from.toLowerCase();
+      return this.isAllowedString(
+        allowedFrom.toLowerCase(),
+        from.toLowerCase(),
+      );
     });
     return isAllow;
   }
