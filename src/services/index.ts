@@ -3,3 +3,4 @@ export * from './transaction.service';
 export * from './verse.service';
 export * from './jsonrpcCheck.service';
 export * from './allowCheck.service';
+export * from './deployer.service';
