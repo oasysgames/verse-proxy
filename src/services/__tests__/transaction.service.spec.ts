@@ -7,7 +7,7 @@ import { AllowCheckService } from '../../shared/services/src';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';
-import { JsonrpcError } from 'src/shared/entities';
+import { JsonrpcError } from 'src/entities';
 
 describe('TransactionService', () => {
   let verseService: VerseService;

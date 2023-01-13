@@ -7,7 +7,7 @@ import {
   JsonrpcRequestBody,
   VerseRequestResponse,
   JsonrpcError,
-} from 'src/shared/entities';
+} from 'src/entities';
 
 @Injectable()
 export class VerseService {
