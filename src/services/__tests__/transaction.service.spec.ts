@@ -3,7 +3,7 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { TransactionService } from '../transaction.service';
 import { VerseService } from '../verse.service';
-import { AllowCheckService } from '../../shared/services/src';
+import { AllowCheckService } from '../allowCheck.service';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';

@@ -7,12 +7,12 @@ import {
   JsonrpcVersion,
   JsonrpcError,
 } from 'src/entities';
-import { AllowCheckService } from 'src/shared/services/src';
 import {
   TransactionAllow,
   getTxAllowList,
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
+import { AllowCheckService } from './allowCheck.service';
 
 @Injectable()
 export class TransactionService {

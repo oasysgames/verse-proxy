@@ -3,12 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { ForbiddenException } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { Response } from 'express';
-import { TransactionService, VerseService, ProxyService } from 'src/services';
-import { ProxyController } from '../proxy.controller';
 import {
+  TransactionService,
+  VerseService,
+  ProxyService,
   AllowCheckService,
   JsonrpcCheckService,
-} from 'src/shared/services/src';
+} from 'src/services';
+import { ProxyController } from '../proxy.controller';
 
 describe('ProxyController', () => {
   let jsonrpcCheckService: JsonrpcCheckService;

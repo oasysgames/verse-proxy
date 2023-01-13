@@ -8,8 +8,11 @@ import { of } from 'rxjs';
 import { AxiosResponse } from 'axios';
 import { AppModule } from './../src/app.module';
 import { ConfigService } from '@nestjs/config';
-import { TransactionService, VerseService } from 'src/services';
-import { AllowCheckService } from 'src/shared/services/src';
+import {
+  TransactionService,
+  VerseService,
+  AllowCheckService,
+} from 'src/services';
 
 describe('AppController (e2e)', () => {
   let httpService: HttpService;
