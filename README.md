@@ -143,6 +143,31 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 ```
 
+If you want to allow transacting factory and bridge contracts, please set those contract addresses to `to`.
+
+```json
+// Verse-Layer pre-deployed Contracts. Same address for all Verse-Layers.
+L2StandardBridge: '0x4200000000000000000000000000000000000010',
+L2StandardTokenFactory: '0x4200000000000000000000000000000000000012',
+L2ERC721Bridge: '0x6200000000000000000000000000000000000001',
+```
+
+```typescript
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: [<FROM_YOU_WANT_TO_SET>],
+      toList: [
+        '0x4200000000000000000000000000000000000010',
+        '0x4200000000000000000000000000000000000012',
+        '0x6200000000000000000000000000000000000001',
+      ],
+    },
+    ...
+  ];
+};
+```
+
 #### Value
 You can control the token value of a transaction.
 
