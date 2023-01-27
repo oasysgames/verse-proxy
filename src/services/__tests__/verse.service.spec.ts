@@ -6,7 +6,7 @@ import { AxiosResponse } from 'axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from '../verse.service';
-import { JsonrpcError } from 'src/shared/entities';
+import { JsonrpcError } from 'src/entities';
 
 const verseUrl = 'http://localhost:8545';
 

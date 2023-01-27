@@ -5,7 +5,7 @@ import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { TransactionService, VerseService, ProxyService } from 'src/services';
 import { AllowCheckService } from 'src/shared/services/src';
-import { JsonrpcError } from 'src/shared/entities';
+import { JsonrpcError } from 'src/entities';
 
 const type = 2;
 const chainId = 5;

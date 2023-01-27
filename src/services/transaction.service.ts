@@ -6,7 +6,7 @@ import {
   JsonrpcId,
   JsonrpcVersion,
   JsonrpcError,
-} from 'src/shared/entities';
+} from 'src/entities';
 import { AllowCheckService } from 'src/shared/services/src';
 import {
   TransactionAllow,
