@@ -3,7 +3,7 @@ import {
   TransactionAllow,
   ComparisonOperation,
 } from 'src/config/transactionAllowList';
-import { AllowCheckService } from '../allowCheck.service';
+import { AllowCheckService } from 'src/services';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 
 describe('isAllowedString', () => {

@@ -1,9 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { TransactionService } from '../transaction.service';
-import { VerseService } from '../verse.service';
-import { AllowCheckService } from '../../shared/services/src';
+import {
+  TransactionService,
+  VerseService,
+  AllowCheckService,
+} from 'src/services';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';
