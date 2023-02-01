@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
-import { ProxyService, JsonrpcCheckService } from 'src/services';
-import { VerseRequestResponse } from 'src/entities';
+import { ProxyService } from 'src/services';
+import { VerseRequestResponse } from 'src/shared/entities';
+import { JsonrpcCheckService } from 'src/shared/services/src';
 
 @Controller()
 export class ProxyController {

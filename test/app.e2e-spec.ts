@@ -6,13 +6,10 @@ import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { of } from 'rxjs';
 import { AxiosResponse } from 'axios';
-import { AppModule } from 'src/app.module';
+import { AppModule } from './../src/app.module';
 import { ConfigService } from '@nestjs/config';
-import {
-  TransactionService,
-  VerseService,
-  AllowCheckService,
-} from 'src/services';
+import { TransactionService, VerseService } from 'src/services';
+import { AllowCheckService } from 'src/shared/services/src';
 
 describe('AppController (e2e)', () => {
   let httpService: HttpService;

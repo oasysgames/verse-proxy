@@ -1,15 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import {
-  TransactionService,
-  VerseService,
-  AllowCheckService,
-} from 'src/services';
+import { TransactionService } from '../transaction.service';
+import { VerseService } from '../verse.service';
+import { AllowCheckService } from '../../shared/services/src';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { AccessList } from 'ethers/lib/utils';
-import { JsonrpcError } from 'src/entities';
+import { JsonrpcError } from 'src/shared/entities';
 
 describe('TransactionService', () => {
   let verseService: VerseService;

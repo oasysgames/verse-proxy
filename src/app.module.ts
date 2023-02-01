@@ -2,13 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
-import {
-  ProxyService,
-  TransactionService,
-  VerseService,
-  AllowCheckService,
-  JsonrpcCheckService,
-} from './services';
+import { ProxyService, TransactionService, VerseService } from './services';
+import { SharedModule } from './shared/shared.module';
+import { AllowCheckService, JsonrpcCheckService } from './shared/services/src';
 import configuration from './config/configuration';
 
 @Module({
@@ -17,6 +13,7 @@ import configuration from './config/configuration';
       load: [configuration],
     }),
     HttpModule,
+    SharedModule,
   ],
   controllers: [ProxyController],
   providers: [

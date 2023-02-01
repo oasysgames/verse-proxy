@@ -3,13 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
-import {
-  TransactionService,
-  VerseService,
-  ProxyService,
-  AllowCheckService,
-} from 'src/services';
-import { JsonrpcError } from 'src/entities';
+import { TransactionService, VerseService, ProxyService } from 'src/services';
+import { AllowCheckService } from 'src/shared/services/src';
+import { JsonrpcError } from 'src/shared/entities';
 
 const type = 2;
 const chainId = 5;

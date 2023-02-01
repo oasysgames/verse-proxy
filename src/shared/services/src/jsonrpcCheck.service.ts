@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { JsonrpcRequestBody } from 'src/entities';
+import { JsonrpcRequestBody } from 'src/shared/entities';
 
 @Injectable()
 export class JsonrpcCheckService {

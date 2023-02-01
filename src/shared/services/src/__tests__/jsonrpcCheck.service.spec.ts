@@ -1,4 +1,4 @@
-import { JsonrpcCheckService } from 'src/services';
+import { JsonrpcCheckService } from '../jsonrpcCheck.service';
 
 const jsonrpcCheckService = new JsonrpcCheckService();
 
