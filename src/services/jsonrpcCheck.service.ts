@@ -8,7 +8,14 @@ export class JsonrpcCheckService {
     if (typeof body.id !== 'string' && typeof body.id !== 'number')
       return false;
     if (typeof body.method !== 'string') return false;
-    if (!Array.isArray(body.params)) return false;
+    if (
+      !(
+        Array.isArray(body.params) ||
+        body.params === null ||
+        body.params === undefined
+      )
+    )
+      return false;
     return true;
   }
 

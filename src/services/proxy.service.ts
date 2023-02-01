@@ -53,7 +53,9 @@ export class ProxyService {
         return result;
       }
 
-      const rawTx = body.params[0];
+      const rawTx = body.params ? body.params[0] : undefined;
+      if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
+
       const tx = this.txService.parseRawTx(rawTx);
       this.txService.checkAllowedTx(tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
