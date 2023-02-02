@@ -221,14 +221,14 @@ describe('VerseService', () => {
       expect(result).toEqual(responseResult);
     });
 
-    it('request is failed', async () => {
+    it('verse response status is 200, but failed (transaction is failed)', async () => {
       const inheritHostHeader = false;
-      const errMsg = 'Access is not allowed';
-      const errCode = -32603;
+      const errMsg = 'gas required exceeds allowance (21000)';
+      const errCode = -32602;
 
       const postMock = jest.spyOn(httpService, 'post');
       postMock.mockImplementation(() => {
-        throw new Error(errMsg);
+        throw new JsonrpcError(errMsg, errCode);
       });
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         switch (key) {
@@ -252,7 +252,8 @@ describe('VerseService', () => {
         await verseService.post(proxyRequestHeaders, body);
       } catch (e) {
         const error = new JsonrpcError(errMsg, errCode);
-        expect(e).toEqual(error);
+        expect(e.code).toEqual(error.code);
+        expect(e.message).toEqual(error.message);
       }
     });
   });
