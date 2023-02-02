@@ -7,5 +7,5 @@ export interface JsonrpcRequestBody {
   jsonrpc: JsonrpcVersion;
   id: JsonrpcId;
   method: JsonrpcMethod;
-  params: JsonrpcParams;
+  params?: JsonrpcParams | null;
 }

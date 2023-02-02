@@ -395,6 +395,88 @@ describe('ProxyService', () => {
       expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
     });
 
+    it('tx method is eth_sendRawTransaction and body.params is null', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const method = 'eth_sendRawTransaction';
+      const headers = { host: 'localhost' };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: null,
+      };
+      const errMsg = 'rawTransaction is not found';
+      const errCode = -32602;
+      const status = 200;
+      const verseData = {
+        jsonrpc: body.jsonrpc,
+        id: body.id,
+        error: {
+          code: errCode,
+          message: errMsg,
+        },
+      };
+      const postResponse = {
+        status: status,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
+
+      const proxyService = new ProxyService(
+        configService,
+        verseService,
+        txService,
+      );
+
+      const result = await proxyService.requestVerse(headers, body);
+      expect(result).toEqual(postResponse);
+      expect(jest.spyOn(txService, 'parseRawTx')).not.toHaveBeenCalled();
+      expect(jest.spyOn(txService, 'checkAllowedTx')).not.toHaveBeenCalled();
+      expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_sendRawTransaction and body.params is []', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const method = 'eth_sendRawTransaction';
+      const headers = { host: 'localhost' };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+      const errMsg = 'rawTransaction is not found';
+      const errCode = -32602;
+      const status = 200;
+      const verseData = {
+        jsonrpc: body.jsonrpc,
+        id: body.id,
+        error: {
+          code: errCode,
+          message: errMsg,
+        },
+      };
+      const postResponse = {
+        status: status,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
+
+      const proxyService = new ProxyService(
+        configService,
+        verseService,
+        txService,
+      );
+
+      const result = await proxyService.requestVerse(headers, body);
+      expect(result).toEqual(postResponse);
+      expect(jest.spyOn(txService, 'parseRawTx')).not.toHaveBeenCalled();
+      expect(jest.spyOn(txService, 'checkAllowedTx')).not.toHaveBeenCalled();
+      expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
+    });
+
     it('tx method is eth_sendRawTransaction and checkAllowedTx is failed', async () => {
       const rawTx =
         '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';

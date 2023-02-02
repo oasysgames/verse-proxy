@@ -60,6 +60,36 @@ describe('isJsonrcp', () => {
     };
     expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
   });
+
+  it('body.params is empty Array', () => {
+    const body = {
+      jsonrpc: '2.0',
+      method: 'eth_sendRawTransaction',
+      params: [],
+      id: 1,
+    };
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+  });
+
+  it('body.params is undefined', () => {
+    const body = {
+      jsonrpc: '2.0',
+      method: 'eth_sendRawTransaction',
+      params: undefined,
+      id: 1,
+    };
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+  });
+
+  it('body.params is null', () => {
+    const body = {
+      jsonrpc: '2.0',
+      method: 'eth_sendRawTransaction',
+      params: null,
+      id: 1,
+    };
+    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+  });
 });
 
 describe('isJsonrcpArray', () => {
