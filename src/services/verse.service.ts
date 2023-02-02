@@ -3,11 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom, catchError } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
-import {
-  JsonrpcRequestBody,
-  VerseRequestResponse,
-  JsonrpcError,
-} from 'src/entities';
+import { JsonrpcRequestBody, VerseRequestResponse } from 'src/entities';
 
 @Injectable()
 export class VerseService {
@@ -41,8 +37,9 @@ export class VerseService {
 
     const res = await lastValueFrom(
       this.httpService.post(this.verseUrl, body, axiosConfig).pipe(
+        // when response status is 400 or higher
         catchError((e) => {
-          throw new JsonrpcError(e.response.data, -32603);
+          throw e;
         }),
       ),
     );
