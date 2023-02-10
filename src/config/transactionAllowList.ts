@@ -7,10 +7,13 @@ export interface ComparisonOperation {
   lte?: string; // txValue <= condition is allowed
 }
 
+export type ContractList = { [contractAddress: string]: string[] };
+
 export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
+  contractList?: ContractList;
 }
 
 export const getTxAllowList = (): Array<TransactionAllow> => {

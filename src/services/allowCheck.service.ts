@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import {
   TransactionAllow,
   ComparisonOperation,
+  ContractList,
 } from 'src/config/transactionAllowList';
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { getDeployAllowList } from 'src/config/transactionAllowList';
 
 @Injectable()
@@ -45,6 +46,25 @@ export class AllowCheckService {
       );
     });
     return isAllow;
+  }
+
+  isAllowedContractMethod(
+    contractList: ContractList | undefined,
+    to: string,
+    methodId: string,
+  ): boolean {
+    if (contractList === undefined) return true;
+    if (Object.keys(contractList).length === 0) return true;
+
+    const allowedContract = contractList[to];
+    if (!allowedContract) return false;
+
+    const isAllowMethod = allowedContract.some((allowedMethod) => {
+      const allowedMethodId = utils.id(allowedMethod).substring(0, 10);
+      return allowedMethodId === methodId;
+    });
+
+    return isAllowMethod;
   }
 
   isAllowedValue(

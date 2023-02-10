@@ -28,6 +28,7 @@ export class TransactionService {
     const from = tx.from;
     const to = tx.to;
     const value = tx.value;
+    const methodId = tx.data.substring(0, 10);
 
     if (!from) throw new JsonrpcError('transaction is invalid', -32602);
 
@@ -46,13 +47,19 @@ export class TransactionService {
       const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
+      const contractCheck = this.allowCheckService.isAllowedContractMethod(
+        condition.contractList,
+        to,
+        methodId,
+      );
+
       const valueCondition = condition.value;
       const valueCheck = this.allowCheckService.isAllowedValue(
         valueCondition,
         value,
       );
 
-      if (fromCheck && toCheck && valueCheck) {
+      if (fromCheck && toCheck && contractCheck && valueCheck) {
         isAllow = true;
         break;
       }
