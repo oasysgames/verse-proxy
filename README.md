@@ -132,12 +132,23 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 
 ```typescript
 // ! is denial.
-// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
+
+// everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+    },
+  ];
+};
+
+// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to transact to all address.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
       fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
-      toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+      toList: ['*'],
     },
   ];
 };
@@ -168,7 +179,41 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 ```
 
-#### Value
+#### Contract(Option)
+You cant restrict to transact contract method.
+
+```typescript
+// everyone can only transact to greet and setGreeting to 0x5FbDB2315678afecb367f032d93F642f64180aa3
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
+      contractList: {
+        '0x5FbDB2315678afecb367f032d93F642f64180aa3': [
+          'greet',
+          'setGreeting(string)',
+        ],
+      },
+    },
+  ];
+};
+```
+
+```typescript
+// if contractList is {}, all transaction is allowed.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
+      contractList: {},
+    },
+  ];
+};
+```
+
+#### Value(Option)
 You can control the token value of a transaction.
 
 ```typescript
