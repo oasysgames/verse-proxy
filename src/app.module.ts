@@ -8,6 +8,7 @@ import {
   VerseService,
   AllowCheckService,
   JsonrpcCheckService,
+  WebhookService,
 } from './services';
 import configuration from './config/configuration';
 
@@ -25,6 +26,7 @@ import configuration from './config/configuration';
     ProxyService,
     AllowCheckService,
     JsonrpcCheckService,
+    WebhookService,
   ],
 })
 export class AppModule {}

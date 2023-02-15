@@ -5,6 +5,7 @@ import {
   Body,
   ForbiddenException,
   Res,
+  Ip,
 } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
@@ -20,6 +21,7 @@ export class ProxyController {
 
   @Post()
   async post(
+    @Ip() ip: string,
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
@@ -29,9 +31,9 @@ export class ProxyController {
       res.status(status).send(data);
     };
     if (this.jsonrpcCheckService.isJsonrcpArray(body)) {
-      await this.proxyService.handleBatchRequest(headers, body, callback);
+      await this.proxyService.handleBatchRequest(ip, headers, body, callback);
     } else if (this.jsonrpcCheckService.isJsonrcp(body)) {
-      await this.proxyService.handleSingleRequest(headers, body, callback);
+      await this.proxyService.handleSingleRequest(ip, headers, body, callback);
     } else {
       throw new ForbiddenException(`invalid request`);
     }

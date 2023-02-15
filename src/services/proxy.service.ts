@@ -18,22 +18,24 @@ export class ProxyService {
   ) {}
 
   async handleSingleRequest(
+    ip: string,
     headers: IncomingHttpHeaders,
     body: JsonrpcRequestBody,
     callback: (result: VerseRequestResponse) => void,
   ) {
-    const result = await this.requestVerse(headers, body);
+    const result = await this.requestVerse(ip, headers, body);
     callback(result);
   }
 
   async handleBatchRequest(
+    ip: string,
     headers: IncomingHttpHeaders,
     body: Array<JsonrpcRequestBody>,
     callback: (result: VerseRequestResponse) => void,
   ) {
     const results = await Promise.all(
       body.map(async (verseRequest): Promise<any> => {
-        const result = await this.requestVerse(headers, verseRequest);
+        const result = await this.requestVerse(ip, headers, verseRequest);
         return result.data;
       }),
     );
@@ -43,7 +45,11 @@ export class ProxyService {
     });
   }
 
-  async requestVerse(headers: IncomingHttpHeaders, body: JsonrpcRequestBody) {
+  async requestVerse(
+    ip: string,
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+  ) {
     try {
       const method = body.method;
       this.checkMethod(method);
@@ -57,7 +63,7 @@ export class ProxyService {
       if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
       const tx = this.txService.parseRawTx(rawTx);
-      this.txService.checkAllowedTx(tx);
+      this.txService.checkAllowedTx(ip, headers, body, tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.post(headers, body);
       return result;

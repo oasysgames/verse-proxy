@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
+import { IncomingHttpHeaders } from 'http';
 import {
   EthEstimateGasParams,
   JsonrpcRequestBody,
@@ -24,7 +25,12 @@ export class TransactionService {
     this.txAllowList = getTxAllowList();
   }
 
-  checkAllowedTx(tx: Transaction): void {
+  checkAllowedTx(
+    ip: string,
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+    tx: Transaction,
+  ): void {
     const from = tx.from;
     const to = tx.to;
     const value = tx.value;
@@ -59,7 +65,23 @@ export class TransactionService {
         value,
       );
 
-      if (fromCheck && toCheck && contractCheck && valueCheck) {
+      let webhookCheck = true;
+      if (condition.webhooks) {
+        condition.webhooks.forEach((webhook) => {
+          const check = this.allowCheckService.webhookCheck(
+            ip,
+            headers,
+            body,
+            tx,
+            webhook,
+          );
+          if (!check) {
+            webhookCheck = false;
+          }
+        });
+      }
+
+      if (fromCheck && toCheck && contractCheck && valueCheck && webhookCheck) {
         isAllow = true;
         break;
       }

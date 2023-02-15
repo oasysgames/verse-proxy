@@ -9,11 +9,20 @@ export interface ComparisonOperation {
 
 export type ContractList = { [contractAddress: string]: string[] };
 
+export interface Webhook {
+  url: string;
+  headers?: { [name: string]: string };
+  timeout: number;
+  retry: number;
+  parse: boolean;
+}
+
 export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
   contractList?: ContractList;
+  webhooks?: Array<Webhook>;
 }
 
 export const getTxAllowList = (): Array<TransactionAllow> => {

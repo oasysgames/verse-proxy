@@ -1,16 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { BigNumber, Transaction, utils } from 'ethers';
+import { IncomingHttpHeaders } from 'http';
+import { JsonrpcRequestBody } from 'src/entities';
+import { Webhook } from 'src/config/transactionAllowList';
 import {
   TransactionAllow,
   ComparisonOperation,
   ContractList,
 } from 'src/config/transactionAllowList';
-import { BigNumber, utils } from 'ethers';
 import { getDeployAllowList } from 'src/config/transactionAllowList';
+import { WebhookService } from './webhook.service';
 
 @Injectable()
 export class AllowCheckService {
   private deployAllowList: Array<string>;
-  constructor() {
+  constructor(private webhookService: WebhookService) {
     this.deployAllowList = getDeployAllowList();
   }
 
@@ -106,5 +110,25 @@ export class AllowCheckService {
       }
     }
     return isAllow;
+  }
+
+  async webhookCheck(
+    ip: string,
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+    tx: Transaction,
+    webhook: Webhook,
+  ): Promise<boolean> {
+    const { status } = await this.webhookService.post(
+      ip,
+      headers,
+      body,
+      tx,
+      webhook,
+    );
+    if (status >= 200 && status < 300) {
+      return true;
+    }
+    return false;
   }
 }
