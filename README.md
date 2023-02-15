@@ -238,6 +238,176 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
 
+#### Webhook(Option)
+You can add webhook setting that execute your original transaction restriction.
+
+| key  |  description  | Required |
+| ---- | ---- | ---- |
+|  url  | Your restriction webhook url  | O |
+|  headers  |  Information that you want to send to webhook(described later) | X |
+|  timeout  |  Webhook request timeout(ms)  | O |
+|  retry  |   Webhook request retry times  | O |
+|  parse  | Whether to parse tx in the proxy(described later) | O |
+
+```typescript
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      webhooks: [
+        {
+          url: 'https://localhost:8080',
+          headers: {
+            Authorization: 'Bearer xxxxxxxx',
+          },
+          timeout: 1000, // 1000 is 1 second.
+          retry: 3,
+          parse: false,
+        },
+      ],
+    },
+  ];
+};
+
+// You can set multiple webhook to `webhooks`.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      webhooks: [
+        {
+          url: 'https://localhost:8080',
+          headers: {
+            Authorization: 'Bearer xxxxxxxx',
+          },
+          timeout: 1000, // 1000 is 1 second.
+          retry: 3,
+          parse: false,
+        },
+        {
+          url: 'https://localhost:8000',
+          timeout: 1000, // 1000 is 1 second.
+          retry: 3,
+          parse: false,
+        },
+      ],
+    },
+  ];
+};
+```
+
+Webhook Request body patterns are following.
+
+| Body key  |  Description  |
+| ---- | ---- |
+|  request.clientIp  |  client ip address  |
+|  request.headers.host  |  jsonrpc host  |
+|  request.headers.user-agent  |  client user agent  |
+|  request.headers.*  |  additional data according to headers setting  |
+|  data  |  transaction data according to parse setting  |
+
+
+
+In case that header is not set and parse setting is false
+```typescript
+// src/config/transactionAllowList.ts
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      webhooks: [
+        {
+          url: 'https://localhost:8080',
+          timeout: 1000,
+          retry: 3,
+          parse: false,
+        },
+      ],
+    },
+  ];
+};
+```
+
+```typescript
+// webhook request body
+{
+  request: {
+    clientIp: '::1',
+    headers: {
+      host: 'localhost:3001',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+    }
+  },
+  // data is jsonrpc body
+  data: {
+    method: 'eth_sendRawTransaction',
+    params: [
+      '0xf8c61780826b23945fbdb2315678afecb367f032d93f642f64180aa380b864a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000829deda07ac86766a7dd62eb496ed2862e0d3c67e9a21ab6fa4479d6dfc365f2c7ab390aa02c50389a56442addaf8b6dfe7a65845507d07ac138f61c62960a1be11f9b9eed'
+    ],
+    id: 56,
+    jsonrpc: '2.0'
+  }
+}
+```
+
+In case that header is set Authorization and parse setting is true
+```typescript
+// src/config/transactionAllowList.ts
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      webhooks: [
+        {
+          url: 'https://localhost:8080',
+          headers: {
+            Authorization: 'Bearer xxxxxxxx',
+          },
+          timeout: 1000, // millisecond
+          retry: 3,
+          parse: true,
+        },
+      ],
+    },
+  ];
+};
+```
+
+```typescript
+// webhook request body
+{
+  request: {
+    clientIp: '::1',
+    headers: {
+      host: 'localhost:3001',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
+      Authorization: 'Bearer xxxxxxxx'
+    }
+  },
+  // data is parsed transaction data 
+  data: {
+    nonce: 24,
+    gasPrice: BigNumber { _hex: '0x00', _isBigNumber: true },
+    gasLimit: BigNumber { _hex: '0x6b23', _isBigNumber: true },
+    to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    value: BigNumber { _hex: '0x00', _isBigNumber: true },
+    data: '0xa41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000',
+    chainId: 20197,
+    v: 40430,
+    r: '0xcbab30e2e11cfff22a91dd494a540354e56a98955bc7227ec7545fce5f02b616',
+    s: '0x33e4c632afc4d2af784f3302fb08c6a8978d33baa1ad298b30f10421f6313970',
+    from: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    hash: '0xb8c20b5afa897fb19ac766ef11826215cb3c97fda08a8a1e0d4273147594ec64',
+    type: null
+  }
+}
+```
+
+
 #### Deployer
 You can control deployer of a verse.
 
