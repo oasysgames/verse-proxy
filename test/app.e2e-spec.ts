@@ -12,6 +12,7 @@ import {
   TransactionService,
   VerseService,
   AllowCheckService,
+  WebhookService,
 } from 'src/services';
 
 describe('AppController (e2e)', () => {
@@ -49,6 +50,7 @@ describe('AppController (e2e)', () => {
         VerseService,
         TransactionService,
         AllowCheckService,
+        WebhookService,
       ],
     })
       .useMocker((token) => {
