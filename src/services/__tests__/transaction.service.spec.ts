@@ -85,17 +85,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -114,9 +103,9 @@ describe('TransactionService', () => {
         s,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).toThrow('transaction is invalid');
+      expect(() => transactionService.checkAllowedTx(tx)).toThrow(
+        'transaction is invalid',
+      );
     });
 
     it('deploy transaction(it does not have to) and is not allowed', () => {
@@ -134,17 +123,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -163,9 +141,9 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).toThrow('deploy transaction is not allowed');
+      expect(() => transactionService.checkAllowedTx(tx)).toThrow(
+        'deploy transaction is not allowed',
+      );
     });
 
     it('deploy transaction(it does not have to) and is allowed', () => {
@@ -183,17 +161,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -212,9 +179,7 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).not.toThrow();
+      expect(() => transactionService.checkAllowedTx(tx)).not.toThrow();
     });
 
     it('transaction has allowed_from and allowed_to', () => {
@@ -231,17 +196,6 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
       );
-
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
 
       const tx = {
         type,
@@ -262,9 +216,7 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).not.toThrow();
+      expect(() => transactionService.checkAllowedTx(tx)).not.toThrow();
     });
 
     it('transaction has not_allowed_from', () => {
@@ -285,17 +237,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -315,9 +256,9 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).toThrow('transaction is not allowed');
+      expect(() => transactionService.checkAllowedTx(tx)).toThrow(
+        'transaction is not allowed',
+      );
     });
 
     it('transaction has not_allowed_to', () => {
@@ -338,17 +279,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -368,9 +298,9 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).toThrow('transaction is not allowed');
+      expect(() => transactionService.checkAllowedTx(tx)).toThrow(
+        'transaction is not allowed',
+      );
     });
 
     it('transaction has allowed_from and allowed_to, but does not have allowed_value', () => {
@@ -389,17 +319,6 @@ describe('TransactionService', () => {
         allowCheckService,
       );
 
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
-
       const tx = {
         type,
         chainId,
@@ -419,9 +338,9 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).toThrow('transaction is not allowed');
+      expect(() => transactionService.checkAllowedTx(tx)).toThrow(
+        'transaction is not allowed',
+      );
     });
 
     it('transaction has allowed_from and allowed_to, allowed_value', () => {
@@ -439,17 +358,6 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
       );
-
-      const ip = '1.2.3.4';
-      const headers = { host: 'localhost' };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getTransactionReceipt',
-        params: [
-          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-        ],
-      };
 
       value = BigNumber.from('1000000000000000001');
       const tx = {
@@ -471,9 +379,7 @@ describe('TransactionService', () => {
         from,
       };
 
-      expect(() =>
-        transactionService.checkAllowedTx(ip, headers, body, tx),
-      ).not.toThrow();
+      expect(() => transactionService.checkAllowedTx(tx)).not.toThrow();
     });
   });
 

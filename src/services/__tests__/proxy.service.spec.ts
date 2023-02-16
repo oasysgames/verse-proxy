@@ -531,12 +531,7 @@ describe('ProxyService', () => {
       const result = await proxyService.requestVerse(ip, headers, body);
       expect(result).toEqual(postResponse);
       expect(jest.spyOn(txService, 'parseRawTx')).toHaveBeenCalledWith(rawTx);
-      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(
-        ip,
-        headers,
-        body,
-        tx,
-      );
+      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(tx);
       expect(jest.spyOn(txService, 'checkAllowedGas')).not.toHaveBeenCalled();
     });
 
@@ -585,12 +580,7 @@ describe('ProxyService', () => {
       const result = await proxyService.requestVerse(ip, headers, body);
       expect(result).toEqual(postResponse);
       expect(jest.spyOn(txService, 'parseRawTx')).toHaveBeenCalledWith(rawTx);
-      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(
-        ip,
-        headers,
-        body,
-        tx,
-      );
+      expect(jest.spyOn(txService, 'checkAllowedTx')).toHaveBeenCalledWith(tx);
       expect(jest.spyOn(txService, 'checkAllowedGas')).toHaveBeenCalledWith(
         tx,
         jsonrpc,

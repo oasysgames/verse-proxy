@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { BigNumber } from 'ethers';
+import { AccessList } from 'ethers/lib/utils';
 import { HttpModule } from '@nestjs/axios';
 import {
   TransactionAllow,
@@ -10,6 +11,27 @@ import * as transactionAllowList from 'src/config/transactionAllowList';
 
 describe('AllowCheckService', () => {
   let webhookService: WebhookService;
+
+  const type = 2;
+  const chainId = 5;
+  const nonce = 3;
+  const maxPriorityFeePerGas = BigNumber.from('1500000000');
+  const maxFeePerGas = BigNumber.from('1500000018');
+  const gasPrice = undefined;
+  const gasLimit = BigNumber.from('21000');
+  const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
+  const value = BigNumber.from('1000000000000');
+  const data =
+    '0x1ee5c97d00000000000000000000000000000000000000000000000000000000006e421600000000000000000000000087c3ed02af9d6db56e03a35b67af25009078ad00000000000000000000000000ee903a26803819a6c79b18a827a78a4fa7d3355c';
+  const accessList = [] as AccessList;
+  const hash =
+    '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
+  const v = 0;
+  const r =
+    '0x79448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd028';
+  const s =
+    '0x743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+  const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -514,6 +536,120 @@ describe('AllowCheckService', () => {
 
       const result = allowCheckService.isAllowedValue(valueCondition, value);
       expect(result).toBe(true);
+    });
+  });
+
+  describe('webhookCheck', () => {
+    test('status is 200', async () => {
+      const status = 200;
+      const webhookResponse = {
+        status: status,
+      };
+
+      jest.spyOn(webhookService, 'post').mockResolvedValue(webhookResponse);
+      const allowCheckService = new AllowCheckService(webhookService);
+
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+
+      const webhook = {
+        url: 'https://localhost:8080',
+        timeout: 1000,
+        retry: 3,
+        parse: false,
+      };
+
+      const result = await allowCheckService.webhookCheck(
+        ip,
+        headers,
+        body,
+        tx,
+        webhook,
+      );
+      expect(result).toBe(true);
+    });
+
+    test('status is 500', async () => {
+      const status = 500;
+      const webhookResponse = {
+        status: status,
+      };
+
+      jest.spyOn(webhookService, 'post').mockResolvedValue(webhookResponse);
+      const allowCheckService = new AllowCheckService(webhookService);
+
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+
+      const webhook = {
+        url: 'https://localhost:8080',
+        timeout: 1000,
+        retry: 3,
+        parse: false,
+      };
+
+      const result = await allowCheckService.webhookCheck(
+        ip,
+        headers,
+        body,
+        tx,
+        webhook,
+      );
+      expect(result).toBe(false);
     });
   });
 });
