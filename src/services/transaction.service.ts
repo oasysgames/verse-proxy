@@ -14,6 +14,7 @@ import {
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
+import { WebhookService } from './webhook.service';
 
 @Injectable()
 export class TransactionService {
@@ -21,6 +22,7 @@ export class TransactionService {
   constructor(
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
+    private webhookService: WebhookService,
   ) {
     this.txAllowList = getTxAllowList();
   }
@@ -82,15 +84,18 @@ export class TransactionService {
       }
       await Promise.all(
         condition.webhooks.map(async (webhook): Promise<void> => {
-          const check = await this.allowCheckService.webhookCheck(
+          const { error } = await this.webhookService.post(
             ip,
             headers,
             body,
             tx,
             webhook,
           );
-          if (!check) {
-            throw new JsonrpcError('Webhook Error', -32602); // todo: modify message
+          if (error) {
+            if (error instanceof Error) {
+              throw new JsonrpcError(error.message, -32602);
+            }
+            throw error;
           }
         }),
       );

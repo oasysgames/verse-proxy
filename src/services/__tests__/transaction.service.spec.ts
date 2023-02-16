@@ -13,6 +13,7 @@ import { AccessList } from 'ethers/lib/utils';
 import { JsonrpcError } from 'src/entities';
 
 describe('TransactionService', () => {
+  let webhookService: WebhookService;
   let verseService: VerseService;
   let allowCheckService: AllowCheckService;
   const transactionAllowListMock = jest.spyOn(
@@ -57,10 +58,15 @@ describe('TransactionService', () => {
           return {
             post: jest.fn(),
           };
+        } else if (token === WebhookService) {
+          return {
+            post: jest.fn(),
+          };
         }
       })
       .compile();
 
+    webhookService = moduleRef.get<WebhookService>(WebhookService);
     verseService = moduleRef.get<VerseService>(VerseService);
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
   });
@@ -83,6 +89,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -121,6 +128,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -159,6 +167,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -195,6 +204,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -235,6 +245,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -277,6 +288,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -317,6 +329,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const tx = {
@@ -357,6 +370,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       value = BigNumber.from('1000000000000000001');
@@ -412,6 +426,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const jsonrpc = '2.0';
@@ -469,6 +484,7 @@ describe('TransactionService', () => {
       const transactionService = new TransactionService(
         verseService,
         allowCheckService,
+        webhookService,
       );
 
       const jsonrpc = '2.0';

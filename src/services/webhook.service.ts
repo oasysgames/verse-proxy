@@ -49,15 +49,21 @@ export class WebhookService {
       },
     };
 
-    const res = await lastValueFrom(
-      this.httpService.post(webhook.url, webhookBody, axiosConfig).pipe(
-        // when response status is 400 or higher
-        catchError((e) => {
-          throw e;
-        }),
-        retry(webhook.retry),
-      ),
-    );
-    return { status: res.status };
+    try {
+      const res = await lastValueFrom(
+        this.httpService.post(webhook.url, webhookBody, axiosConfig).pipe(
+          retry(webhook.retry),
+          catchError((e) => {
+            throw e;
+          }),
+        ),
+      );
+      return { status: res.status };
+    } catch (e) {
+      return {
+        status: 400,
+        error: e,
+      };
+    }
   }
 }

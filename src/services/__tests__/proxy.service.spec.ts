@@ -80,6 +80,7 @@ describe('ProxyService', () => {
             return {
               parseRawTx: jest.fn(),
               checkAllowedTx: jest.fn(),
+              checkWebhook: jest.fn(),
               checkAllowedGas: jest.fn(),
             };
         }
@@ -567,6 +568,7 @@ describe('ProxyService', () => {
       };
       jest.spyOn(configService, 'get').mockReturnValue(allowedMethods);
       jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+      jest.spyOn(txService, 'checkWebhook').mockImplementation();
       jest
         .spyOn(txService, 'checkAllowedGas')
         .mockRejectedValue(new JsonrpcError(errMsg, errCode));
