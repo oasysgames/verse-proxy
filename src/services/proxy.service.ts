@@ -7,6 +7,7 @@ import {
   JsonrpcRequestBody,
   VerseRequestResponse,
   JsonrpcError,
+  RequestContext,
 } from 'src/entities';
 
 @Injectable()
@@ -18,24 +19,22 @@ export class ProxyService {
   ) {}
 
   async handleSingleRequest(
-    ip: string,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
     callback: (result: VerseRequestResponse) => void,
   ) {
-    const result = await this.requestVerse(ip, headers, body);
+    const result = await this.requestVerse(requestContext, body);
     callback(result);
   }
 
   async handleBatchRequest(
-    ip: string,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: Array<JsonrpcRequestBody>,
     callback: (result: VerseRequestResponse) => void,
   ) {
     const results = await Promise.all(
       body.map(async (verseRequest): Promise<any> => {
-        const result = await this.requestVerse(ip, headers, verseRequest);
+        const result = await this.requestVerse(requestContext, verseRequest);
         return result.data;
       }),
     );
@@ -45,11 +44,8 @@ export class ProxyService {
     });
   }
 
-  async requestVerse(
-    ip: string,
-    headers: IncomingHttpHeaders,
-    body: JsonrpcRequestBody,
-  ) {
+  async requestVerse(requestContext: RequestContext, body: JsonrpcRequestBody) {
+    const { ip, headers } = requestContext;
     try {
       const method = body.method;
       this.checkMethod(method);
