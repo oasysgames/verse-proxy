@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { IncomingHttpHeaders } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';

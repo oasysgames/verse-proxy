@@ -256,7 +256,7 @@ You can add webhook setting that execute your original transaction restriction.
 | key  |  description  | Required |
 | ---- | ---- | ---- |
 |  url  | Your restriction webhook url  | O |
-|  headers  |  Information that you want to send to webhook(described later) | X |
+|  headers  |  Information that you want to send to webhook(described later) as http_header | X |
 |  timeout  |  Webhook request timeout(ms)  | O |
 |  retry  |   Webhook request retry times  | O |
 |  parse  | Whether to parse tx in the proxy(described later) | O |
@@ -314,11 +314,10 @@ Webhook Request body patterns are following.
 
 | Body key  |  Description  |
 | ---- | ---- |
-|  request.clientIp  |  client ip address  |
-|  request.headers.host  |  jsonrpc host  |
-|  request.headers.user-agent  |  client user agent  |
-|  request.headers.*  |  additional data according to headers setting  |
-|  data  |  transaction data according to parse setting  |
+|  _meta.ip  |  client ip address  |
+|  _meta.headers.host  |  jsonrpc host  |
+|  _meta.headers.user-agent  |  client user agent  |
+| * | transaction data is set in body according to parse setting.
 
 
 
@@ -332,7 +331,11 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       toList: ['*'],
       webhooks: [
         {
-          url: 'https://localhost:8080',
+          url: 'https://rpc.sandverse.oasys.games/',
+          headers: { 
+            host: 'rpc.sandverse.oasys.games',
+            Authorization: 'Bearer xxxxxxxx',
+          },
           timeout: 1000,
           retry: 3,
           parse: false,
@@ -344,23 +347,21 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// webhook request body
 {
-  request: {
-    clientIp: '::1',
+  // jsonrpc body is set
+  method: 'eth_sendRawTransaction',
+  params: [
+    '0xf8c62780826b23945fbdb2315678afecb367f032d93f642f64180aa380b864a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000829deda02c108533361ec243ad0d7f88c07165327c1b14ec64565edbbd50d7193399f0b8a071de69bb3d7cd3aa8697c0a459b2ccc29401d715135cb8a34d2d703b7cd77f47'
+  ],
+  id: 56,
+  jsonrpc: '2.0',
+  // meta is client information
+  _meta: {
+    ip: '::1',
     headers: {
       host: 'localhost:3001',
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
     }
-  },
-  // data is jsonrpc body
-  data: {
-    method: 'eth_sendRawTransaction',
-    params: [
-      '0xf8c61780826b23945fbdb2315678afecb367f032d93f642f64180aa380b864a41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000829deda07ac86766a7dd62eb496ed2862e0d3c67e9a21ab6fa4479d6dfc365f2c7ab390aa02c50389a56442addaf8b6dfe7a65845507d07ac138f61c62960a1be11f9b9eed'
-    ],
-    id: 56,
-    jsonrpc: '2.0'
   }
 }
 ```
@@ -375,11 +376,12 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       toList: ['*'],
       webhooks: [
         {
-          url: 'https://localhost:8080',
+          url: 'https://rpc.sandverse.oasys.games/',
           headers: {
+            host: 'rpc.sandverse.oasys.games',
             Authorization: 'Bearer xxxxxxxx',
           },
-          timeout: 1000, // millisecond
+          timeout: 1000,
           retry: 3,
           parse: true,
         },
@@ -390,31 +392,28 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// webhook request body
 {
-  request: {
-    clientIp: '::1',
+  // parsed jsonrpc body is set
+  nonce: 40,
+  gasPrice: BigNumber { _hex: '0x00', _isBigNumber: true },
+  gasLimit: BigNumber { _hex: '0x6b23', _isBigNumber: true },
+  to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+  value: BigNumber { _hex: '0x00', _isBigNumber: true },
+  data: '0xa41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000',
+  chainId: 20197,
+  v: 40429,
+  r: '0x8a5a8f761bd45ba475b6b2a535a6d1a4d0941b657269b91ab19467e8a9d9d195',
+  s: '0x11c0fb7057f3e18a6e01c324ff8a084abd369acc5289ab586c7f13b4ae88933d',
+  from: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  hash: '0x159625a3df0467d5be60adf105dfc5626294434f45d7f6ce4aeefbee9cedf383',
+  type: null,
+  // meta is client information
+  _meta: {
+    ip: '::1',
     headers: {
       host: 'localhost:3001',
-      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36',
-      Authorization: 'Bearer xxxxxxxx'
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
     }
-  },
-  // data is parsed transaction data 
-  data: {
-    nonce: 24,
-    gasPrice: BigNumber { _hex: '0x00', _isBigNumber: true },
-    gasLimit: BigNumber { _hex: '0x6b23', _isBigNumber: true },
-    to: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    value: BigNumber { _hex: '0x00', _isBigNumber: true },
-    data: '0xa41368620000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000568656c6c6f000000000000000000000000000000000000000000000000000000',
-    chainId: 20197,
-    v: 40430,
-    r: '0xcbab30e2e11cfff22a91dd494a540354e56a98955bc7227ec7545fce5f02b616',
-    s: '0x33e4c632afc4d2af784f3302fb08c6a8978d33baa1ad298b30f10421f6313970',
-    from: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    hash: '0xb8c20b5afa897fb19ac766ef11826215cb3c97fda08a8a1e0d4273147594ec64',
-    type: null
   }
 }
 ```

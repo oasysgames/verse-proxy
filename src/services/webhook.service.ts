@@ -5,7 +5,6 @@ import { lastValueFrom, catchError, retry } from 'rxjs';
 import { IncomingHttpHeaders } from 'http';
 import { JsonrpcRequestBody, WebhookResponse } from 'src/entities';
 import { Webhook } from 'src/config/transactionAllowList';
-import { URL } from 'url';
 
 @Injectable()
 export class WebhookService {
@@ -18,7 +17,8 @@ export class WebhookService {
     tx: Transaction,
     webhook: Webhook,
   ): Promise<WebhookResponse> {
-    let verseHeaders: Record<string, string> = {};
+    const verseHeaders: Record<string, string> = {};
+
     if (headers['host']) {
       verseHeaders['host'] = headers['host'];
     }
@@ -26,27 +26,14 @@ export class WebhookService {
       verseHeaders['user-agent'] = headers['user-agent'];
     }
 
-    if (webhook.headers) {
-      verseHeaders = Object.assign(verseHeaders, webhook.headers);
-    }
-
-    const data = webhook.parse ? tx : body;
-
     const webhookBody = {
-      request: {
-        clientIp: ip,
-        headers: verseHeaders,
-      },
-      data: data,
+      ...(webhook.parse ? tx : body),
+      _meta: { ip, headers: verseHeaders },
     };
-
-    const webhookUrl = new URL(webhook.url);
 
     const axiosConfig = {
       timeout: webhook.timeout,
-      headers: {
-        host: webhookUrl.hostname,
-      },
+      headers: webhook.headers,
     };
 
     try {

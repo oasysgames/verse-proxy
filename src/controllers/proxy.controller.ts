@@ -10,7 +10,7 @@ import {
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
 import { ProxyService, JsonrpcCheckService } from 'src/services';
-import { VerseRequestResponse, RequestContext } from 'src/entities';
+import { VerseRequestResponse } from 'src/entities';
 
 @Controller()
 export class ProxyController {

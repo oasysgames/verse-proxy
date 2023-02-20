@@ -9,7 +9,10 @@ export interface ComparisonOperation {
 
 export interface Webhook {
   url: string;
-  headers?: { [name: string]: string };
+  headers: {
+    [name: string]: string;
+    host: string;
+  };
   timeout: number;
   retry: number;
   parse: boolean;
