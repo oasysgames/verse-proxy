@@ -189,25 +189,37 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     {
       fromList: ['*'],
       toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
-      contractList: {
-        '0x5FbDB2315678afecb367f032d93F642f64180aa3': [
-          'greet',
-          'setGreeting(string)',
-        ],
-      },
+      contractList: [
+        'greet',
+        'setGreeting(string)',
+      ],
+    },
+  ];
+};
+
+// everyone can only transact to greet and setGreeting to 0x5FbDB2315678afecb367f032d93F642f64180aa3 and 0x5FbDB2315678afecb367f032d93F642f64180aa4
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3', '0x5FbDB2315678afecb367f032d93F642f64180aa4'],
+      contractList: [
+        'greet',
+        'setGreeting(string)',
+      ],
     },
   ];
 };
 ```
 
 ```typescript
-// if contractList is {}, all transaction is allowed.
+// if contractList is [], all transaction is allowed.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
       fromList: ['*'],
       toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
-      contractList: {},
+      contractList: [],
     },
   ];
 };

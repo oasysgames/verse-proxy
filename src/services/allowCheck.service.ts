@@ -3,7 +3,6 @@ import { BigNumber, utils } from 'ethers';
 import {
   TransactionAllow,
   ComparisonOperation,
-  ContractList,
 } from 'src/config/transactionAllowList';
 import { getDeployAllowList } from 'src/config/transactionAllowList';
 
@@ -49,19 +48,15 @@ export class AllowCheckService {
   }
 
   isAllowedContractMethod(
-    contractList: ContractList | undefined,
-    to: string,
+    contractMethodList: string[] | undefined,
     methodId: string,
   ): boolean {
-    if (contractList === undefined) return true;
-    if (Object.keys(contractList).length === 0) return true;
+    if (contractMethodList === undefined) return true;
+    if (contractMethodList.length === 0) return true;
 
-    const allowedContract = contractList[to];
-    if (!allowedContract) return false;
-
-    const isAllowMethod = allowedContract.some((allowedMethod) => {
+    const isAllowMethod = contractMethodList.some((allowedMethod) => {
       const allowedMethodId = utils.id(allowedMethod).substring(0, 10);
-      return allowedMethodId === methodId;
+      return allowedMethodId.toLowerCase() === methodId.toLowerCase();
     });
 
     return isAllowMethod;

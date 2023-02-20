@@ -229,95 +229,48 @@ describe('AllowCheckService', () => {
   describe('isAllowedContractMethod', () => {
     const allowCheckService = new AllowCheckService();
 
-    test('contractList is undefined', () => {
-      const contractList = undefined;
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    test('contractMethodList is undefined', () => {
+      const contractMethodList = undefined;
       const methodId = '0x095ea7b3'; // approve(address,uint256)
 
       const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
+        contractMethodList,
         methodId,
       );
       expect(result).toBe(true);
     });
 
-    test('contractList is {}', () => {
-      const contractList = {};
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    test('contractMethodList is empty array', () => {
+      const contractMethodList: string[] = [];
       const methodId = '0x095ea7b3'; // approve(address,uint256)
 
       const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
+        contractMethodList,
         methodId,
       );
       expect(result).toBe(true);
     });
 
-    test('Contract(to) is not at contractList', () => {
-      const contractList = {
-        '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92265': [
-          'approve(address,uint256)',
-          'transfer(address,uint256)',
-        ],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    test('allowedMethod is not in contractMethodList', () => {
+      const contractMethodList = ['transfer(address,uint256)'];
       const methodId = '0x095ea7b3'; // approve(address,uint256)
 
       const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
+        contractMethodList,
         methodId,
       );
       expect(result).toBe(false);
     });
 
-    test('Contract(to) is at contractList and allowedMethods are []', () => {
-      const contractList = {
-        '0xaf395754eB6F542742784cE7702940C60465A46c': [],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
+    test('allowedMethod is in contractMethodList', () => {
+      const contractMethodList = [
+        'approve(address,uint256)',
+        'transfer(address,uint256)',
+      ];
       const methodId = '0x095ea7b3'; // approve(address,uint256)
 
       const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
-        methodId,
-      );
-      expect(result).toBe(false);
-    });
-
-    test('Contract(to) is at contractList and allowedMethods are not there', () => {
-      const contractList = {
-        '0xaf395754eB6F542742784cE7702940C60465A46c': [
-          'transfer(address,uint256)',
-        ],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
-
-      const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
-        methodId,
-      );
-      expect(result).toBe(false);
-    });
-
-    test('Contract(to) is at contractList and allowedMethods are there', () => {
-      const contractList = {
-        '0xaf395754eB6F542742784cE7702940C60465A46c': [
-          'approve(address,uint256)',
-          'transfer(address,uint256)',
-        ],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
-
-      const result = allowCheckService.isAllowedContractMethod(
-        contractList,
-        to,
+        contractMethodList,
         methodId,
       );
       expect(result).toBe(true);

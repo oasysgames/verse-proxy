@@ -56,8 +56,7 @@ export class TransactionService {
       const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const contractCheck = this.allowCheckService.isAllowedContractMethod(
-        condition.contractList,
-        to,
+        condition.contractMethodList,
         methodId,
       );
 
