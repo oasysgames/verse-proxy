@@ -27,7 +27,12 @@ export class TransactionService {
     this.txAllowList = getTxAllowList();
   }
 
-  checkAllowedTx(tx: Transaction): void {
+  async checkAllowedTx(
+    ip: string,
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+    tx: Transaction,
+  ): Promise<void> {
     const from = tx.from;
     const to = tx.to;
     const value = tx.value;
@@ -62,44 +67,31 @@ export class TransactionService {
         value,
       );
 
-      if (fromCheck && toCheck && contractCheck && valueCheck) {
+      let webhookCheck = true;
+      if (condition.webhooks) {
+        await Promise.all(
+          condition.webhooks.map(async (webhook): Promise<void> => {
+            const { status } = await this.webhookService.post(
+              ip,
+              headers,
+              body,
+              tx,
+              webhook,
+            );
+            if (status >= 400) {
+              webhookCheck = false;
+            }
+          }),
+        );
+      }
+
+      if (fromCheck && toCheck && contractCheck && valueCheck && webhookCheck) {
         isAllow = true;
         break;
       }
     }
 
     if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
-    return;
-  }
-
-  async checkWebhook(
-    ip: string,
-    headers: IncomingHttpHeaders,
-    body: JsonrpcRequestBody,
-    tx: Transaction,
-  ): Promise<void> {
-    for (const condition of this.txAllowList) {
-      if (!condition.webhooks) {
-        continue;
-      }
-      await Promise.all(
-        condition.webhooks.map(async (webhook): Promise<void> => {
-          const { error } = await this.webhookService.post(
-            ip,
-            headers,
-            body,
-            tx,
-            webhook,
-          );
-          if (error) {
-            if (error instanceof Error) {
-              throw new JsonrpcError(error.message, -32602);
-            }
-            throw error;
-          }
-        }),
-      );
-    }
   }
 
   async checkAllowedGas(

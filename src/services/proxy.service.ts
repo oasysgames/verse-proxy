@@ -63,8 +63,7 @@ export class ProxyService {
       if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
       const tx = this.txService.parseRawTx(rawTx);
-      this.txService.checkAllowedTx(tx);
-      await this.txService.checkWebhook(ip, headers, body, tx);
+      await this.txService.checkAllowedTx(ip, headers, body, tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.post(headers, body);
       return result;

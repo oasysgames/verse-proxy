@@ -60,6 +60,14 @@ export class WebhookService {
       );
       return { status: res.status };
     } catch (e) {
+      if (e instanceof Error) {
+        console.error(e.message);
+        return {
+          status: 400,
+          error: e.message,
+        };
+      }
+      console.error(e);
       return {
         status: 400,
         error: e,
