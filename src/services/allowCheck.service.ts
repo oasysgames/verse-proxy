@@ -1,50 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { BigNumber, utils } from 'ethers';
 import {
-  TransactionAllow,
   ComparisonOperation,
+  AddressRestriction,
 } from 'src/config/transactionAllowList';
-import { getDeployAllowList } from 'src/config/transactionAllowList';
 
 @Injectable()
 export class AllowCheckService {
-  private deployAllowList: Array<string>;
-  constructor() {
-    this.deployAllowList = getDeployAllowList();
-  }
-
-  isAllowedString(allowPattern: string, input: string): boolean {
-    if (allowPattern[0] === '!' && allowPattern.slice(1) === input)
-      return false;
-    if (allowPattern === '*' || allowPattern === input) return true;
-    return false;
-  }
-
-  isAllowedFrom(condition: TransactionAllow, from: string): boolean {
-    const isAllow = condition.fromList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
+  isAllowedAddress(addressRestriction: AddressRestriction, input: string) {
+    let isAllowedAddress = false;
+    if (addressRestriction.allowList) {
+      isAllowedAddress = addressRestriction.allowList.some((allowedAddress) => {
+        if (allowedAddress === '*') return true;
+        if (allowedAddress === '') return false;
+        return allowedAddress.toLowerCase() === input.toLowerCase();
+      });
+    } else if (addressRestriction.deniedList) {
+      isAllowedAddress = addressRestriction.deniedList.every(
+        (deniedAddress) => {
+          return deniedAddress.toLowerCase() !== input.toLowerCase();
+        },
       );
-    });
-    return isAllow;
-  }
-
-  isAllowedTo(condition: TransactionAllow, to: string): boolean {
-    const isAllow = condition.toList.some((allowedTo) => {
-      return this.isAllowedString(allowedTo.toLowerCase(), to.toLowerCase());
-    });
-    return isAllow;
-  }
-
-  isAllowedDeploy(from: string): boolean {
-    const isAllow = this.deployAllowList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
-      );
-    });
-    return isAllow;
+    }
+    return isAllowedAddress;
   }
 
   isAllowedContractMethod(

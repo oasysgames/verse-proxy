@@ -102,53 +102,83 @@ You can set allowed transaction list at `src/config/transactionAllowList.ts`.
 #### from, to
 You can control the from and to of a transaction.
 
+You can set either the allowed_address_list or the denied_address_list.
+
+| Key  |  Description  |
+| ---- | ---- |
+|  allowList  |  Only the address specified here is allowed.  |
+|  deniedList  |  Addresses other than the one specified here are permitted.  |
+
 ```typescript
-// elements contained in the array are allowed to be transacted.
+// you can set multiple restriction setting
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
+    // 0xaf395754eB6F542742784cE7702940C60465A46a can transact to 0xaf395754eB6F542742784cE7702940C60465A46b
     {
-      fromList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
-      toList: ['0xaf395754eB6F542742784cE7702940C60465A46a'],
+      fromList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] },
+      toList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46b'] },
     },
+    // 0xaf395754eB6F542742784cE7702940C60465A46c cannot transact to 0xaf395754eB6F542742784cE7702940C60465A46d
     {
-      fromList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
-      toList: ['0xaf395754eB6F542742784cE7702940C60465A46c'],
+      fromList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46c'] },
+      toList: { deniedList: ['0xaf395754eB6F542742784cE7702940C60465A46d'] },
     },
-  ];
+  ]
 };
 ```
 
+You can set wildcard to allowList so that any address is allowed.
 ```typescript
-// '*' is wildcard.
+// allowList: ['*'] is wildcard.
+
+// Everyone can transact any contract.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
     },
   ];
 }
 ```
 
+When setting `allowList: ['']`, it means complete denial.
 ```typescript
-// ! is denial.
+// allowList: [''] is complete denial
 
-// everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
+// 0xaf395754eB6F542742784cE7702940C60465A46a cannot transact to any contract.
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a can transact to any contract.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+      fromList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] },
+      toList: { allowList: [''] },
+    },
+  ];
+}
+```
+
+deniedList setting is following.
+```typescript
+
+// 0xaf395754eB6F542742784cE7702940C60465A46a cannot transact to 0xaf395754eB6F542742784cE7702940C60465A46b
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a can transact to 0xaf395754eB6F542742784cE7702940C60465A46b.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] },
+      toList: { deniedList: ['0xaf395754eB6F542742784cE7702940C60465A46b'] },
     },
   ];
 };
 
-// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to transact to all address.
+// 0xaf395754eB6F542742784cE7702940C60465A46a cannot transact to 0xaf395754eB6F542742784cE7702940C60465A46b
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a can transact to 0xaf395754eB6F542742784cE7702940C60465A46b.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
-      toList: ['*'],
+      fromList: { deniedList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] },
+      toList: { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46b'] },
     },
   ];
 };
@@ -167,12 +197,12 @@ L2ERC721Bridge: '0x6200000000000000000000000000000000000001',
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: [<FROM_YOU_WANT_TO_SET>],
-      toList: [
+      fromList: { allowList: [<FROM_YOU_WANT_TO_SET>] },
+      toList: { allowList: [
         '0x4200000000000000000000000000000000000010',
         '0x4200000000000000000000000000000000000012',
         '0x6200000000000000000000000000000000000001',
-      ],
+      ] },
     },
     ...
   ];
@@ -187,9 +217,9 @@ You cant restrict to transact contract method.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
-      contractList: [
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'] },
+      contractMethodList: [
         'greet',
         'setGreeting(string)',
       ],
@@ -203,7 +233,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     {
       fromList: ['*'],
       toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3', '0x5FbDB2315678afecb367f032d93F642f64180aa4'],
-      contractList: [
+      contractMethodList: [
         'greet',
         'setGreeting(string)',
       ],
@@ -213,13 +243,13 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// if contractList is [], all transaction is allowed.
+// if contractMethodList is [], all transaction is allowed.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
-      contractList: [],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'] },
+      contractMethodList: [],
     },
   ];
 };
@@ -233,8 +263,8 @@ You can control the token value of a transaction.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
       value: { gt: '1000000000000000000' },
     }
   ];
@@ -265,8 +295,8 @@ You can add webhook setting that execute your original transaction restriction.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
       webhooks: [
         {
           url: 'https://localhost:8080',
@@ -286,8 +316,8 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
       webhooks: [
         {
           url: 'https://localhost:8080',
@@ -327,8 +357,8 @@ In case that header is not set and parse setting is false
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
       webhooks: [
         {
           url: 'https://rpc.sandverse.oasys.games/',
@@ -372,8 +402,8 @@ In case that header is set Authorization and parse setting is true
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
       webhooks: [
         {
           url: 'https://rpc.sandverse.oasys.games/',
@@ -422,24 +452,34 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 #### Deployer
 You can control deployer of a verse.
 
+You can set either the allowed_address_list or the denied_address_list.
+
+| Key  |  Description  |
+| ---- | ---- |
+|  allowList  |  Only the address specified here is allowed.  |
+|  deniedList  |  Addresses other than the one specified here are permitted.  |
+
+
 ```typescript
 // Only 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
 export const getDeployAllowList = (): Array<string> => {
-  return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
+  return { allowList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] };
 };
 
 // Everyone can deploy
 export const getDeployAllowList = (): Array<string> => {
-  return ['*'];
+  return { allowList: ['*'] };
 };
 
-// 0xaf395754eB6F542742784cE7702940C60465A46c cannot deploy,
-// 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+// Everyone cannot deploy
 export const getDeployAllowList = (): Array<string> => {
-  return [
-    '!0xaf395754eB6F542742784cE7702940C60465A46c',
-    '0xaf395754eB6F542742784cE7702940C60465A46a',
-  ];
+  return { allowList: [''] };
+};
+
+// 0xaf395754eB6F542742784cE7702940C60465A46a cannot deploy,
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+export const getDeployAllowList = (): Array<string> => {
+  return { deniedList: ['0xaf395754eB6F542742784cE7702940C60465A46a'] };
 };
 ```
 

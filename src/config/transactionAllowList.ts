@@ -18,9 +18,20 @@ export interface Webhook {
   parse: boolean;
 }
 
+type AllowedAddressList = {
+  allowList: Array<string>;
+  deniedList?: never;
+};
+type DeniedAddressList = {
+  allowList?: never;
+  deniedList: Array<string>;
+};
+
+export type AddressRestriction = AllowedAddressList | DeniedAddressList;
+
 export interface TransactionAllow {
-  fromList: Array<string>;
-  toList: Array<string>;
+  fromList: AddressRestriction;
+  toList: AddressRestriction;
   value?: ComparisonOperation;
   contractMethodList?: string[];
   webhooks?: Array<Webhook>;
@@ -29,12 +40,12 @@ export interface TransactionAllow {
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['*'],
-      toList: ['*'],
+      fromList: { allowList: ['*'] },
+      toList: { allowList: ['*'] },
     },
   ];
 };
 
-export const getDeployAllowList = (): Array<string> => {
-  return [''];
+export const getDeployAllowList = (): AddressRestriction => {
+  return { allowList: [''] };
 };
