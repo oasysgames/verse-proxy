@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
+import { DatabaseModule } from './modules';
 import { ProxyController } from './controllers';
 import {
   ProxyService,
@@ -9,6 +10,7 @@ import {
   AllowCheckService,
   JsonrpcCheckService,
 } from './services';
+import { RedisService } from './repositories';
 import configuration from './config/configuration';
 
 @Module({
@@ -17,6 +19,7 @@ import configuration from './config/configuration';
       load: [configuration],
     }),
     HttpModule,
+    DatabaseModule.register(),
   ],
   controllers: [ProxyController],
   providers: [
@@ -25,6 +28,7 @@ import configuration from './config/configuration';
     ProxyService,
     AllowCheckService,
     JsonrpcCheckService,
+    RedisService,
   ],
 })
 export class AppModule {}
