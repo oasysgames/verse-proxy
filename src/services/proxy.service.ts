@@ -3,6 +3,7 @@ import { IncomingHttpHeaders } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
+import { RateLimitService } from './rateLimit.service';
 import {
   JsonrpcRequestBody,
   VerseRequestResponse,
@@ -15,6 +16,7 @@ export class ProxyService {
     private configService: ConfigService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
+    private readonly rateLimitService: RateLimitService,
   ) {}
 
   async handleSingleRequest(
@@ -60,6 +62,9 @@ export class ProxyService {
       this.txService.checkAllowedTx(tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.post(headers, body);
+      const rateLimitPlugin = this.configService.get<string>('rateLimitPlugin');
+      await this.rateLimitService.checkRateLimits(tx);
+      if (rateLimitPlugin) await this.rateLimitService.store(tx);
       return result;
     } catch (err) {
       const status = 200;

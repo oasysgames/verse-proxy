@@ -3,13 +3,22 @@ import { Redis } from 'ioredis';
 
 @Injectable()
 export class RedisService {
-  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
+  private rateLimitKey: string;
 
-  async set(key: string, value: string) {
-    return this.redis.set(key, value);
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {
+    this.rateLimitKey = 'rate-limit';
   }
 
-  async get(key: string) {
-    return this.redis.get(key);
+  async setTransactionHistory(value: string, timestamp: number) {
+    return await this.redis.zadd(this.rateLimitKey, timestamp, value);
+  }
+
+  async getTransactionHistory(startTimestamp: number, endTimestamp: number) {
+    return await this.redis.zrange(
+      this.rateLimitKey,
+      startTimestamp,
+      endTimestamp,
+      'BYSCORE',
+    );
   }
 }

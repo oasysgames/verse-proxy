@@ -9,6 +9,7 @@ import {
   VerseService,
   AllowCheckService,
   JsonrpcCheckService,
+  RateLimitService,
 } from './services';
 import { RedisService } from './repositories';
 import configuration from './config/configuration';
@@ -29,6 +30,7 @@ import configuration from './config/configuration';
     AllowCheckService,
     JsonrpcCheckService,
     RedisService,
+    RateLimitService,
   ],
 })
 export class AppModule {}

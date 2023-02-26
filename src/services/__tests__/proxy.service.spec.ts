@@ -8,8 +8,11 @@ import {
   VerseService,
   ProxyService,
   AllowCheckService,
+  RateLimitService,
 } from 'src/services';
 import { JsonrpcError } from 'src/entities';
+import { RedisService } from 'src/repositories';
+import { DatabaseModule } from 'src/modules';
 
 const type = 2;
 const chainId = 5;
@@ -52,16 +55,19 @@ describe('ProxyService', () => {
   let configService: ConfigService;
   let verseService: VerseService;
   let txService: TransactionService;
+  let rateLimitService: RateLimitService;
   let moduleRef: TestingModule;
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [HttpModule],
+      imports: [HttpModule, DatabaseModule.register()],
       providers: [
         ConfigService,
         VerseService,
         TransactionService,
         AllowCheckService,
+        RateLimitService,
+        RedisService,
       ],
     })
       .useMocker((token) => {
@@ -80,6 +86,10 @@ describe('ProxyService', () => {
               checkAllowedTx: jest.fn(),
               checkAllowedGas: jest.fn(),
             };
+          case RateLimitService:
+            return {
+              checkRateLimits: jest.fn(),
+            };
         }
       })
       .compile();
@@ -87,6 +97,7 @@ describe('ProxyService', () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
     verseService = moduleRef.get<VerseService>(VerseService);
     txService = moduleRef.get<TransactionService>(TransactionService);
+    rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
   });
 
   describe('handleSingleRequest', () => {
@@ -124,6 +135,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       await proxyService.handleSingleRequest(headers, body, callback);
@@ -165,6 +177,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       await proxyService.handleSingleRequest(headers, body, callback);
@@ -230,6 +243,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       await proxyService.handleBatchRequest(headers, body, callback);
@@ -302,6 +316,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       await proxyService.handleBatchRequest(headers, body, callback);
@@ -343,6 +358,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -386,6 +402,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -427,6 +444,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -468,6 +486,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -515,6 +534,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -563,6 +583,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -607,6 +628,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       const result = await proxyService.requestVerse(headers, body);
@@ -628,6 +650,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       expect(() => proxyService.checkMethod(method)).not.toThrow();
@@ -642,6 +665,7 @@ describe('ProxyService', () => {
         configService,
         verseService,
         txService,
+        rateLimitService,
       );
 
       expect(() => proxyService.checkMethod(method)).toThrow(
