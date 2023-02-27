@@ -14,10 +14,11 @@ export class AllowCheckService {
   }
 
   isAllowedString(allowPattern: string, input: string): boolean {
-    if (allowPattern[0] === '!' && allowPattern.slice(1) === input)
-      return false;
-    if (allowPattern === '*' || allowPattern === input) return true;
-    return false;
+    if (allowPattern[0] === '!') {
+      return allowPattern.slice(1) !== input;
+    } else {
+      return allowPattern === '*' || allowPattern === input;
+    }
   }
 
   isAllowedFrom(condition: TransactionAllow, from: string): boolean {

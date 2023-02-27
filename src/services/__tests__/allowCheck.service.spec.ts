@@ -43,10 +43,10 @@ describe('isAllowedString', () => {
 
   test('allowPattern is not denial of input', () => {
     const allowPattern = '!0xaf395754eB6F542742784cE7702940C60465A46a';
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+    const input = '0xaf395754eB6F542742784cE7702940C60465A46c';
 
     const result = allowCheckService.isAllowedString(allowPattern, input);
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 });
 
@@ -165,7 +165,6 @@ describe('isAllowedDeploy', () => {
     );
     getDeployAllowListMock.mockReturnValue([
       '!0xaf395754eB6F542742784cE7702940C60465A46c',
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
     ]);
 
     const allowCheckService = new AllowCheckService();
@@ -181,7 +180,6 @@ describe('isAllowedDeploy', () => {
       'getDeployAllowList',
     );
     getDeployAllowListMock.mockReturnValue([
-      '!0xaf395754eB6F542742784cE7702940C60465A46c',
       '0xaf395754eB6F542742784cE7702940C60465A46a',
     ]);
 

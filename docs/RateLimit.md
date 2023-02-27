@@ -12,7 +12,7 @@ REDIS_HOST=<YOUR_REDIS_HOST>
 And please set expire as the period of time to store the transaction.
 
 ## Rate limit setting
-Using `getRateLimitRules`, you can set transaction rate limit.
+Using `getRateLimitRules` at `src/config/transactionAllowList.ts`, you can set transaction rate limit.
 
 ```typescript
 export const getRateLimitRules = (): Array<RateLimitRule> => {
@@ -148,22 +148,14 @@ export const getRateLimitRules = (): Array<RateLimitRule> => {
 Addresses set in `getDeployAllowList` and `getUnlimitedTxRateAddresses` are not rate-limited for transactions.
 
 ```typescript
-export const getDeployAllowList = (): Array<string> => {
-  return ['0xaf395754eB6F542742784cE7702940C60465A46c'];
-};
+const deployAllowList: Array<string> = ['0xaf395754eB6F542742784cE7702940C60465A46c'];
 
-export const getUnlimitedTxRateAddresses = (): Array<string> => {
-  return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
-};
+const unlimitedTxRateAddresses: Array<string> = ['0xaf395754eB6F542742784cE7702940C60465A46a'];
 ```
 
 You can set wildcard
 ```typescript
-export const getDeployAllowList = (): Array<string> => {
-  return ['*'];
-};
+const deployAllowList: Array<string> = ['*'];
 
-export const getUnlimitedTxRateAddresses = (): Array<string> => {
-  return ['*'];
-};
+const unlimitedTxRateAddresses: Array<string> = ['*'];
 ```
