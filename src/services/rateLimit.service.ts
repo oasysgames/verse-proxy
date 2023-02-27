@@ -166,8 +166,8 @@ export class RateLimitService {
         const { fromList, toList } = rateLimitRule;
 
         const isMatchRateLimitCheck =
-          (fromList.includes('*') || this.checkAddressList(fromList, txFrom)) &&
-          (toList.includes('*') || this.checkAddressList(toList, txTo));
+          this.checkAddressList(fromList, txFrom) &&
+          this.checkAddressList(toList, txTo);
 
         if (!isMatchRateLimitCheck) return;
 
@@ -179,7 +179,10 @@ export class RateLimitService {
   // todo: integrate to allowCheck.service logic
   private checkAddressList(addressList: Array<string>, input: string) {
     const isAllow = addressList.some((allowedAddress) => {
-      return allowedAddress.toLowerCase() === input.toLowerCase();
+      return (
+        addressList.includes('*') ||
+        allowedAddress.toLowerCase() === input.toLowerCase()
+      );
     });
     return isAllow;
   }
@@ -196,8 +199,7 @@ export class RateLimitService {
     fromList: Array<string>,
   ) {
     return (
-      fromList.includes('*') ||
-      (historyData.from && this.checkAddressList(fromList, historyData.from))
+      historyData.from && this.checkAddressList(fromList, historyData.from)
     );
   }
 
@@ -212,10 +214,7 @@ export class RateLimitService {
     historyData: TransactionHistory,
     toList: Array<string>,
   ) {
-    return (
-      toList.includes('*') ||
-      (historyData.to && this.checkAddressList(toList, historyData.to))
-    );
+    return historyData.to && this.checkAddressList(toList, historyData.to);
   }
 
   private perMethodCondition(
