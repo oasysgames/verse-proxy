@@ -217,6 +217,9 @@ export const getDeployAllowList = (): Array<string> => {
 };
 ```
 
+### Transaction access rate limit(Option)
+If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
+
 ### Set allowed header
 You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
 ```typescript
