@@ -9,8 +9,15 @@ export class RedisService {
     this.rateLimitKey = 'rate-limit';
   }
 
-  async setTransactionHistory(key: string, value: string, timestamp: number) {
-    return await this.redis.zadd(key, timestamp, value);
+  async setTransactionHistory(
+    key: string,
+    value: string,
+    timestamp: number,
+    removeDataTimestamp: number,
+  ) {
+    await this.redis.zadd(key, timestamp, value);
+    if (timestamp % 5 === 0)
+      await this.redis.zremrangebyscore(key, 0, removeDataTimestamp);
   }
 
   async getTransactionHistoryCount(

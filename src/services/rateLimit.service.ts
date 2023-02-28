@@ -38,15 +38,18 @@ export class RateLimitService {
       methodId,
       timestamp,
     };
+    const { interval } = rateLimit;
 
     switch (this.rateLimitPlugin) {
       case 'redis':
         const jsonStringValue = JSON.stringify(value);
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        const removeDataTimestamp = timestamp - interval * 1000 - 1;
         await this.redisService.setTransactionHistory(
           redisKey,
           jsonStringValue,
           timestamp,
+          removeDataTimestamp,
         );
         break;
     }
