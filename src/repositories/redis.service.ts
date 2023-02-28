@@ -9,16 +9,15 @@ export class RedisService {
     this.rateLimitKey = 'rate-limit';
   }
 
-  async setTransactionHistory(value: string, timestamp: number) {
-    return await this.redis.zadd(this.rateLimitKey, timestamp, value);
+  async setTransactionHistory(key: string, value: string, timestamp: number) {
+    return await this.redis.zadd(key, timestamp, value);
   }
 
-  async getTransactionHistory(startTimestamp: number, endTimestamp: number) {
-    return await this.redis.zrange(
-      this.rateLimitKey,
-      startTimestamp,
-      endTimestamp,
-      'BYSCORE',
-    );
+  async getTransactionHistoryCount(
+    key: string,
+    startTimestamp: number,
+    endTimestamp: number,
+  ) {
+    return await this.redis.zcount(key, startTimestamp, endTimestamp);
   }
 }

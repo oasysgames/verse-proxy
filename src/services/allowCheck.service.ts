@@ -4,13 +4,18 @@ import {
   ComparisonOperation,
 } from 'src/config/transactionAllowList';
 import { BigNumber } from 'ethers';
-import { getDeployAllowList } from 'src/config/transactionAllowList';
+import {
+  getDeployAllowList,
+  getUnlimitedTxRateAddresses,
+} from 'src/config/transactionAllowList';
 
 @Injectable()
 export class AllowCheckService {
   private deployAllowList: Array<string>;
+  private unlimitedTxRateAddresses: Array<string>;
   constructor() {
     this.deployAllowList = getDeployAllowList();
+    this.unlimitedTxRateAddresses = getUnlimitedTxRateAddresses();
   }
 
   isAllowedString(allowPattern: string, input: string): boolean {
@@ -40,6 +45,16 @@ export class AllowCheckService {
 
   isAllowedDeploy(from: string): boolean {
     const isAllow = this.deployAllowList.some((allowedFrom) => {
+      return this.isAllowedString(
+        allowedFrom.toLowerCase(),
+        from.toLowerCase(),
+      );
+    });
+    return isAllow;
+  }
+
+  isUnlimitedTxRate(from: string): boolean {
+    const isAllow = this.unlimitedTxRateAddresses.some((allowedFrom) => {
       return this.isAllowedString(
         allowedFrom.toLowerCase(),
         from.toLowerCase(),

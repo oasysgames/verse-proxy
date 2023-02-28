@@ -8,6 +8,7 @@ export interface ComparisonOperation {
 }
 
 export interface RateLimit {
+  name: string;
   perFrom?: boolean;
   perTo?: boolean;
   perMethod?: boolean;
@@ -15,16 +16,11 @@ export interface RateLimit {
   limit: number;
 }
 
-export interface RateLimitRule {
-  fromList: Array<string>;
-  toList: Array<string>;
-  rateLimit: RateLimit;
-}
-
 export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
+  rateLimit?: RateLimit;
 }
 
 const txAllowList: Array<TransactionAllow> = [
@@ -81,8 +77,4 @@ export const getDeployAllowList = (): Array<string> => {
 export const getUnlimitedTxRateAddresses = (): Array<string> => {
   checkAddressList(unlimitedTxRateAddresses);
   return unlimitedTxRateAddresses;
-};
-
-export const getRateLimitRules = (): Array<RateLimitRule> => {
-  return [];
 };

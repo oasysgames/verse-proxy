@@ -3,35 +3,34 @@ import { Transaction } from 'ethers';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/repositories';
 import {
-  RateLimitRule,
-  getRateLimitRules,
-  getUnlimitedTxRateAddresses,
-  getDeployAllowList,
+  TransactionAllow,
+  getTxAllowList,
+  RateLimit,
 } from 'src/config/transactionAllowList';
 import { JsonrpcError, TransactionHistory } from 'src/entities';
+import { AllowCheckService } from './allowCheck.service';
 
 @Injectable()
 export class RateLimitService {
   private rateLimitPlugin: string;
-  private rateLimitRules: Array<RateLimitRule>;
-  private unlimitedTxRateAddresses: Array<string>;
-  private deployAllowList: Array<string>;
+  private txAllowList: Array<TransactionAllow>;
 
   constructor(
     private configService: ConfigService,
     private redisService: RedisService,
+    private allowCheckService: AllowCheckService,
   ) {
     this.rateLimitPlugin =
       this.configService.get<string>('rateLimitPlugin') ?? '';
-    this.rateLimitRules = getRateLimitRules();
-    this.unlimitedTxRateAddresses = getUnlimitedTxRateAddresses();
-    this.deployAllowList = getDeployAllowList();
+    this.txAllowList = getTxAllowList();
   }
 
-  async store(tx: Transaction) {
-    const from = tx.from;
-    const to = tx.to;
-    const methodId = tx.data.substring(0, 10);
+  async setTransactionHistory(
+    from: string,
+    to: string,
+    methodId: string,
+    rateLimit: RateLimit,
+  ) {
     const timestamp = Date.now();
     const value: TransactionHistory = {
       from,
@@ -43,7 +42,9 @@ export class RateLimitService {
     switch (this.rateLimitPlugin) {
       case 'redis':
         const jsonStringValue = JSON.stringify(value);
+        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
         await this.redisService.setTransactionHistory(
+          redisKey,
           jsonStringValue,
           timestamp,
         );
@@ -51,34 +52,116 @@ export class RateLimitService {
     }
   }
 
-  async getTransactionHistory(interval: number) {
-    const transactionHistory: TransactionHistory[] = [];
+  async store(tx: Transaction) {
+    const txFrom = tx.from;
+    const txTo = tx.to;
+    const methodId = tx.data.substring(0, 10);
+
+    if (!txFrom) throw new JsonrpcError('transaction is invalid', -32602);
+
+    if (
+      this.allowCheckService.isUnlimitedTxRate(txFrom) ||
+      this.allowCheckService.isAllowedDeploy(txFrom)
+    ) {
+      return;
+    }
+
+    if (!txTo)
+      throw new JsonrpcError('deploy transaction is not allowed', -32602);
+
+    await Promise.all(
+      this.txAllowList.map(async (txAllow) => {
+        const { rateLimit } = txAllow;
+
+        const isMatchRateLimitCheck =
+          this.allowCheckService.isAllowedFrom(txAllow, txFrom) &&
+          this.allowCheckService.isAllowedTo(txAllow, txTo);
+
+        if (!isMatchRateLimitCheck) return;
+        if (!rateLimit) return;
+
+        await this.setTransactionHistory(txFrom, txTo, methodId, rateLimit);
+      }),
+    );
+  }
+
+  async getTransactionHistoryCount(
+    from: string,
+    to: string,
+    methodId: string,
+    rateLimit: RateLimit,
+  ) {
+    const { interval } = rateLimit;
+    let txCounter = 0;
     const endDate = new Date();
     const startDate = new Date();
     startDate.setSeconds(endDate.getSeconds() - interval);
 
     switch (this.rateLimitPlugin) {
       case 'redis':
-        const history = await this.redisService.getTransactionHistory(
+        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        txCounter = await this.redisService.getTransactionHistoryCount(
+          redisKey,
           startDate.getTime(),
           endDate.getTime(),
         );
-        history.forEach((stringTxData) => {
-          const txData = JSON.parse(stringTxData) as TransactionHistory; // todo: don't use type assertion.
-          transactionHistory.push(txData);
-        });
         break;
     }
-    return transactionHistory;
+    return txCounter;
   }
 
-  async checkRateLimit(tx: Transaction, rateLimitRule: RateLimitRule) {
+  async checkRateLimits(tx: Transaction) {
     const txFrom = tx.from;
     const txTo = tx.to;
-    const txMethodId = tx.data.substring(0, 10);
+    const methodId = tx.data.substring(0, 10);
 
-    const { fromList, toList, rateLimit } = rateLimitRule;
-    const { perFrom, perTo, perMethod, interval, limit } = rateLimit;
+    if (!txFrom) throw new JsonrpcError('transaction is invalid', -32602);
+
+    if (
+      this.allowCheckService.isUnlimitedTxRate(txFrom) ||
+      this.allowCheckService.isAllowedDeploy(txFrom)
+    ) {
+      return;
+    }
+
+    if (!txTo)
+      throw new JsonrpcError('deploy transaction is not allowed', -32602);
+
+    await Promise.all(
+      this.txAllowList.map(async (txAllow) => {
+        const { rateLimit } = txAllow;
+
+        const isMatchRateLimitCheck =
+          this.allowCheckService.isAllowedFrom(txAllow, txFrom) &&
+          this.allowCheckService.isAllowedTo(txAllow, txTo);
+
+        if (!isMatchRateLimitCheck) return;
+        if (!rateLimit) return;
+
+        const { interval, limit } = rateLimit;
+        const txCounter = await this.getTransactionHistoryCount(
+          txFrom,
+          txTo,
+          methodId,
+          rateLimit,
+        );
+
+        if (txCounter + 1 > limit)
+          throw new JsonrpcError(
+            `The number of allowed transacting has been exceeded. Wait ${interval} seconds before transacting.`,
+            -32602,
+          );
+      }),
+    );
+  }
+
+  private getRedisKey(
+    from: string,
+    to: string,
+    methodId: string,
+    rateLimit: RateLimit,
+  ) {
+    const { name, perFrom, perTo, perMethod } = rateLimit;
 
     // only method check is not allowed
     if (!perFrom && !perTo && perMethod) {
@@ -88,139 +171,13 @@ export class RateLimitService {
       );
     }
 
-    const txHistory = await this.getTransactionHistory(interval);
-    let txCounter = 1;
+    const keyArray = [];
+    keyArray.push(name);
+    keyArray.push(perFrom ? `${from}` : '*');
+    keyArray.push(perTo ? `${to}` : '*');
+    keyArray.push(perMethod ? `${methodId}` : '*');
+    const key = keyArray.join(':');
 
-    if (perFrom && !perTo && !perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.perFromCondition(historyData, txFrom) &&
-          this.nonPerToCondition(historyData, toList),
-      ).length;
-    } else if (!perFrom && perTo && !perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.nonPerFromCondition(historyData, fromList) &&
-          this.perToCondition(historyData, txTo),
-      ).length;
-    } else if (perFrom && perTo && !perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.perFromCondition(historyData, txFrom) &&
-          this.perToCondition(historyData, txTo),
-      ).length;
-    } else if (perFrom && !perTo && perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.perFromCondition(historyData, txFrom) &&
-          this.nonPerToCondition(historyData, toList) &&
-          this.perMethodCondition(historyData, txMethodId),
-      ).length;
-    } else if (!perFrom && perTo && perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.nonPerFromCondition(historyData, fromList) &&
-          this.perToCondition(historyData, txTo) &&
-          this.perMethodCondition(historyData, txMethodId),
-      ).length;
-    } else if (perFrom && perTo && perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.perFromCondition(historyData, txFrom) &&
-          this.perToCondition(historyData, txTo) &&
-          this.perMethodCondition(historyData, txMethodId),
-      ).length;
-    } else if (!perFrom && !perTo && !perMethod) {
-      txCounter += txHistory.filter(
-        (historyData) =>
-          this.nonPerFromCondition(historyData, fromList) &&
-          this.nonPerToCondition(historyData, toList),
-      ).length;
-    }
-
-    if (txCounter > limit)
-      throw new JsonrpcError(
-        `The number of allowed transacting has been exceeded. Wait ${interval} seconds before transacting.`,
-        -32602,
-      );
-  }
-
-  async checkRateLimits(tx: Transaction) {
-    const txFrom = tx.from;
-    const txTo = tx.to;
-
-    if (!txFrom) throw new JsonrpcError('transaction is invalid', -32602);
-
-    if (
-      this.checkAddressList(this.unlimitedTxRateAddresses, txFrom) ||
-      this.checkAddressList(this.deployAllowList, txFrom)
-    ) {
-      return;
-    }
-
-    if (!txTo)
-      throw new JsonrpcError('deploy transaction is not allowed', -32602);
-
-    await Promise.all(
-      this.rateLimitRules.map(async (rateLimitRule) => {
-        const { fromList, toList } = rateLimitRule;
-
-        const isMatchRateLimitCheck =
-          this.checkAddressList(fromList, txFrom) &&
-          this.checkAddressList(toList, txTo);
-
-        if (!isMatchRateLimitCheck) return;
-
-        await this.checkRateLimit(tx, rateLimitRule);
-      }),
-    );
-  }
-
-  // todo: integrate to allowCheck.service logic
-  private checkAddressList(addressList: Array<string>, input: string) {
-    const isAllow = addressList.some((allowedAddress) => {
-      return (
-        addressList.includes('*') ||
-        allowedAddress.toLowerCase() === input.toLowerCase()
-      );
-    });
-    return isAllow;
-  }
-
-  private perFromCondition(
-    historyData: TransactionHistory,
-    txFrom: string | undefined,
-  ) {
-    return historyData.from === txFrom;
-  }
-
-  private nonPerFromCondition(
-    historyData: TransactionHistory,
-    fromList: Array<string>,
-  ) {
-    return (
-      historyData.from && this.checkAddressList(fromList, historyData.from)
-    );
-  }
-
-  private perToCondition(
-    historyData: TransactionHistory,
-    txTo: string | undefined,
-  ) {
-    return historyData.to === txTo;
-  }
-
-  private nonPerToCondition(
-    historyData: TransactionHistory,
-    toList: Array<string>,
-  ) {
-    return historyData.to && this.checkAddressList(toList, historyData.to);
-  }
-
-  private perMethodCondition(
-    historyData: TransactionHistory,
-    txMethodId: string,
-  ) {
-    return historyData.methodId === txMethodId;
+    return key;
   }
 }
