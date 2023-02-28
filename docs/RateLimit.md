@@ -6,7 +6,7 @@ For setting datastore to store transaction history, you have to set datastore en
 ```bash
 # In case of redis
 RATE_LIMIT_PLUGIN=redis
-REDIS_HOST=<YOUR_REDIS_HOST>
+REDIS_URI=<REDIS_URI> # e.g. redis://localhost:6379/0
 ```
 
 And please set expire as the period of time to store the transaction.

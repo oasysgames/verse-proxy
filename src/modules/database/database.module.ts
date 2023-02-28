@@ -6,13 +6,10 @@ export class DatabaseModule {
   static register(): DynamicModule {
     const providers: Provider<any>[] = [];
 
-    if (process.env.REDIS_HOST) {
+    if (process.env.REDIS_URI) {
       const redisProvider = {
         provide: 'REDIS_CLIENT',
-        useValue: new Redis({
-          host: process.env.REDIS_HOST,
-          port: 6379,
-        }),
+        useValue: new Redis(process.env.REDIS_URI),
       };
       providers.push(redisProvider);
     }
