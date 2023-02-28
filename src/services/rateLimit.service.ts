@@ -166,14 +166,6 @@ export class RateLimitService {
   ) {
     const { name, perFrom, perTo, perMethod } = rateLimit;
 
-    // only method check is not allowed
-    if (!perFrom && !perTo && perMethod) {
-      throw new JsonrpcError(
-        'can not set rate limit with only method.',
-        -32603,
-      );
-    }
-
     const keyArray = [];
     keyArray.push(name);
     keyArray.push(perFrom ? `${from}` : '*');
