@@ -59,11 +59,10 @@ export class ProxyService {
       if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
       const tx = this.txService.parseRawTx(rawTx);
-      this.txService.checkAllowedTx(tx);
+      await this.txService.checkAllowedTx(tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.post(headers, body);
       const rateLimitPlugin = this.configService.get<string>('rateLimitPlugin');
-      await this.rateLimitService.checkRateLimits(tx);
       if (rateLimitPlugin) await this.rateLimitService.store(tx);
       return result;
     } catch (err) {

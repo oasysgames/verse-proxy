@@ -13,6 +13,7 @@ import {
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
+import { RateLimitService } from './rateLimit.service';
 
 @Injectable()
 export class TransactionService {
@@ -20,13 +21,15 @@ export class TransactionService {
   constructor(
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
+    private readonly rateLimitService: RateLimitService,
   ) {
     this.txAllowList = getTxAllowList();
   }
 
-  checkAllowedTx(tx: Transaction): void {
+  async checkAllowedTx(tx: Transaction): Promise<void> {
     const from = tx.from;
     const to = tx.to;
+    const methodId = tx.data.substring(0, 10);
     const value = tx.value;
 
     if (!from) throw new JsonrpcError('transaction is invalid', -32602);
@@ -51,6 +54,8 @@ export class TransactionService {
         valueCondition,
         value,
       );
+
+      await this.rateLimitService.checkRateLimit(from, to, methodId, condition);
 
       if (fromCheck && toCheck && valueCheck) {
         isAllow = true;

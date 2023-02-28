@@ -113,49 +113,38 @@ export class RateLimitService {
     return txCounter;
   }
 
-  async checkRateLimits(tx: Transaction) {
-    const txFrom = tx.from;
-    const txTo = tx.to;
-    const methodId = tx.data.substring(0, 10);
-
-    if (!txFrom) throw new JsonrpcError('transaction is invalid', -32602);
-
-    if (
-      this.allowCheckService.isUnlimitedTxRate(txFrom) ||
-      this.allowCheckService.isAllowedDeploy(txFrom)
-    ) {
+  async checkRateLimit(
+    from: string,
+    to: string,
+    methodId: string,
+    txAllow: TransactionAllow,
+  ) {
+    if (this.allowCheckService.isUnlimitedTxRate(from)) {
       return;
     }
 
-    if (!txTo)
-      throw new JsonrpcError('deploy transaction is not allowed', -32602);
+    const { rateLimit } = txAllow;
 
-    await Promise.all(
-      this.txAllowList.map(async (txAllow) => {
-        const { rateLimit } = txAllow;
+    const isMatchRateLimitCheck =
+      this.allowCheckService.isAllowedFrom(txAllow, from) &&
+      this.allowCheckService.isAllowedTo(txAllow, to);
 
-        const isMatchRateLimitCheck =
-          this.allowCheckService.isAllowedFrom(txAllow, txFrom) &&
-          this.allowCheckService.isAllowedTo(txAllow, txTo);
+    if (!isMatchRateLimitCheck) return;
+    if (!rateLimit) return;
 
-        if (!isMatchRateLimitCheck) return;
-        if (!rateLimit) return;
-
-        const { interval, limit } = rateLimit;
-        const txCounter = await this.getTransactionHistoryCount(
-          txFrom,
-          txTo,
-          methodId,
-          rateLimit,
-        );
-
-        if (txCounter + 1 > limit)
-          throw new JsonrpcError(
-            `The number of allowed transacting has been exceeded. Wait ${interval} seconds before transacting.`,
-            -32602,
-          );
-      }),
+    const { interval, limit } = rateLimit;
+    const txCounter = await this.getTransactionHistoryCount(
+      from,
+      to,
+      methodId,
+      rateLimit,
     );
+
+    if (txCounter + 1 > limit)
+      throw new JsonrpcError(
+        `The number of allowed transacting has been exceeded. Wait ${interval} seconds before transacting.`,
+        -32602,
+      );
   }
 
   private getRedisKey(
