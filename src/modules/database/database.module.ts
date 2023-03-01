@@ -12,6 +12,12 @@ export class DatabaseModule {
         useValue: new Redis(process.env.REDIS_URI),
       };
       providers.push(redisProvider);
+    } else {
+      const redisProvider = {
+        provide: 'REDIS_CLIENT',
+        useValue: [],
+      };
+      providers.push(redisProvider);
     }
 
     return {
