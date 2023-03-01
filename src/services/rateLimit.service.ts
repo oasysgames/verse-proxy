@@ -124,12 +124,6 @@ export class RateLimitService {
     }
 
     const { rateLimit } = txAllow;
-
-    const isMatchRateLimitCheck =
-      this.allowCheckService.isIncludedAddress(txAllow.fromList, from) &&
-      this.allowCheckService.isIncludedAddress(txAllow.toList, to);
-
-    if (!isMatchRateLimitCheck) return;
     if (!rateLimit) return;
 
     const { interval, limit } = rateLimit;

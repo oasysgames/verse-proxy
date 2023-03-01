@@ -61,9 +61,13 @@ export class TransactionService {
         value,
       );
 
-      await this.rateLimitService.checkRateLimit(from, to, methodId, condition);
-
       if (fromCheck && toCheck && valueCheck) {
+        await this.rateLimitService.checkRateLimit(
+          from,
+          to,
+          methodId,
+          condition,
+        );
         isAllow = true;
         break;
       }
