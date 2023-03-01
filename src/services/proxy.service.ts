@@ -55,16 +55,7 @@ export class ProxyService {
         return result;
       }
 
-      const rawTx = body.params ? body.params[0] : undefined;
-      if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
-
-      const tx = this.txService.parseRawTx(rawTx);
-      await this.txService.checkAllowedTx(tx);
-      await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.post(headers, body);
-      const isSetRateLimit = this.configService.get<string>('isSetRateLimit');
-      if (isSetRateLimit) await this.rateLimitService.store(tx);
-      return result;
+      return await this.executeTransaction(headers, body);
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -86,6 +77,43 @@ export class ProxyService {
         data: err,
       };
     }
+  }
+
+  async executeTransaction(
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+  ) {
+    const rawTx = body.params ? body.params[0] : undefined;
+    if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
+
+    const tx = this.txService.parseRawTx(rawTx);
+    const from = tx.from;
+    const to = tx.to;
+    const methodId = tx.data.substring(0, 10);
+    const value = tx.value;
+
+    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
+
+    // Contract Deploy transaction
+    if (!to) {
+      this.txService.checkContractDeploy(from);
+      await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
+      const result = await this.verseService.post(headers, body);
+      return result;
+    }
+
+    const matchedTxAllowRule = await this.txService.getMatchedTxAllowRule(
+      from,
+      to,
+      methodId,
+      value,
+    );
+    await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
+    const result = await this.verseService.post(headers, body);
+    const isSetRateLimit = this.configService.get<string>('isSetRateLimit');
+    if (isSetRateLimit)
+      await this.rateLimitService.store(from, to, methodId, matchedTxAllowRule);
+    return result;
   }
 
   checkMethod(method: string) {

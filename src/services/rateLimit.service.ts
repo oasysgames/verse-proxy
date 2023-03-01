@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Transaction } from 'ethers';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/repositories';
 import {
@@ -55,37 +54,17 @@ export class RateLimitService {
     }
   }
 
-  async store(tx: Transaction) {
-    const txFrom = tx.from;
-    const txTo = tx.to;
-    const methodId = tx.data.substring(0, 10);
+  async store(
+    from: string,
+    to: string,
+    methodId: string,
+    matchedTxAllowRule: TransactionAllow | undefined,
+  ) {
+    if (!matchedTxAllowRule) return;
+    const { rateLimit } = matchedTxAllowRule;
+    if (!rateLimit) return;
 
-    if (!txFrom) throw new JsonrpcError('transaction is invalid', -32602);
-
-    if (
-      this.allowCheckService.isUnlimitedTxRate(txFrom) ||
-      this.allowCheckService.isAllowedDeploy(txFrom)
-    ) {
-      return;
-    }
-
-    if (!txTo)
-      throw new JsonrpcError('deploy transaction is not allowed', -32602);
-
-    await Promise.all(
-      this.txAllowList.map(async (txAllow) => {
-        const { rateLimit } = txAllow;
-
-        const isMatchRateLimitCheck =
-          this.allowCheckService.isIncludedAddress(txAllow.fromList, txFrom) &&
-          this.allowCheckService.isIncludedAddress(txAllow.toList, txTo);
-
-        if (!isMatchRateLimitCheck) return;
-        if (!rateLimit) return;
-
-        await this.setTransactionHistory(txFrom, txTo, methodId, rateLimit);
-      }),
-    );
+    await this.setTransactionHistory(from, to, methodId, rateLimit);
   }
 
   async getTransactionHistoryCount(

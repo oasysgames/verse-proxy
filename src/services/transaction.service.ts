@@ -26,25 +26,23 @@ export class TransactionService {
     this.txAllowList = getTxAllowList();
   }
 
-  async checkAllowedTx(tx: Transaction): Promise<void> {
-    const from = tx.from;
-    const to = tx.to;
-    const methodId = tx.data.substring(0, 10);
-    const value = tx.value;
-
-    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
-
-    // Check for deploy transactions
-    if (!to) {
-      if (this.allowCheckService.isAllowedDeploy(from)) {
-        return;
-      } else {
-        throw new JsonrpcError('deploy transaction is not allowed', -32602);
-      }
+  checkContractDeploy(from: string) {
+    if (this.allowCheckService.isAllowedDeploy(from)) {
+      return;
+    } else {
+      throw new JsonrpcError('deploy transaction is not allowed', -32602);
     }
+  }
 
-    // Check for transactions other than deploy
+  async getMatchedTxAllowRule(
+    from: string,
+    to: string,
+    methodId: string,
+    value: BigNumber,
+  ): Promise<TransactionAllow | undefined> {
+    let matchedTxAllow;
     let isAllow = false;
+
     for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isIncludedAddress(
         condition.fromList,
@@ -69,12 +67,14 @@ export class TransactionService {
           condition,
         );
         isAllow = true;
+        matchedTxAllow = condition;
         break;
       }
     }
 
     if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
-    return;
+
+    return matchedTxAllow;
   }
 
   async checkAllowedGas(
