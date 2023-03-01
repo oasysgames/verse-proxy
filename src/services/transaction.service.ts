@@ -46,8 +46,14 @@ export class TransactionService {
     // Check for transactions other than deploy
     let isAllow = false;
     for (const condition of this.txAllowList) {
-      const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
-      const toCheck = this.allowCheckService.isAllowedTo(condition, to);
+      const fromCheck = this.allowCheckService.isIncludedAddress(
+        condition.fromList,
+        from,
+      );
+      const toCheck = this.allowCheckService.isIncludedAddress(
+        condition.toList,
+        to,
+      );
 
       const valueCondition = condition.value;
       const valueCheck = this.allowCheckService.isAllowedValue(

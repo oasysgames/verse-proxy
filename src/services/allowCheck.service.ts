@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  TransactionAllow,
-  ComparisonOperation,
-} from 'src/config/transactionAllowList';
+import { ComparisonOperation } from 'src/config/transactionAllowList';
 import { BigNumber } from 'ethers';
 import {
   getDeployAllowList,
@@ -18,48 +15,52 @@ export class AllowCheckService {
     this.unlimitedTxRateAddresses = getUnlimitedTxRateAddresses();
   }
 
-  isAllowedString(allowPattern: string, input: string): boolean {
-    if (allowPattern[0] === '!') {
+  private isNotProhibitedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.every((allowPattern) => {
+      if (allowPattern[0] !== '!')
+        throw new Error(
+          'You can not set setting with address and address_denial(!address)',
+        );
       return allowPattern.slice(1) !== input;
-    } else {
-      return allowPattern === '*' || allowPattern === input;
-    }
-  }
-
-  isAllowedFrom(condition: TransactionAllow, from: string): boolean {
-    const isAllow = condition.fromList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
-      );
     });
+
     return isAllow;
   }
 
-  isAllowedTo(condition: TransactionAllow, to: string): boolean {
-    const isAllow = condition.toList.some((allowedTo) => {
-      return this.isAllowedString(allowedTo.toLowerCase(), to.toLowerCase());
+  private isAllowedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.some((allowPattern) => {
+      if (allowPattern[0] === '!')
+        throw new Error(
+          'You can not set setting with address and address_denial(!address)',
+        );
+      return allowPattern === input;
     });
+
+    return isAllow;
+  }
+
+  isIncludedAddress(addressList: Array<string>, input: string) {
+    if (addressList.includes('*')) return true;
+
+    let isAllow: boolean;
+    const firstAddress = addressList[0];
+
+    if (firstAddress[0] === '!') {
+      isAllow = this.isNotProhibitedAddress(addressList, input);
+    } else {
+      isAllow = this.isAllowedAddress(addressList, input);
+    }
+
     return isAllow;
   }
 
   isAllowedDeploy(from: string): boolean {
-    const isAllow = this.deployAllowList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
-      );
-    });
+    const isAllow = this.isIncludedAddress(this.deployAllowList, from);
     return isAllow;
   }
 
   isUnlimitedTxRate(from: string): boolean {
-    const isAllow = this.unlimitedTxRateAddresses.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
-      );
-    });
+    const isAllow = this.isIncludedAddress(this.unlimitedTxRateAddresses, from);
     return isAllow;
   }
 

@@ -77,8 +77,8 @@ export class RateLimitService {
         const { rateLimit } = txAllow;
 
         const isMatchRateLimitCheck =
-          this.allowCheckService.isAllowedFrom(txAllow, txFrom) &&
-          this.allowCheckService.isAllowedTo(txAllow, txTo);
+          this.allowCheckService.isIncludedAddress(txAllow.fromList, txFrom) &&
+          this.allowCheckService.isIncludedAddress(txAllow.toList, txTo);
 
         if (!isMatchRateLimitCheck) return;
         if (!rateLimit) return;
@@ -126,8 +126,8 @@ export class RateLimitService {
     const { rateLimit } = txAllow;
 
     const isMatchRateLimitCheck =
-      this.allowCheckService.isAllowedFrom(txAllow, from) &&
-      this.allowCheckService.isAllowedTo(txAllow, to);
+      this.allowCheckService.isIncludedAddress(txAllow.fromList, from) &&
+      this.allowCheckService.isIncludedAddress(txAllow.toList, to);
 
     if (!isMatchRateLimitCheck) return;
     if (!rateLimit) return;
