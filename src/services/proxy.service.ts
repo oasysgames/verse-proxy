@@ -62,8 +62,8 @@ export class ProxyService {
       await this.txService.checkAllowedTx(tx);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.post(headers, body);
-      const rateLimitPlugin = this.configService.get<string>('rateLimitPlugin');
-      if (rateLimitPlugin) await this.rateLimitService.store(tx);
+      const isSetRateLimit = this.configService.get<string>('isSetRateLimit');
+      if (isSetRateLimit) await this.rateLimitService.store(tx);
       return result;
     } catch (err) {
       const status = 200;
