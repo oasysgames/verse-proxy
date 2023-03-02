@@ -3,13 +3,13 @@ import { IncomingHttpHeaders } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
-import { RateLimitService } from './rateLimit.service';
 import {
   JsonrpcRequestBody,
   VerseRequestResponse,
   JsonrpcError,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
+import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class ProxyService {
@@ -21,12 +21,12 @@ export class ProxyService {
     private readonly typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
-    private readonly rateLimitService: RateLimitService,
+    private readonly datastoreService: DatastoreService,
   ) {
     this.allowedMethods = this.configService.get<RegExp[]>(
       'allowedMethods',
     ) ?? [/^.*$/];
-    this.isSetRateLimit = !!this.configService.get<string>('rateLimitPlugin');
+    this.isSetRateLimit = !!this.configService.get<string>('datastore');
   }
 
   async handleSingleRequest(
@@ -124,7 +124,7 @@ export class ProxyService {
     const txHash = result.data.result;
 
     if (this.isSetRateLimit && matchedTxAllowRule.rateLimit)
-      await this.rateLimitService.setTransactionHistory(
+      await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
         methodId,

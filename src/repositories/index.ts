@@ -1,1 +1,1 @@
-export * from './redis.service';
+export * from './datastore.service';

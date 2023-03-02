@@ -12,7 +12,7 @@ import {
   RateLimitService,
 } from 'src/services';
 import { ProxyController } from 'src/controllers';
-import { RedisService } from 'src/repositories';
+import { DatastoreService } from 'src/repositories';
 
 describe('ProxyController', () => {
   let typeCheckService: TypeCheckService;
@@ -31,7 +31,7 @@ describe('ProxyController', () => {
         TypeCheckService,
         ProxyService,
         RateLimitService,
-        RedisService,
+        DatastoreService,
         {
           provide: 'REDIS_CLIENT',
           useValue: {},

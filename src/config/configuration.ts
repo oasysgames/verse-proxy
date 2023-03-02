@@ -1,6 +1,6 @@
 export default () => ({
   verseUrl: process.env.VERSE_URL ?? 'http://localhost:8545',
-  rateLimitPlugin: process.env.RATE_LIMIT_PLUGIN ?? '',
+  datastore: process.env.DATASTORE ?? '',
   allowedMethods: [
     /^net_version$/,
     /^web3_clientVersion$/,
