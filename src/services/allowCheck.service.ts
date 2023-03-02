@@ -21,7 +21,7 @@ export class AllowCheckService {
         throw new Error(
           'You can not set setting with address and address_denial(!address)',
         );
-      return allowPattern.slice(1) !== input;
+      return allowPattern.slice(1).toLowerCase() !== input.toLowerCase();
     });
 
     return isAllow;
@@ -33,7 +33,7 @@ export class AllowCheckService {
         throw new Error(
           'You can not set setting with address and address_denial(!address)',
         );
-      return allowPattern === input;
+      return allowPattern.toLowerCase() === input.toLowerCase();
     });
 
     return isAllow;
