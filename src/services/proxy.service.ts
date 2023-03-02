@@ -9,11 +9,13 @@ import {
   VerseRequestResponse,
   JsonrpcError,
 } from 'src/entities';
+import { TypeCheckService } from './typeCheck.service';
 
 @Injectable()
 export class ProxyService {
   constructor(
     private configService: ConfigService,
+    private readonly typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
     private readonly rateLimitService: RateLimitService,
@@ -110,9 +112,21 @@ export class ProxyService {
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const result = await this.verseService.post(headers, body);
+
+    const txHash = this.typeCheckService.isJsonrpcTxResponse(result.data)
+      ? result.data.result
+      : undefined;
+    if (!txHash) throw new JsonrpcError('Can not get verse response', -32603);
+
     const isSetRateLimit = this.configService.get<string>('isSetRateLimit');
     if (isSetRateLimit)
-      await this.rateLimitService.store(from, to, methodId, matchedTxAllowRule);
+      await this.rateLimitService.store(
+        from,
+        to,
+        methodId,
+        txHash,
+        matchedTxAllowRule,
+      );
     return result;
   }
 

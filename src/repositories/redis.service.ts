@@ -7,7 +7,7 @@ export class RedisService {
 
   async setTransactionHistory(
     key: string,
-    value: string,
+    value: Buffer,
     timestamp: number,
     removeDataTimestamp: number,
   ) {

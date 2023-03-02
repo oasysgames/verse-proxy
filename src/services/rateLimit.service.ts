@@ -1,18 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/repositories';
-import {
-  TransactionAllow,
-  getTxAllowList,
-  RateLimit,
-} from 'src/config/transactionAllowList';
-import { JsonrpcError, TransactionHistory } from 'src/entities';
+import { TransactionAllow, RateLimit } from 'src/config/transactionAllowList';
+import { JsonrpcError } from 'src/entities';
 import { AllowCheckService } from './allowCheck.service';
 
 @Injectable()
 export class RateLimitService {
   private rateLimitPlugin: string;
-  private txAllowList: Array<TransactionAllow>;
 
   constructor(
     private configService: ConfigService,
@@ -21,32 +16,26 @@ export class RateLimitService {
   ) {
     this.rateLimitPlugin =
       this.configService.get<string>('rateLimitPlugin') ?? '';
-    this.txAllowList = getTxAllowList();
   }
 
   async setTransactionHistory(
     from: string,
     to: string,
     methodId: string,
+    txHash: string,
     rateLimit: RateLimit,
   ) {
     const timestamp = Date.now();
-    const value: TransactionHistory = {
-      from,
-      to,
-      methodId,
-      timestamp,
-    };
+    const txHashByte = Buffer.from(txHash.slice(2), 'hex');
     const { interval } = rateLimit;
 
     switch (this.rateLimitPlugin) {
       case 'redis':
-        const jsonStringValue = JSON.stringify(value);
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
         const removeDataTimestamp = timestamp - interval * 1000 - 1;
         await this.redisService.setTransactionHistory(
           redisKey,
-          jsonStringValue,
+          txHashByte,
           timestamp,
           removeDataTimestamp,
         );
@@ -58,13 +47,14 @@ export class RateLimitService {
     from: string,
     to: string,
     methodId: string,
+    txHash: string,
     matchedTxAllowRule: TransactionAllow | undefined,
   ) {
     if (!matchedTxAllowRule) return;
     const { rateLimit } = matchedTxAllowRule;
     if (!rateLimit) return;
 
-    await this.setTransactionHistory(from, to, methodId, rateLimit);
+    await this.setTransactionHistory(from, to, methodId, txHash, rateLimit);
   }
 
   async getTransactionHistoryCount(
