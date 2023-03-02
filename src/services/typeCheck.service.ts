@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { JsonrpcRequestBody } from 'src/entities';
 
 @Injectable()
-export class JsonrpcCheckService {
-  isJsonrcp(body: any): body is JsonrpcRequestBody {
+export class TypeCheckService {
+  isJsonrpcRequestBody(body: any): body is JsonrpcRequestBody {
     if (typeof body.jsonrpc !== 'string') return false;
     if (typeof body.id !== 'string' && typeof body.id !== 'number')
       return false;
@@ -19,8 +19,8 @@ export class JsonrpcCheckService {
     return true;
   }
 
-  isJsonrcpArray(body: any): body is Array<JsonrpcRequestBody> {
+  isJsonrpcArrayRequestBody(body: any): body is Array<JsonrpcRequestBody> {
     if (!Array.isArray(body)) return false;
-    return body.every(this.isJsonrcp);
+    return body.every(this.isJsonrpcRequestBody);
   }
 }

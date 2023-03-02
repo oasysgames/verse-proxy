@@ -8,7 +8,7 @@ import {
   TransactionService,
   VerseService,
   AllowCheckService,
-  JsonrpcCheckService,
+  TypeCheckService,
   RateLimitService,
 } from './services';
 import { RedisService } from './repositories';
@@ -28,7 +28,7 @@ import configuration from './config/configuration';
     TransactionService,
     ProxyService,
     AllowCheckService,
-    JsonrpcCheckService,
+    TypeCheckService,
     RedisService,
     RateLimitService,
   ],
