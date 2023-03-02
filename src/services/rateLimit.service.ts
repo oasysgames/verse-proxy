@@ -25,18 +25,18 @@ export class RateLimitService {
     txHash: string,
     rateLimit: RateLimit,
   ) {
-    const timestamp = Date.now();
     const txHashByte = Buffer.from(txHash.slice(2), 'hex');
     const { interval } = rateLimit;
 
     switch (this.rateLimitPlugin) {
       case 'redis':
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
-        const removeDataTimestamp = timestamp - interval * 1000 - 1;
+        const now = Date.now();
+        const removeDataTimestamp = this.getTimeSecondsAgo(now, interval) - 1;
         await this.redisService.setTransactionHistory(
           redisKey,
           txHashByte,
-          timestamp,
+          now,
           removeDataTimestamp,
         );
         break;
@@ -63,19 +63,18 @@ export class RateLimitService {
     methodId: string,
     rateLimit: RateLimit,
   ) {
-    const { interval } = rateLimit;
     let txCounter = 0;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setSeconds(endDate.getSeconds() - interval);
+    const { interval } = rateLimit;
 
     switch (this.rateLimitPlugin) {
       case 'redis':
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        const now = Date.now();
+        const intervalAgo = this.getTimeSecondsAgo(now, interval);
         txCounter = await this.redisService.getTransactionHistoryCount(
           redisKey,
-          startDate.getTime(),
-          endDate.getTime(),
+          intervalAgo,
+          now,
         );
         break;
     }
@@ -126,5 +125,11 @@ export class RateLimitService {
     const key = keyArray.join(':');
 
     return key;
+  }
+
+  private getTimeSecondsAgo(timestamp: number, interval: number) {
+    const intervalAgo = timestamp - interval * 1000;
+
+    return intervalAgo;
   }
 }
