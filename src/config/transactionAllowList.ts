@@ -23,58 +23,19 @@ export interface TransactionAllow {
   rateLimit?: RateLimit;
 }
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['*'],
-  },
-];
-
-const deployAllowList: Array<string> = [''];
-
-const unlimitedTxRateAddresses: Array<string> = [''];
-
-const checkAddressList = (addressList: Array<string>) => {
-  if (addressList.includes('*')) {
-    if (addressList.length !== 1)
-      throw new Error('You can not set wildcard with another address');
-    return;
-  }
-
-  let isAllow: boolean;
-  const firstAddress = addressList[0];
-
-  if (firstAddress[0] === '!') {
-    isAllow = addressList.every((address) => {
-      return address[0] === '!';
-    });
-  } else {
-    isAllow = addressList.every((address) => {
-      return address[0] !== '!';
-    });
-  }
-
-  if (!isAllow)
-    throw new Error(
-      'You can not set setting with address and address_denial(!address)',
-    );
-};
-
 export const getTxAllowList = (): Array<TransactionAllow> => {
-  txAllowList.forEach((txAllow) => {
-    checkAddressList(txAllow.fromList);
-    checkAddressList(txAllow.toList);
-  });
-
-  return txAllowList;
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+    },
+  ];
 };
 
 export const getDeployAllowList = (): Array<string> => {
-  checkAddressList(deployAllowList);
-  return deployAllowList;
+  return ['*'];
 };
 
 export const getUnlimitedTxRateAddresses = (): Array<string> => {
-  checkAddressList(unlimitedTxRateAddresses);
-  return unlimitedTxRateAddresses;
+  return [''];
 };

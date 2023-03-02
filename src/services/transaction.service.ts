@@ -24,6 +24,10 @@ export class TransactionService {
     private readonly rateLimitService: RateLimitService,
   ) {
     this.txAllowList = getTxAllowList();
+    this.txAllowList.forEach((txAllow) => {
+      this.allowCheckService.checkAddressList(txAllow.fromList);
+      this.allowCheckService.checkAddressList(txAllow.toList);
+    });
   }
 
   checkContractDeploy(from: string) {

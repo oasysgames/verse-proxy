@@ -13,30 +13,34 @@ export class AllowCheckService {
   constructor() {
     this.deployAllowList = getDeployAllowList();
     this.unlimitedTxRateAddresses = getUnlimitedTxRateAddresses();
+    this.checkAddressList(this.deployAllowList);
+    this.checkAddressList(this.unlimitedTxRateAddresses);
   }
 
-  private isNotProhibitedAddress(addressList: Array<string>, input: string) {
-    const isAllow = addressList.every((allowPattern) => {
-      if (allowPattern[0] !== '!')
-        throw new Error(
-          'You can not set setting with address and address_denial(!address)',
-        );
-      return allowPattern.slice(1).toLowerCase() !== input.toLowerCase();
-    });
+  checkAddressList(addressList: Array<string>) {
+    if (addressList.includes('*')) {
+      if (addressList.length !== 1)
+        throw new Error('You can not set wildcard with another address');
+      return;
+    }
 
-    return isAllow;
-  }
+    let isAllow: boolean;
+    const firstAddress = addressList[0];
 
-  private isAllowedAddress(addressList: Array<string>, input: string) {
-    const isAllow = addressList.some((allowPattern) => {
-      if (allowPattern[0] === '!')
-        throw new Error(
-          'You can not set setting with address and address_denial(!address)',
-        );
-      return allowPattern.toLowerCase() === input.toLowerCase();
-    });
+    if (firstAddress[0] === '!') {
+      isAllow = addressList.every((address) => {
+        return address[0] === '!';
+      });
+    } else {
+      isAllow = addressList.every((address) => {
+        return address[0] !== '!';
+      });
+    }
 
-    return isAllow;
+    if (!isAllow)
+      throw new Error(
+        'You can not set setting with address and address_denial(!address)',
+      );
   }
 
   isIncludedAddress(addressList: Array<string>, input: string) {
@@ -102,6 +106,22 @@ export class AllowCheckService {
           break;
       }
     }
+    return isAllow;
+  }
+
+  private isNotProhibitedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.every((allowPattern) => {
+      return allowPattern.slice(1).toLowerCase() !== input.toLowerCase();
+    });
+
+    return isAllow;
+  }
+
+  private isAllowedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.some((allowPattern) => {
+      return allowPattern.toLowerCase() === input.toLowerCase();
+    });
+
     return isAllow;
   }
 }
