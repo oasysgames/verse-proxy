@@ -43,9 +43,8 @@ export class TransactionService {
     to: string,
     methodId: string,
     value: BigNumber,
-  ): Promise<TransactionAllow | undefined> {
-    let matchedTxAllow;
-    let isAllow = false;
+  ): Promise<TransactionAllow> {
+    let matchedTxAllowRule;
 
     for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isIncludedAddress(
@@ -64,21 +63,22 @@ export class TransactionService {
       );
 
       if (fromCheck && toCheck && valueCheck) {
-        await this.rateLimitService.checkRateLimit(
-          from,
-          to,
-          methodId,
-          condition,
-        );
-        isAllow = true;
-        matchedTxAllow = condition;
+        if (condition.rateLimit)
+          await this.rateLimitService.checkRateLimit(
+            from,
+            to,
+            methodId,
+            condition.rateLimit,
+          );
+        matchedTxAllowRule = condition;
         break;
       }
     }
 
-    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
+    if (!matchedTxAllowRule)
+      throw new JsonrpcError('transaction is not allowed', -32602);
 
-    return matchedTxAllow;
+    return matchedTxAllowRule;
   }
 
   async checkAllowedGas(

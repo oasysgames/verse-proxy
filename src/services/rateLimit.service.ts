@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/repositories';
-import { TransactionAllow, RateLimit } from 'src/config/transactionAllowList';
+import { RateLimit } from 'src/config/transactionAllowList';
 import { JsonrpcError } from 'src/entities';
 import { AllowCheckService } from './allowCheck.service';
 
@@ -26,13 +26,13 @@ export class RateLimitService {
     rateLimit: RateLimit,
   ) {
     const txHashByte = Buffer.from(txHash.slice(2), 'hex');
-    const { interval } = rateLimit;
+    const now = Date.now();
+    const removeDataTimestamp =
+      this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
 
     switch (this.rateLimitPlugin) {
       case 'redis':
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
-        const now = Date.now();
-        const removeDataTimestamp = this.getTimeSecondsAgo(now, interval) - 1;
         await this.redisService.setTransactionHistory(
           redisKey,
           txHashByte,
@@ -43,20 +43,6 @@ export class RateLimitService {
     }
   }
 
-  async store(
-    from: string,
-    to: string,
-    methodId: string,
-    txHash: string,
-    matchedTxAllowRule: TransactionAllow | undefined,
-  ) {
-    if (!matchedTxAllowRule) return;
-    const { rateLimit } = matchedTxAllowRule;
-    if (!rateLimit) return;
-
-    await this.setTransactionHistory(from, to, methodId, txHash, rateLimit);
-  }
-
   async getTransactionHistoryCount(
     from: string,
     to: string,
@@ -64,13 +50,12 @@ export class RateLimitService {
     rateLimit: RateLimit,
   ) {
     let txCounter = 0;
-    const { interval } = rateLimit;
+    const now = Date.now();
+    const intervalAgo = this.getTimeSecondsAgo(now, rateLimit.interval);
 
     switch (this.rateLimitPlugin) {
       case 'redis':
         const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
-        const now = Date.now();
-        const intervalAgo = this.getTimeSecondsAgo(now, interval);
         txCounter = await this.redisService.getTransactionHistoryCount(
           redisKey,
           intervalAgo,
@@ -85,16 +70,12 @@ export class RateLimitService {
     from: string,
     to: string,
     methodId: string,
-    txAllow: TransactionAllow,
+    rateLimit: RateLimit,
   ) {
     if (this.allowCheckService.isUnlimitedTxRate(from)) {
       return;
     }
 
-    const { rateLimit } = txAllow;
-    if (!rateLimit) return;
-
-    const { interval, limit } = rateLimit;
     const txCounter = await this.getTransactionHistoryCount(
       from,
       to,
@@ -102,9 +83,9 @@ export class RateLimitService {
       rateLimit,
     );
 
-    if (txCounter + 1 > limit)
+    if (txCounter + 1 > rateLimit.limit)
       throw new JsonrpcError(
-        `The number of allowed transacting has been exceeded. Wait ${interval} seconds before transacting.`,
+        `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`,
         -32602,
       );
   }
