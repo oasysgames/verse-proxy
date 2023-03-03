@@ -30,19 +30,13 @@ export class DatastoreService {
         const now = Date.now();
         const removeDataTimestamp =
           this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
-        if (now % 5 === 0) {
-          await this.redis
-            .pipeline()
-            .zadd(redisKey, now, txHashByte)
-            .zremrangebyscore(redisKey, 0, removeDataTimestamp)
-            .exec((err) => {
-              console.error(err);
-            });
-        } else {
-          await this.redis
-            .zadd(redisKey, now, txHashByte)
-            .catch((err) => console.error(err));
-        }
+        const pipeline = this.redis.pipeline();
+        pipeline.zadd(redisKey, now, txHashByte);
+        if (now % 5 === 0)
+          pipeline.zremrangebyscore(redisKey, 0, removeDataTimestamp);
+        await pipeline.exec((err) => {
+          if (err) console.error(err);
+        });
         break;
     }
   }
