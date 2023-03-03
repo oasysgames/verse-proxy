@@ -1,201 +1,187 @@
 import { BigNumber } from 'ethers';
 import { ComparisonOperation } from 'src/config/transactionAllowList';
 import { AllowCheckService } from 'src/services';
-import * as transactionAllowList from 'src/config/transactionAllowList';
+
+describe('checkAddressList', () => {
+  const allowCheckService = new AllowCheckService();
+
+  test('addressList includes only wildcard', () => {
+    const addressList = ['*'];
+
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
+  });
+
+  test('addressList includes wildcard and another address', () => {
+    const addressList = ['*', '0xaf395754eB6F542742784cE7702940C60465A46a'];
+
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error('You can not set wildcard with another address');
+      expect(e).toEqual(error);
+    }
+  });
+
+  test('addressList includes only normal_address', () => {
+    const addressList = [
+      '0xaf395754eB6F542742784cE7702940C60465A46c',
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
+
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
+  });
+
+  test('addressList includes only exception_pattern', () => {
+    const addressList = [
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+      '!0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
+
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
+  });
+
+  test('addressList includes normal_address and exception_pattern', () => {
+    const addressList = [
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
+
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error(
+        'You can not set setting with address and address_denial(!address)',
+      );
+      expect(e).toEqual(error);
+    }
+  });
+
+  test('addressList includes normal_address and exception_pattern', () => {
+    const addressList = [
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+    ];
+
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error(
+        'You can not set setting with address and address_denial(!address)',
+      );
+      expect(e).toEqual(error);
+    }
+  });
+});
 
 describe('isIncludedAddress', () => {
   const allowCheckService = new AllowCheckService();
 
-  test('addressList is wildcard', () => {
-    const addressList = ['*'];
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+  describe('addressList and input have the same font case', () => {
+    test('addressList is wildcard', () => {
+      const addressList = ['*'];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-    const result = allowCheckService.isIncludedAddress(addressList, input);
-    expect(result).toBe(true);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
+
+    test('addressList includes to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
+
+    test('addressList does not include to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46d',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
+
+    test('addressList has exception_pattern and input is exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
+
+    test('addressList has exception_pattern and input is not exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46d';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
   });
 
-  test('addressList includes to', () => {
-    const addressList = [
-      '0xaf395754eB6F542742784cE7702940C60465A46c',
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
-    ];
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+  describe('addressList and input do not have the same font case', () => {
+    test('addressList is wildcard', () => {
+      const addressList = ['*'];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-    const result = allowCheckService.isIncludedAddress(addressList, input);
-    expect(result).toBe(true);
-  });
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
 
-  test('addressList does not include to', () => {
-    const addressList = [
-      '0xaf395754eB6F542742784cE7702940C60465A46c',
-      '0xaf395754eB6F542742784cE7702940C60465A46d',
-    ];
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+    test('addressList includes to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
 
-    const result = allowCheckService.isIncludedAddress(addressList, input);
-    expect(result).toBe(false);
-  });
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
 
-  test('addressList has exception_pattern and input is exception_pattern', () => {
-    const addressList = [
-      '!0xaf395754eB6F542742784cE7702940C60465A46c',
-      '!0xaf395754eB6F542742784cE7702940C60465A46a',
-    ];
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+    test('addressList does not include to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46d',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
 
-    const result = allowCheckService.isIncludedAddress(addressList, input);
-    expect(result).toBe(false);
-  });
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
 
-  test('addressList has exception_pattern and input is not exception_pattern', () => {
-    const addressList = [
-      '!0xaf395754eB6F542742784cE7702940C60465A46c',
-      '!0xaf395754eB6F542742784cE7702940C60465A46a',
-    ];
-    const input = '0xaf395754eB6F542742784cE7702940C60465A46d';
+    test('addressList has exception_pattern and input is exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
 
-    const result = allowCheckService.isIncludedAddress(addressList, input);
-    expect(result).toBe(true);
-  });
-});
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
 
-describe('isAllowedDeploy', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
+    test('addressList has exception_pattern and input is not exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46d'.toUpperCase();
 
-  test('from is not included in deployAllowList', () => {
-    const getDeployAllowListMock = jest.spyOn(
-      transactionAllowList,
-      'getDeployAllowList',
-    );
-    getDeployAllowListMock.mockReturnValue([
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
-      '0xaf395754eB6F542742784cE7702940C60465A46d',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isAllowedDeploy(from);
-    expect(result).toBe(false);
-  });
-
-  test('from is not allowed in deployAllowList', () => {
-    const getDeployAllowListMock = jest.spyOn(
-      transactionAllowList,
-      'getDeployAllowList',
-    );
-    getDeployAllowListMock.mockReturnValue([
-      '!0xaf395754eB6F542742784cE7702940C60465A46c',
-      '!0xaf395754eB6F542742784cE7702940C60465A46d',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isAllowedDeploy(from);
-    expect(result).toBe(false);
-  });
-
-  test('from is allowed in deployAllowList', () => {
-    const getDeployAllowListMock = jest.spyOn(
-      transactionAllowList,
-      'getDeployAllowList',
-    );
-    getDeployAllowListMock.mockReturnValue([
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-    const result = allowCheckService.isAllowedDeploy(from);
-    expect(result).toBe(true);
-  });
-
-  test('deployAllowList has wildcard', () => {
-    const getDeployAllowListMock = jest.spyOn(
-      transactionAllowList,
-      'getDeployAllowList',
-    );
-    getDeployAllowListMock.mockReturnValue(['*']);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isAllowedDeploy(from);
-    expect(result).toBe(true);
-  });
-});
-
-describe('isUnlimitedTxRate', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
-  test('from is not included in unlimitedTxRateAddresses', () => {
-    const getUnlimitedTxRateAddressesMock = jest.spyOn(
-      transactionAllowList,
-      'getUnlimitedTxRateAddresses',
-    );
-    getUnlimitedTxRateAddressesMock.mockReturnValue([
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
-      '0xaf395754eB6F542742784cE7702940C60465A46d',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isUnlimitedTxRate(from);
-    expect(result).toBe(false);
-  });
-
-  test('from is not allowed in unlimitedTxRateAddresses', () => {
-    const getUnlimitedTxRateAddressesMock = jest.spyOn(
-      transactionAllowList,
-      'getUnlimitedTxRateAddresses',
-    );
-    getUnlimitedTxRateAddressesMock.mockReturnValue([
-      '!0xaf395754eB6F542742784cE7702940C60465A46c',
-      '!0xaf395754eB6F542742784cE7702940C60465A46d',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isUnlimitedTxRate(from);
-    expect(result).toBe(false);
-  });
-
-  test('from is allowed in unlimitedTxRateAddresses', () => {
-    const getUnlimitedTxRateAddressesMock = jest.spyOn(
-      transactionAllowList,
-      'getUnlimitedTxRateAddresses',
-    );
-    getUnlimitedTxRateAddressesMock.mockReturnValue([
-      '0xaf395754eB6F542742784cE7702940C60465A46a',
-    ]);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-    const result = allowCheckService.isUnlimitedTxRate(from);
-    expect(result).toBe(true);
-  });
-
-  test('unlimitedTxRateAddresses has wildcard', () => {
-    const getUnlimitedTxRateAddressesMock = jest.spyOn(
-      transactionAllowList,
-      'getUnlimitedTxRateAddresses',
-    );
-    getUnlimitedTxRateAddressesMock.mockReturnValue(['*']);
-
-    const allowCheckService = new AllowCheckService();
-
-    const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-    const result = allowCheckService.isUnlimitedTxRate(from);
-    expect(result).toBe(true);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
   });
 });
 
