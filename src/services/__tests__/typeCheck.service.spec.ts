@@ -203,3 +203,63 @@ describe('isJsonrpcArray', () => {
     expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
   });
 });
+
+describe('isJsonrpcTxResponse', () => {
+  it('res is isJsonrpcTxResponse', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(true);
+  });
+
+  it('res.jsonrpc is not string', () => {
+    const res = {
+      jsonrpc: 2.0,
+      id: 1,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.id is not string or number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: true,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is not string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 1,
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is string and is not 66 characters', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is not tx hash string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result:
+        'aa4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+});
