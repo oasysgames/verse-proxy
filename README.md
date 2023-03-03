@@ -222,3 +222,13 @@ You can set whether you inherit proxy request's host header on verse request at 
 ```typescript
 inheritHostHeader: true,
 ```
+
+### Batch Request
+You can execute batch requests to the proxy.
+
+If you want to make many transaction batch requests, change the parse limit in the body by environment variable.
+The default body parse limit is 512kb.
+
+```bash
+MAX_BODY_BYTE_SIZE=1048576 # 1048576 byte is 1MB.
+```
