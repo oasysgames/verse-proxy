@@ -32,10 +32,6 @@ describe('ProxyController', () => {
         ProxyService,
         RateLimitService,
         DatastoreService,
-        {
-          provide: 'REDIS_CLIENT',
-          useValue: {},
-        },
       ],
     })
       .useMocker((token) => {
