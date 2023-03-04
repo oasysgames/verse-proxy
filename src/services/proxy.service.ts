@@ -61,8 +61,7 @@ export class ProxyService {
       this.checkMethod(method);
 
       if (method !== 'eth_sendRawTransaction') {
-        const result = await this.verseService.post(headers, body);
-        return result;
+        return await this.verseService.post(headers, body);
       }
 
       return await this.sendTransaction(headers, body);
