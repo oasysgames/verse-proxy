@@ -82,6 +82,10 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/ (Post)', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     describe('single request', () => {
       it('tx method is not eth_sendRawTransaction and successful', async () => {
         const inheritHostHeader = true;
@@ -318,7 +322,7 @@ describe('AppController (e2e)', () => {
           .expect(responseData);
       });
 
-      it('tx method is not eth_sendRawTransaction and successful', async () => {
+      it('tx method is eth_sendRawTransaction and successful', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
         const method = 'eth_sendRawTransaction';
@@ -351,7 +355,8 @@ describe('AppController (e2e)', () => {
         const responseData = {
           jsonrpc: '2.0',
           id: 1,
-          result: '0x',
+          result:
+            '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
         };
         const res: AxiosResponse = {
           status: 200,
@@ -684,7 +689,7 @@ describe('AppController (e2e)', () => {
           .expect(results);
       });
 
-      it('tx method is not eth_sendRawTransaction and successful', async () => {
+      it('tx method is eth_sendRawTransaction and successful', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
         const method = 'eth_sendRawTransaction';
@@ -722,10 +727,12 @@ describe('AppController (e2e)', () => {
           s,
           from,
         };
+        const txHash =
+          '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1';
         const responseData = {
           jsonrpc: '2.0',
           id: 1,
-          result: '0x',
+          result: txHash,
         };
         const res: AxiosResponse = {
           status: 200,
@@ -738,12 +745,12 @@ describe('AppController (e2e)', () => {
           {
             jsonrpc: '2.0',
             id: 1,
-            result: '0x',
+            result: txHash,
           },
           {
             jsonrpc: '2.0',
             id: 1,
-            result: '0x',
+            result: txHash,
           },
         ];
         jest.spyOn(configService, 'get').mockImplementation((key: string) => {

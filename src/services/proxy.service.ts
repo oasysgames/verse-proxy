@@ -13,21 +13,13 @@ import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class ProxyService {
-  private allowedMethods: RegExp[];
-  private isSetRateLimit: boolean;
-
   constructor(
     private configService: ConfigService,
     private readonly typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
     private readonly datastoreService: DatastoreService,
-  ) {
-    this.allowedMethods = this.configService.get<RegExp[]>(
-      'allowedMethods',
-    ) ?? [/^.*$/];
-    this.isSetRateLimit = !!this.configService.get<string>('datastore');
-  }
+  ) {}
 
   async handleSingleRequest(
     headers: IncomingHttpHeaders,
@@ -122,7 +114,8 @@ export class ProxyService {
       throw new JsonrpcError('Can not get verse response', -32603);
     const txHash = result.data.result;
 
-    if (this.isSetRateLimit && matchedTxAllowRule.rateLimit)
+    const isSetRateLimit = !!this.configService.get<string>('datastore');
+    if (isSetRateLimit && matchedTxAllowRule.rateLimit)
       await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
@@ -134,7 +127,10 @@ export class ProxyService {
   }
 
   checkMethod(method: string) {
-    const checkMethod = this.allowedMethods.some((allowedMethod) => {
+    const allowedMethods = this.configService.get<RegExp[]>(
+      'allowedMethods',
+    ) ?? [/^.*$/];
+    const checkMethod = allowedMethods.some((allowedMethod) => {
       return allowedMethod.test(method);
     });
     if (!checkMethod)
