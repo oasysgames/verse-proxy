@@ -5,7 +5,7 @@ import * as request from 'supertest';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
 import { of } from 'rxjs';
-import { AxiosResponse } from 'axios';
+import { AxiosResponse, AxiosRequestConfig } from 'axios';
 import { AppModule } from 'src/app.module';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -16,6 +16,32 @@ import {
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
 import * as transactionAllowList from 'src/config/transactionAllowList';
+
+const mockHttpServicePost = (
+  httpService: HttpService,
+  noTxRes: AxiosResponse,
+  estimateGasRes: AxiosResponse,
+  txRes: AxiosResponse,
+) => {
+  jest
+    .spyOn(httpService, 'post')
+    .mockImplementation(
+      (
+        url: string,
+        data?: any,
+        config?: AxiosRequestConfig<any> | undefined,
+      ) => {
+        switch (data.method) {
+          case 'eth_sendRawTransaction':
+            return of(txRes);
+          case 'eth_estimateGas':
+            return of(estimateGasRes);
+          default:
+            return of(noTxRes);
+        }
+      },
+    );
+};
 
 describe('AppController (e2e)', () => {
   let httpService: HttpService;
@@ -141,13 +167,6 @@ describe('AppController (e2e)', () => {
             id: 1,
             result: '0x',
           };
-          const res: AxiosResponse = {
-            status: 200,
-            data: responseData,
-            statusText: '',
-            headers: {},
-            config: {},
-          };
           jest.spyOn(configService, 'get').mockImplementation((key: string) => {
             switch (key) {
               case 'verseUrl':
@@ -160,7 +179,33 @@ describe('AppController (e2e)', () => {
                 return '';
             }
           });
-          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+          const noTxRes: AxiosResponse = {
+            status: 200,
+            data: responseData,
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          const estimateGasRes: AxiosResponse = {
+            status: 200,
+            data: responseData,
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          const txRes: AxiosResponse = {
+            status: 200,
+            data: {
+              jsonrpc: '2.0',
+              id: 1,
+              result:
+                '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+            },
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
           const txAllowList = [
             {
               fromList: ['*'],
@@ -234,79 +279,7 @@ describe('AppController (e2e)', () => {
         });
       });
 
-      describe('eth_sendRawTransaction', () => {
-        it('tx is not allowed', async () => {
-          const rawTx =
-            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-          const inheritHostHeader = true;
-          const allowedMethods = [/^.*$/];
-          const method = 'eth_sendRawTransaction';
-          const body = {
-            jsonrpc: '2.0',
-            id: 1,
-            method: method,
-            params: [rawTx],
-          };
-          // this tx doesn't have from.
-          const tx = {
-            type,
-            chainId,
-            nonce,
-            maxPriorityFeePerGas,
-            maxFeePerGas,
-            gasPrice,
-            gasLimit,
-            to,
-            value,
-            data,
-            accessList,
-            hash,
-            v,
-            r,
-            s,
-          };
-          const errMsg = 'transaction is invalid';
-          const errCode = -32602;
-          const responseData = {
-            jsonrpc: '2.0',
-            id: 1,
-            error: {
-              code: errCode,
-              message: errMsg,
-            },
-          };
-          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-            switch (key) {
-              case 'verseUrl':
-                return verseUrl;
-              case 'inheritHostHeader':
-                return inheritHostHeader;
-              case 'allowedMethods':
-                return allowedMethods;
-              case 'datastore':
-                return '';
-            }
-          });
-          jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-          const txAllowList = [
-            {
-              fromList: ['*'],
-              toList: ['*'],
-            },
-          ];
-          const deployAllowList = [''];
-          const unlimitedTxRateAddresses = [''];
-          getTxAllowList.mockReturnValue(txAllowList);
-          getDeployAllowList.mockReturnValue(deployAllowList);
-          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
-
-          return await request(app.getHttpServer())
-            .post('/')
-            .send(body)
-            .expect(200)
-            .expect(responseData);
-        });
-
+      describe('eth_sendRawTransaction(normal transaction)', () => {
         it('gas is not allowed', async () => {
           const jsonrpc = '2.0';
           const id = 1;
@@ -349,13 +322,6 @@ describe('AppController (e2e)', () => {
               message: errMsg,
             },
           };
-          const res: AxiosResponse = {
-            status: 200,
-            data: responseData,
-            statusText: '',
-            headers: {},
-            config: {},
-          };
           jest.spyOn(configService, 'get').mockImplementation((key: string) => {
             switch (key) {
               case 'verseUrl':
@@ -369,83 +335,37 @@ describe('AppController (e2e)', () => {
             }
           });
           jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
-          const txAllowList = [
-            {
-              fromList: ['*'],
-              toList: ['*'],
+          const noTxRes: AxiosResponse = {
+            status: 200,
+            data: {
+              jsonrpc: '2.0',
+              id: 1,
+              result: '0x',
             },
-          ];
-          const deployAllowList = [''];
-          const unlimitedTxRateAddresses = [''];
-          getTxAllowList.mockReturnValue(txAllowList);
-          getDeployAllowList.mockReturnValue(deployAllowList);
-          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
-
-          return await request(app.getHttpServer())
-            .post('/')
-            .send(body)
-            .expect(200)
-            .expect(responseData);
-        });
-
-        it('successful', async () => {
-          const inheritHostHeader = true;
-          const allowedMethods = [/^.*$/];
-          const method = 'eth_sendRawTransaction';
-          const rawTx =
-            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-          const body = {
-            jsonrpc: '2.0',
-            id: 1,
-            method: method,
-            params: [rawTx],
+            statusText: '',
+            headers: {},
+            config: {},
           };
-          const tx = {
-            type,
-            chainId,
-            nonce,
-            maxPriorityFeePerGas,
-            maxFeePerGas,
-            gasPrice,
-            gasLimit,
-            to,
-            value,
-            data,
-            accessList,
-            hash,
-            v,
-            r,
-            s,
-            from,
-          };
-          const responseData = {
-            jsonrpc: '2.0',
-            id: 1,
-            result:
-              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
-          };
-          const res: AxiosResponse = {
+          const estimateGasRes: AxiosResponse = {
             status: 200,
             data: responseData,
             statusText: '',
             headers: {},
             config: {},
           };
-          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-            switch (key) {
-              case 'verseUrl':
-                return verseUrl;
-              case 'inheritHostHeader':
-                return inheritHostHeader;
-              case 'allowedMethods':
-                return allowedMethods;
-              case 'datastore':
-                return '';
-            }
-          });
-          jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+          const txRes: AxiosResponse = {
+            status: 200,
+            data: {
+              jsonrpc: '2.0',
+              id: 1,
+              result:
+                '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+            },
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
           const txAllowList = [
             {
               fromList: ['*'],
@@ -490,13 +410,6 @@ describe('AppController (e2e)', () => {
           id: 1,
           result: '999999',
         };
-        const res: AxiosResponse = {
-          status: 200,
-          data: responseData,
-          statusText: '',
-          headers: {},
-          config: {},
-        };
         const results = [
           {
             jsonrpc: '2.0',
@@ -521,7 +434,37 @@ describe('AppController (e2e)', () => {
               return '';
           }
         });
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
         const txAllowList = [
           {
             fromList: ['*'],
@@ -792,7 +735,37 @@ describe('AppController (e2e)', () => {
           }
         });
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
         const txAllowList = [
           {
             fromList: ['*'],
@@ -857,13 +830,6 @@ describe('AppController (e2e)', () => {
           id: 1,
           result: txHash,
         };
-        const res: AxiosResponse = {
-          status: 200,
-          data: responseData,
-          statusText: '',
-          headers: {},
-          config: {},
-        };
         const results = [
           {
             jsonrpc: '2.0',
@@ -889,7 +855,36 @@ describe('AppController (e2e)', () => {
           }
         });
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
         const txAllowList = [
           {
             fromList: ['*'],
