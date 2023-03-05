@@ -43,6 +43,27 @@ const mockHttpServicePost = (
     );
 };
 
+const mockConfigServiceGet = (
+  configService: ConfigService,
+  verseUrl: string,
+  inheritHostHeader: boolean,
+  allowedMethods: RegExp[],
+  datastore: string,
+) => {
+  jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+    switch (key) {
+      case 'verseUrl':
+        return verseUrl;
+      case 'inheritHostHeader':
+        return inheritHostHeader;
+      case 'allowedMethods':
+        return allowedMethods;
+      case 'datastore':
+        return datastore;
+    }
+  });
+};
+
 describe('AppController (e2e)', () => {
   let httpService: HttpService;
   let configService: ConfigService;
@@ -137,6 +158,7 @@ describe('AppController (e2e)', () => {
         it('successful', async () => {
           const inheritHostHeader = true;
           const allowedMethods = [/^.*$/];
+          const datastore = '';
           const method = 'eth_call';
           const tx = {
             type,
@@ -167,18 +189,13 @@ describe('AppController (e2e)', () => {
             id: 1,
             result: '0x',
           };
-          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-            switch (key) {
-              case 'verseUrl':
-                return verseUrl;
-              case 'inheritHostHeader':
-                return inheritHostHeader;
-              case 'allowedMethods':
-                return allowedMethods;
-              case 'datastore':
-                return '';
-            }
-          });
+          mockConfigServiceGet(
+            configService,
+            verseUrl,
+            inheritHostHeader,
+            allowedMethods,
+            datastore,
+          );
           const noTxRes: AxiosResponse = {
             status: 200,
             data: responseData,
@@ -228,6 +245,7 @@ describe('AppController (e2e)', () => {
         it('tx method is not allowed', async () => {
           const inheritHostHeader = true;
           const allowedMethods = [/^eth_call$/];
+          const datastore = '';
           const method = 'eth_getTransactionReceipt';
           const body = {
             jsonrpc: '2.0',
@@ -247,18 +265,13 @@ describe('AppController (e2e)', () => {
               message: errMsg,
             },
           };
-          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-            switch (key) {
-              case 'verseUrl':
-                return verseUrl;
-              case 'inheritHostHeader':
-                return inheritHostHeader;
-              case 'allowedMethods':
-                return allowedMethods;
-              case 'datastore':
-                return '';
-            }
-          });
+          mockConfigServiceGet(
+            configService,
+            verseUrl,
+            inheritHostHeader,
+            allowedMethods,
+            datastore,
+          );
           const txAllowList = [
             {
               fromList: ['*'],
@@ -287,6 +300,7 @@ describe('AppController (e2e)', () => {
             '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
           const inheritHostHeader = true;
           const allowedMethods = [/^.*$/];
+          const datastore = '';
           const method = 'eth_sendRawTransaction';
           const body = {
             jsonrpc: jsonrpc,
@@ -322,18 +336,13 @@ describe('AppController (e2e)', () => {
               message: errMsg,
             },
           };
-          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-            switch (key) {
-              case 'verseUrl':
-                return verseUrl;
-              case 'inheritHostHeader':
-                return inheritHostHeader;
-              case 'allowedMethods':
-                return allowedMethods;
-              case 'datastore':
-                return '';
-            }
-          });
+          mockConfigServiceGet(
+            configService,
+            verseUrl,
+            inheritHostHeader,
+            allowedMethods,
+            datastore,
+          );
           jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
           const noTxRes: AxiosResponse = {
             status: 200,
@@ -391,6 +400,7 @@ describe('AppController (e2e)', () => {
       it('tx method is not eth_sendRawTransaction and successful', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
+        const datastore = '';
         const body = [
           {
             jsonrpc: '2.0',
@@ -422,18 +432,13 @@ describe('AppController (e2e)', () => {
             result: '999999',
           },
         ];
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
         const noTxRes: AxiosResponse = {
           status: 200,
           data: responseData,
@@ -487,6 +492,7 @@ describe('AppController (e2e)', () => {
       it('tx method is not allowed', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^eth_call$/];
+        const datastore = '';
         const method = 'eth_getTransactionReceipt';
         const body = [
           {
@@ -526,18 +532,13 @@ describe('AppController (e2e)', () => {
             },
           },
         ];
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
         const txAllowList = [
           {
             fromList: ['*'],
@@ -562,6 +563,7 @@ describe('AppController (e2e)', () => {
           '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
+        const datastore = '';
         const method = 'eth_sendRawTransaction';
         const body = [
           {
@@ -615,18 +617,13 @@ describe('AppController (e2e)', () => {
             },
           },
         ];
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const txAllowList = [
           {
@@ -654,6 +651,7 @@ describe('AppController (e2e)', () => {
           '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
+        const datastore = '';
         const method = 'eth_sendRawTransaction';
         const body = [
           {
@@ -722,18 +720,13 @@ describe('AppController (e2e)', () => {
             },
           },
         ];
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
@@ -788,6 +781,7 @@ describe('AppController (e2e)', () => {
       it('tx method is eth_sendRawTransaction and successful', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
+        const datastore = '';
         const method = 'eth_sendRawTransaction';
         const rawTx =
           '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
@@ -842,18 +836,13 @@ describe('AppController (e2e)', () => {
             result: txHash,
           },
         ];
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
