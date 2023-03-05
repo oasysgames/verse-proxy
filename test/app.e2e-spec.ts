@@ -15,12 +15,23 @@ import {
   RateLimitService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
+import * as transactionAllowList from 'src/config/transactionAllowList';
 
 describe('AppController (e2e)', () => {
   let httpService: HttpService;
   let configService: ConfigService;
   let txService: TransactionService;
   let app: INestApplication;
+
+  const getTxAllowList = jest.spyOn(transactionAllowList, 'getTxAllowList');
+  const getDeployAllowList = jest.spyOn(
+    transactionAllowList,
+    'getDeployAllowList',
+  );
+  const getUnlimitedTxRateAddresses = jest.spyOn(
+    transactionAllowList,
+    'getUnlimitedTxRateAddresses',
+  );
 
   const verseUrl = 'http://localhost:8545';
   const type = 2;
@@ -69,6 +80,11 @@ describe('AppController (e2e)', () => {
             return {
               parseRawTx: jest.fn(),
             };
+          case DatastoreService:
+            return {
+              setTransactionHistory: jest.fn(),
+              getTransactionHistoryCount: jest.fn(),
+            };
         }
       })
       .compile();
@@ -86,305 +102,368 @@ describe('AppController (e2e)', () => {
       jest.resetAllMocks();
     });
 
+    afterAll(async () => {
+      await app.close();
+    });
+
     describe('single request', () => {
-      it('tx method is not eth_sendRawTransaction and successful', async () => {
-        const inheritHostHeader = true;
-        const allowedMethods = [/^.*$/];
-        const method = 'eth_call';
-        const tx = {
-          type,
-          chainId,
-          nonce,
-          maxPriorityFeePerGas,
-          maxFeePerGas,
-          gasPrice,
-          gasLimit,
-          to,
-          value,
-          data,
-          accessList,
-          hash,
-          v,
-          r,
-          s,
-          from,
-        };
-        const body = {
-          jsonrpc: '2.0',
-          id: 1,
-          method: method,
-          params: [tx, 'latest'],
-        };
-        const responseData = {
-          jsonrpc: '2.0',
-          id: 1,
-          result: '0x',
-        };
-        const res: AxiosResponse = {
-          status: 200,
-          data: responseData,
-          statusText: '',
-          headers: {},
-          config: {},
-        };
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+      describe('methods other than eth_sendRawTransaction', () => {
+        it('successful', async () => {
+          const inheritHostHeader = true;
+          const allowedMethods = [/^.*$/];
+          const method = 'eth_call';
+          const tx = {
+            type,
+            chainId,
+            nonce,
+            maxPriorityFeePerGas,
+            maxFeePerGas,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            data,
+            accessList,
+            hash,
+            v,
+            r,
+            s,
+            from,
+          };
+          const body = {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [tx, 'latest'],
+          };
+          const responseData = {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          };
+          const res: AxiosResponse = {
+            status: 200,
+            data: responseData,
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+            switch (key) {
+              case 'verseUrl':
+                return verseUrl;
+              case 'inheritHostHeader':
+                return inheritHostHeader;
+              case 'allowedMethods':
+                return allowedMethods;
+              case 'datastore':
+                return '';
+            }
+          });
+          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+          const txAllowList = [
+            {
+              fromList: ['*'],
+              toList: ['*'],
+            },
+          ];
+          const deployAllowList = [''];
+          const unlimitedTxRateAddresses = [''];
+          getTxAllowList.mockReturnValue(txAllowList);
+          getDeployAllowList.mockReturnValue(deployAllowList);
+          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
-        return await request(app.getHttpServer())
-          .post('/')
-          .send(body)
-          .expect(200)
-          .expect(responseData);
+          return await request(app.getHttpServer())
+            .post('/')
+            .send(body)
+            .expect(200)
+            .expect(responseData);
+        });
+
+        it('tx method is not allowed', async () => {
+          const inheritHostHeader = true;
+          const allowedMethods = [/^eth_call$/];
+          const method = 'eth_getTransactionReceipt';
+          const body = {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [
+              '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+            ],
+          };
+          const errMsg = `${method} is not allowed`;
+          const errCode = -32601;
+          const responseData = {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          };
+          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+            switch (key) {
+              case 'verseUrl':
+                return verseUrl;
+              case 'inheritHostHeader':
+                return inheritHostHeader;
+              case 'allowedMethods':
+                return allowedMethods;
+              case 'datastore':
+                return '';
+            }
+          });
+          const txAllowList = [
+            {
+              fromList: ['*'],
+              toList: ['*'],
+            },
+          ];
+          const deployAllowList = [''];
+          const unlimitedTxRateAddresses = [''];
+          getTxAllowList.mockReturnValue(txAllowList);
+          getDeployAllowList.mockReturnValue(deployAllowList);
+          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
+
+          return await request(app.getHttpServer())
+            .post('/')
+            .send(body)
+            .expect(200)
+            .expect(responseData);
+        });
       });
 
-      it('tx method is not allowed', async () => {
-        const inheritHostHeader = true;
-        const allowedMethods = [/^eth_call$/];
-        const method = 'eth_getTransactionReceipt';
-        const body = {
-          jsonrpc: '2.0',
-          id: 1,
-          method: method,
-          params: [
-            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
-          ],
-        };
-        const errMsg = `${method} is not allowed`;
-        const errCode = -32601;
-        const responseData = {
-          jsonrpc: '2.0',
-          id: 1,
-          error: {
-            code: errCode,
-            message: errMsg,
-          },
-        };
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
+      describe('eth_sendRawTransaction', () => {
+        it('tx is not allowed', async () => {
+          const rawTx =
+            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+          const inheritHostHeader = true;
+          const allowedMethods = [/^.*$/];
+          const method = 'eth_sendRawTransaction';
+          const body = {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          };
+          // this tx doesn't have from.
+          const tx = {
+            type,
+            chainId,
+            nonce,
+            maxPriorityFeePerGas,
+            maxFeePerGas,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            data,
+            accessList,
+            hash,
+            v,
+            r,
+            s,
+          };
+          const errMsg = 'transaction is invalid';
+          const errCode = -32602;
+          const responseData = {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          };
+          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+            switch (key) {
+              case 'verseUrl':
+                return verseUrl;
+              case 'inheritHostHeader':
+                return inheritHostHeader;
+              case 'allowedMethods':
+                return allowedMethods;
+              case 'datastore':
+                return '';
+            }
+          });
+          jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+          const txAllowList = [
+            {
+              fromList: ['*'],
+              toList: ['*'],
+            },
+          ];
+          const deployAllowList = [''];
+          const unlimitedTxRateAddresses = [''];
+          getTxAllowList.mockReturnValue(txAllowList);
+          getDeployAllowList.mockReturnValue(deployAllowList);
+          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
+
+          return await request(app.getHttpServer())
+            .post('/')
+            .send(body)
+            .expect(200)
+            .expect(responseData);
         });
 
-        return await request(app.getHttpServer())
-          .post('/')
-          .send(body)
-          .expect(200)
-          .expect(responseData);
-      });
+        it('gas is not allowed', async () => {
+          const jsonrpc = '2.0';
+          const id = 1;
+          const rawTx =
+            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+          const inheritHostHeader = true;
+          const allowedMethods = [/^.*$/];
+          const method = 'eth_sendRawTransaction';
+          const body = {
+            jsonrpc: jsonrpc,
+            id: id,
+            method: method,
+            params: [rawTx],
+          };
+          const tx = {
+            type,
+            chainId,
+            nonce,
+            maxPriorityFeePerGas,
+            maxFeePerGas,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            data,
+            accessList,
+            hash,
+            v,
+            r,
+            s,
+            from,
+          };
+          const errMsg = 'insufficient balance for transfer';
+          const errCode = -32602;
+          const responseData = {
+            jsonrpc: '2.0',
+            id: 1,
+            error: {
+              code: errCode,
+              message: errMsg,
+            },
+          };
+          const res: AxiosResponse = {
+            status: 200,
+            data: responseData,
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+            switch (key) {
+              case 'verseUrl':
+                return verseUrl;
+              case 'inheritHostHeader':
+                return inheritHostHeader;
+              case 'allowedMethods':
+                return allowedMethods;
+              case 'datastore':
+                return '';
+            }
+          });
+          jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+          const txAllowList = [
+            {
+              fromList: ['*'],
+              toList: ['*'],
+            },
+          ];
+          const deployAllowList = [''];
+          const unlimitedTxRateAddresses = [''];
+          getTxAllowList.mockReturnValue(txAllowList);
+          getDeployAllowList.mockReturnValue(deployAllowList);
+          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
-      it('tx method is eth_sendRawTransaction and but is not allowed tx', async () => {
-        const rawTx =
-          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-        const inheritHostHeader = true;
-        const allowedMethods = [/^.*$/];
-        const method = 'eth_sendRawTransaction';
-        const body = {
-          jsonrpc: '2.0',
-          id: 1,
-          method: method,
-          params: [rawTx],
-        };
-        // this tx doesn't have from.
-        const tx = {
-          type,
-          chainId,
-          nonce,
-          maxPriorityFeePerGas,
-          maxFeePerGas,
-          gasPrice,
-          gasLimit,
-          to,
-          value,
-          data,
-          accessList,
-          hash,
-          v,
-          r,
-          s,
-        };
-        const errMsg = 'transaction is invalid';
-        const errCode = -32602;
-        const responseData = {
-          jsonrpc: '2.0',
-          id: 1,
-          error: {
-            code: errCode,
-            message: errMsg,
-          },
-        };
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
+          return await request(app.getHttpServer())
+            .post('/')
+            .send(body)
+            .expect(200)
+            .expect(responseData);
         });
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
-        return await request(app.getHttpServer())
-          .post('/')
-          .send(body)
-          .expect(200)
-          .expect(responseData);
-      });
+        it('successful', async () => {
+          const inheritHostHeader = true;
+          const allowedMethods = [/^.*$/];
+          const method = 'eth_sendRawTransaction';
+          const rawTx =
+            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+          const body = {
+            jsonrpc: '2.0',
+            id: 1,
+            method: method,
+            params: [rawTx],
+          };
+          const tx = {
+            type,
+            chainId,
+            nonce,
+            maxPriorityFeePerGas,
+            maxFeePerGas,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            data,
+            accessList,
+            hash,
+            v,
+            r,
+            s,
+            from,
+          };
+          const responseData = {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          };
+          const res: AxiosResponse = {
+            status: 200,
+            data: responseData,
+            statusText: '',
+            headers: {},
+            config: {},
+          };
+          jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+            switch (key) {
+              case 'verseUrl':
+                return verseUrl;
+              case 'inheritHostHeader':
+                return inheritHostHeader;
+              case 'allowedMethods':
+                return allowedMethods;
+              case 'datastore':
+                return '';
+            }
+          });
+          jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+          jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+          const txAllowList = [
+            {
+              fromList: ['*'],
+              toList: ['*'],
+            },
+          ];
+          const deployAllowList = [''];
+          const unlimitedTxRateAddresses = [''];
+          getTxAllowList.mockReturnValue(txAllowList);
+          getDeployAllowList.mockReturnValue(deployAllowList);
+          getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
-      it('tx method is eth_sendRawTransaction and but is not allowed gas', async () => {
-        const jsonrpc = '2.0';
-        const id = 1;
-        const rawTx =
-          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-        const inheritHostHeader = true;
-        const allowedMethods = [/^.*$/];
-        const method = 'eth_sendRawTransaction';
-        const body = {
-          jsonrpc: jsonrpc,
-          id: id,
-          method: method,
-          params: [rawTx],
-        };
-        const tx = {
-          type,
-          chainId,
-          nonce,
-          maxPriorityFeePerGas,
-          maxFeePerGas,
-          gasPrice,
-          gasLimit,
-          to,
-          value,
-          data,
-          accessList,
-          hash,
-          v,
-          r,
-          s,
-          from,
-        };
-        const errMsg = 'insufficient balance for transfer';
-        const errCode = -32602;
-        const responseData = {
-          jsonrpc: '2.0',
-          id: 1,
-          error: {
-            code: errCode,
-            message: errMsg,
-          },
-        };
-        const res: AxiosResponse = {
-          status: 200,
-          data: responseData,
-          statusText: '',
-          headers: {},
-          config: {},
-        };
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
+          return await request(app.getHttpServer())
+            .post('/')
+            .send(body)
+            .expect(200)
+            .expect(responseData);
         });
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
-
-        return await request(app.getHttpServer())
-          .post('/')
-          .send(body)
-          .expect(200)
-          .expect(responseData);
-      });
-
-      it('tx method is eth_sendRawTransaction and successful', async () => {
-        const inheritHostHeader = true;
-        const allowedMethods = [/^.*$/];
-        const method = 'eth_sendRawTransaction';
-        const rawTx =
-          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
-        const body = {
-          jsonrpc: '2.0',
-          id: 1,
-          method: method,
-          params: [rawTx],
-        };
-        const tx = {
-          type,
-          chainId,
-          nonce,
-          maxPriorityFeePerGas,
-          maxFeePerGas,
-          gasPrice,
-          gasLimit,
-          to,
-          value,
-          data,
-          accessList,
-          hash,
-          v,
-          r,
-          s,
-          from,
-        };
-        const responseData = {
-          jsonrpc: '2.0',
-          id: 1,
-          result:
-            '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
-        };
-        const res: AxiosResponse = {
-          status: 200,
-          data: responseData,
-          statusText: '',
-          headers: {},
-          config: {},
-        };
-        jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-          switch (key) {
-            case 'verseUrl':
-              return verseUrl;
-            case 'inheritHostHeader':
-              return inheritHostHeader;
-            case 'allowedMethods':
-              return allowedMethods;
-            case 'datastore':
-              return '';
-          }
-        });
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
-        jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
-
-        return await request(app.getHttpServer())
-          .post('/')
-          .send(body)
-          .expect(200)
-          .expect(responseData);
       });
     });
 
@@ -443,6 +522,17 @@ describe('AppController (e2e)', () => {
           }
         });
         jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -505,6 +595,17 @@ describe('AppController (e2e)', () => {
               return '';
           }
         });
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -584,6 +685,17 @@ describe('AppController (e2e)', () => {
           }
         });
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -681,6 +793,17 @@ describe('AppController (e2e)', () => {
         });
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -767,6 +890,17 @@ describe('AppController (e2e)', () => {
         });
         jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -780,6 +914,17 @@ describe('AppController (e2e)', () => {
       it('request is not jsonrpc', async () => {
         const body = {};
         const errMsg = 'invalid request';
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        getTxAllowList.mockReturnValue(txAllowList);
+        getDeployAllowList.mockReturnValue(deployAllowList);
+        getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
         const result = await request(app.getHttpServer()).post('/').send(body);
         expect(result.status).toEqual(403);
