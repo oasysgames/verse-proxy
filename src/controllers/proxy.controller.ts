@@ -8,13 +8,13 @@ import {
 } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
-import { ProxyService, JsonrpcCheckService } from 'src/services';
+import { ProxyService, TypeCheckService } from 'src/services';
 import { VerseRequestResponse } from 'src/entities';
 
 @Controller()
 export class ProxyController {
   constructor(
-    private readonly jsonrpcCheckService: JsonrpcCheckService,
+    private readonly typeCheckService: TypeCheckService,
     private readonly proxyService: ProxyService,
   ) {}
 
@@ -28,9 +28,9 @@ export class ProxyController {
       const { status, data } = result;
       res.status(status).send(data);
     };
-    if (this.jsonrpcCheckService.isJsonrcpArray(body)) {
+    if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
       await this.proxyService.handleBatchRequest(headers, body, callback);
-    } else if (this.jsonrpcCheckService.isJsonrcp(body)) {
+    } else if (this.typeCheckService.isJsonrpcRequestBody(body)) {
       await this.proxyService.handleSingleRequest(headers, body, callback);
     } else {
       throw new ForbiddenException(`invalid request`);

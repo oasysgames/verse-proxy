@@ -9,3 +9,9 @@ export interface JsonrpcRequestBody {
   method: JsonrpcMethod;
   params?: JsonrpcParams | null;
 }
+
+export interface JsonrpcTxResponse {
+  jsonrpc: JsonrpcVersion;
+  id: JsonrpcId;
+  result: string;
+}

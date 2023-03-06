@@ -8,12 +8,14 @@ import {
   VerseService,
   ProxyService,
   AllowCheckService,
-  JsonrpcCheckService,
+  TypeCheckService,
+  RateLimitService,
 } from 'src/services';
 import { ProxyController } from 'src/controllers';
+import { DatastoreService } from 'src/repositories';
 
 describe('ProxyController', () => {
-  let jsonrpcCheckService: JsonrpcCheckService;
+  let typeCheckService: TypeCheckService;
   let proxyService: ProxyService;
   let moduleRef: TestingModule;
 
@@ -26,16 +28,18 @@ describe('ProxyController', () => {
         VerseService,
         TransactionService,
         AllowCheckService,
-        JsonrpcCheckService,
+        TypeCheckService,
         ProxyService,
+        RateLimitService,
+        DatastoreService,
       ],
     })
       .useMocker((token) => {
         switch (token) {
-          case JsonrpcCheckService:
+          case TypeCheckService:
             return {
-              isJsonrcpArray: jest.fn(),
-              isJsonrcp: jest.fn(),
+              isJsonrpcArray: jest.fn(),
+              isJsonrpc: jest.fn(),
             };
           case ProxyService:
             return {
@@ -46,8 +50,7 @@ describe('ProxyController', () => {
       })
       .compile();
 
-    jsonrpcCheckService =
-      moduleRef.get<JsonrpcCheckService>(JsonrpcCheckService);
+    typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     proxyService = moduleRef.get<ProxyService>(ProxyService);
   });
 
@@ -81,7 +84,9 @@ describe('ProxyController', () => {
         status: (code: number) => res,
       } as Response;
 
-      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(true);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcArrayRequestBody')
+        .mockReturnValue(true);
       const handleBatchRequestMock = jest.spyOn(
         proxyService,
         'handleBatchRequest',
@@ -112,8 +117,12 @@ describe('ProxyController', () => {
         status: (code: number) => res,
       } as Response;
 
-      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(false);
-      jest.spyOn(jsonrpcCheckService, 'isJsonrcp').mockReturnValue(true);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcArrayRequestBody')
+        .mockReturnValue(false);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcRequestBody')
+        .mockReturnValue(true);
       const handleBatchRequestMock = jest.spyOn(
         proxyService,
         'handleBatchRequest',
@@ -140,8 +149,12 @@ describe('ProxyController', () => {
       } as Response;
       const errMsg = 'invalid request';
 
-      jest.spyOn(jsonrpcCheckService, 'isJsonrcpArray').mockReturnValue(false);
-      jest.spyOn(jsonrpcCheckService, 'isJsonrcp').mockReturnValue(false);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcArrayRequestBody')
+        .mockReturnValue(false);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcRequestBody')
+        .mockReturnValue(false);
       const handleBatchRequestMock = jest.spyOn(
         proxyService,
         'handleBatchRequest',

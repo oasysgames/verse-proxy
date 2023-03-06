@@ -127,17 +127,60 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       toList: ['*'],
     },
   ];
-}
+};
 ```
 
 ```typescript
 // ! is denial.
+
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a are allowed to be transacted.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
       fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+      toList: ['*'],
+    },
+  ];
+};
+
+// Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
+// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
       toList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+    },
+  ];
+};
+
+// Multiple Setting is enabled.
+// Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
+// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: [
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+        '!0xaf395754eB6F542742784cE7702940C60465A46c'
+      ],
+    },
+  ];
+};
+```
+
+```typescript
+// You can not set setting with address and address_denial.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: [
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+        '!0xaf395754eB6F542742784cE7702940C60465A46c'
+      ],
     },
   ];
 };
@@ -168,7 +211,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 ```
 
-#### Value
+#### Value(Option)
 You can control the token value of a transaction.
 
 ```typescript
@@ -179,7 +222,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       fromList: ['*'],
       toList: ['*'],
       value: { gt: '1000000000000000000' },
-    }
+      },
   ];
 };
 ```
@@ -202,20 +245,21 @@ export const getDeployAllowList = (): Array<string> => {
   return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
 };
 
+// wild card
 // Everyone can deploy
 export const getDeployAllowList = (): Array<string> => {
   return ['*'];
 };
 
-// 0xaf395754eB6F542742784cE7702940C60465A46c cannot deploy,
-// 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+// exception_pattern
+// any address other than 0xaf395754eB6F542742784cE7702940C60465A46c can deploy.
 export const getDeployAllowList = (): Array<string> => {
-  return [
-    '!0xaf395754eB6F542742784cE7702940C60465A46c',
-    '0xaf395754eB6F542742784cE7702940C60465A46a',
-  ];
+  return ['!0xaf395754eB6F542742784cE7702940C60465A46c'];
 };
 ```
+
+### Transaction access rate limit(Option)
+If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
 
 ### Set allowed header
 You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.

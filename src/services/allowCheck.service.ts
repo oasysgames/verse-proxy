@@ -1,49 +1,70 @@
 import { Injectable } from '@nestjs/common';
-import {
-  TransactionAllow,
-  ComparisonOperation,
-} from 'src/config/transactionAllowList';
+import { ComparisonOperation } from 'src/config/transactionAllowList';
 import { BigNumber } from 'ethers';
-import { getDeployAllowList } from 'src/config/transactionAllowList';
+import {
+  getDeployAllowList,
+  getUnlimitedTxRateAddresses,
+} from 'src/config/transactionAllowList';
 
 @Injectable()
 export class AllowCheckService {
   private deployAllowList: Array<string>;
+  private unlimitedTxRateAddresses: Array<string>;
   constructor() {
     this.deployAllowList = getDeployAllowList();
+    this.unlimitedTxRateAddresses = getUnlimitedTxRateAddresses();
+    this.checkAddressList(this.deployAllowList);
+    this.checkAddressList(this.unlimitedTxRateAddresses);
   }
 
-  isAllowedString(allowPattern: string, input: string): boolean {
-    if (allowPattern[0] === '!' && allowPattern.slice(1) === input)
-      return false;
-    if (allowPattern === '*' || allowPattern === input) return true;
-    return false;
-  }
+  checkAddressList(addressList: Array<string>) {
+    if (addressList.includes('*')) {
+      if (addressList.length !== 1)
+        throw new Error('You can not set wildcard with another address');
+      return;
+    }
 
-  isAllowedFrom(condition: TransactionAllow, from: string): boolean {
-    const isAllow = condition.fromList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
+    let isAllow: boolean;
+    const firstAddress = addressList[0];
+
+    if (firstAddress[0] === '!') {
+      isAllow = addressList.every((address) => {
+        return address[0] === '!';
+      });
+    } else {
+      isAllow = addressList.every((address) => {
+        return address[0] !== '!';
+      });
+    }
+
+    if (!isAllow)
+      throw new Error(
+        'You can not set setting with address and address_denial(!address)',
       );
-    });
-    return isAllow;
   }
 
-  isAllowedTo(condition: TransactionAllow, to: string): boolean {
-    const isAllow = condition.toList.some((allowedTo) => {
-      return this.isAllowedString(allowedTo.toLowerCase(), to.toLowerCase());
-    });
+  isIncludedAddress(addressList: Array<string>, input: string) {
+    if (addressList.includes('*')) return true;
+
+    let isAllow: boolean;
+    const firstAddress = addressList[0];
+
+    if (firstAddress[0] === '!') {
+      isAllow = this.isNotProhibitedAddress(addressList, input);
+    } else {
+      isAllow = this.isAllowedAddress(addressList, input);
+    }
+
     return isAllow;
   }
 
   isAllowedDeploy(from: string): boolean {
-    const isAllow = this.deployAllowList.some((allowedFrom) => {
-      return this.isAllowedString(
-        allowedFrom.toLowerCase(),
-        from.toLowerCase(),
-      );
-    });
+    const isAllow = this.isIncludedAddress(this.deployAllowList, from);
+    return isAllow;
+  }
+
+  isUnlimitedTxRate(from: string): boolean {
+    const isAllow = this.isIncludedAddress(this.unlimitedTxRateAddresses, from);
     return isAllow;
   }
 
@@ -85,6 +106,22 @@ export class AllowCheckService {
           break;
       }
     }
+    return isAllow;
+  }
+
+  private isNotProhibitedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.every((allowPattern) => {
+      return allowPattern.slice(1).toLowerCase() !== input.toLowerCase();
+    });
+
+    return isAllow;
+  }
+
+  private isAllowedAddress(addressList: Array<string>, input: string) {
+    const isAllow = addressList.some((allowPattern) => {
+      return allowPattern.toLowerCase() === input.toLowerCase();
+    });
+
     return isAllow;
   }
 }

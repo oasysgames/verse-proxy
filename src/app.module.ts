@@ -7,8 +7,10 @@ import {
   TransactionService,
   VerseService,
   AllowCheckService,
-  JsonrpcCheckService,
+  TypeCheckService,
+  RateLimitService,
 } from './services';
+import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
 
 @Module({
@@ -24,7 +26,9 @@ import configuration from './config/configuration';
     TransactionService,
     ProxyService,
     AllowCheckService,
-    JsonrpcCheckService,
+    TypeCheckService,
+    DatastoreService,
+    RateLimitService,
   ],
 })
 export class AppModule {}

@@ -7,10 +7,20 @@ export interface ComparisonOperation {
   lte?: string; // txValue <= condition is allowed
 }
 
+export interface RateLimit {
+  name: string;
+  perFrom?: boolean;
+  perTo?: boolean;
+  perMethod?: boolean;
+  interval: number;
+  limit: number;
+}
+
 export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
+  rateLimit?: RateLimit;
 }
 
 export const getTxAllowList = (): Array<TransactionAllow> => {
@@ -23,5 +33,9 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 
 export const getDeployAllowList = (): Array<string> => {
+  return ['*'];
+};
+
+export const getUnlimitedTxRateAddresses = (): Array<string> => {
   return [''];
 };

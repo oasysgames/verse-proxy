@@ -13,6 +13,7 @@ import {
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
+import { RateLimitService } from './rateLimit.service';
 
 @Injectable()
 export class TransactionService {
@@ -20,31 +21,40 @@ export class TransactionService {
   constructor(
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
+    private readonly rateLimitService: RateLimitService,
   ) {
     this.txAllowList = getTxAllowList();
+    this.txAllowList.forEach((txAllow) => {
+      this.allowCheckService.checkAddressList(txAllow.fromList);
+      this.allowCheckService.checkAddressList(txAllow.toList);
+    });
   }
 
-  checkAllowedTx(tx: Transaction): void {
-    const from = tx.from;
-    const to = tx.to;
-    const value = tx.value;
-
-    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
-
-    // Check for deploy transactions
-    if (!to) {
-      if (this.allowCheckService.isAllowedDeploy(from)) {
-        return;
-      } else {
-        throw new JsonrpcError('deploy transaction is not allowed', -32602);
-      }
+  checkContractDeploy(from: string) {
+    if (this.allowCheckService.isAllowedDeploy(from)) {
+      return;
+    } else {
+      throw new JsonrpcError('deploy transaction is not allowed', -32602);
     }
+  }
 
-    // Check for transactions other than deploy
-    let isAllow = false;
+  async getMatchedTxAllowRule(
+    from: string,
+    to: string,
+    methodId: string,
+    value: BigNumber,
+  ): Promise<TransactionAllow> {
+    let matchedTxAllowRule;
+
     for (const condition of this.txAllowList) {
-      const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
-      const toCheck = this.allowCheckService.isAllowedTo(condition, to);
+      const fromCheck = this.allowCheckService.isIncludedAddress(
+        condition.fromList,
+        from,
+      );
+      const toCheck = this.allowCheckService.isIncludedAddress(
+        condition.toList,
+        to,
+      );
 
       const valueCondition = condition.value;
       const valueCheck = this.allowCheckService.isAllowedValue(
@@ -53,13 +63,22 @@ export class TransactionService {
       );
 
       if (fromCheck && toCheck && valueCheck) {
-        isAllow = true;
+        if (condition.rateLimit)
+          await this.rateLimitService.checkRateLimit(
+            from,
+            to,
+            methodId,
+            condition.rateLimit,
+          );
+        matchedTxAllowRule = condition;
         break;
       }
     }
 
-    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
-    return;
+    if (!matchedTxAllowRule)
+      throw new JsonrpcError('transaction is not allowed', -32602);
+
+    return matchedTxAllowRule;
   }
 
   async checkAllowedGas(
