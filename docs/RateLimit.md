@@ -5,15 +5,12 @@ For setting datastore to store transaction history, you have to set datastore en
 
 ```bash
 # In case of redis
-RATE_LIMIT_PLUGIN=redis
+DATASTORE=redis
 REDIS_URI=<REDIS_URI> # e.g. redis://localhost:6379/0
 ```
 
-And please set expire as the period of time to store the transaction.
-
 ## Rate limit setting
 Using `txAllowList` at `src/config/transactionAllowList.ts`, you can set transaction rate limit.
-Please define rateLimit variable and set `txAllowList`.
 
 ```typescript
 const rateLimitA = {
@@ -22,13 +19,15 @@ const rateLimitA = {
   limit: 1000,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['*'],
-    rateLimit: rateLimitA,
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 | RateLimit key  |  Description | Required |
@@ -40,7 +39,7 @@ const txAllowList: Array<TransactionAllow> = [
 |  interval  |  Rate limit interval(seconds)  | O |
 |  limit  |  Number of tx's allowed in the interval  | O |
 
-rateLimit can be shared by another txAllowList setting.
+Please define rateLimit variable and set `txAllowList`. because rateLimit can be shared by another txAllowList setting.
 
 ```typescript
 const rateLimitA = {
@@ -51,18 +50,20 @@ const rateLimitA = {
   limit: 1,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
-    rateLimit: rateLimitA,
-  },
-  {
-    fromList: ['*'],
-    toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
-    rateLimit: rateLimitA,
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
+      rateLimit: rateLimitA,
+    },
+    {
+      fromList: ['*'],
+      toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 ### Example(limit settings per user)
@@ -76,13 +77,15 @@ const rateLimitA = {
   limit: 1,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
-    rateLimit: rateLimitA,
-  },
-]
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 ### Example(limit settings per all users)
@@ -95,13 +98,15 @@ const rateLimitA = {
   limit: 1,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
-    rateLimit: rateLimitA,
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 ### Example(limit settings per contract)
@@ -114,18 +119,20 @@ const rateLimitA = {
   limit: 1,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
-    rateLimit: rateLimitA,
-  },
-  {
-    fromList: ['*'],
-    toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
-    rateLimit: rateLimitA,
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
+      rateLimit: rateLimitA,
+    },
+    {
+      fromList: ['*'],
+      toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 ### Example(limit settings per all contracts)
@@ -138,32 +145,53 @@ const rateLimitA = {
   limit: 1,
 };
 
-const txAllowList: Array<TransactionAllow> = [
-  {
-    fromList: ['*'],
-    toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
-    rateLimit: rateLimitA,
-  },
-  {
-    fromList: ['*'],
-    toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
-    rateLimit: rateLimitA,
-  },
-];
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x9809d9d94b0b3380db38b1e1a06047a2964e0041'],
+      rateLimit: rateLimitA,
+    },
+    {
+      fromList: ['*'],
+      toList: ['0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4'],
+      rateLimit: rateLimitA,
+    },
+  ];
+};
 ```
 
 ## Set Addresses unlimited tx rate
 Addresses set in `getDeployAllowList` and `getUnlimitedTxRateAddresses` are not rate-limited for transactions.
 
 ```typescript
-const deployAllowList: Array<string> = ['0xaf395754eB6F542742784cE7702940C60465A46c'];
-
-const unlimitedTxRateAddresses: Array<string> = ['0xaf395754eB6F542742784cE7702940C60465A46a'];
+// 0xaf395754eB6F542742784cE7702940C60465A46c and 0xaf395754eB6F542742784cE7702940C60465A46a are not rate-limited for transactions.
+export const getDeployAllowList = (): Array<string> => {
+  return ['0xaf395754eB6F542742784cE7702940C60465A46c'];
+};
+export const getUnlimitedTxRateAddresses = (): Array<string> => {
+  return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
+};
 ```
 
-You can set wildcard
+You can set wildcard and exception_pattern
 ```typescript
-const deployAllowList: Array<string> = ['*'];
+// wild card
+// Everyone are not rate-limited for transactions.
+export const getDeployAllowList = (): Array<string> => {
+  return [''];
+};
+export const getUnlimitedTxRateAddresses = (): Array<string> => {
+  return ['*'];
+};
 
-const unlimitedTxRateAddresses: Array<string> = ['*'];
+// exception_pattern
+// anyone cannot deploy contract.
+// any address other than 0xaf395754eB6F542742784cE7702940C60465A46c are not rate-limited for transactions.
+export const getDeployAllowList = (): Array<string> => {
+  return [''];
+};
+export const getUnlimitedTxRateAddresses = (): Array<string> => {
+  return ['!0xaf395754eB6F542742784cE7702940C60465A46c'];
+};
 ```
