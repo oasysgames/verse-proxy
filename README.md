@@ -6,7 +6,7 @@ Verse-Proxy can control following items.
 - jsonrpc method
 - transaction's from, to, value
 - address which can deploy smart contract
-
+- transaction access rate
 
 ## Verse Proxy Build Steps
 
@@ -73,6 +73,12 @@ docker run --name verse-proxy -d -p $PORT:$PORT -v $PWD/src/config:/usr/src/app/
 
 ## Control items
 
+### Set allowed header
+You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
+```typescript
+inheritHostHeader: true,
+```
+
 ### Set allowed verse request methods
 You can set allowed verse request methods by regex at `src/config/configuration.ts`.
 ```typescript
@@ -131,7 +137,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// ! is denial.
+// ! is exception_pattern.
 
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
 // But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a are allowed to be transacted.
@@ -172,7 +178,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// You can not set setting with address and address_denial.
+// You can not set setting with normal_address and exception_pattern.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
@@ -236,8 +242,11 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
 
-#### Deployer
-You can control deployer of a verse.
+#### Transaction access rate limit(Option)
+If you set transaction access rate limit, follow [Transaction access rate limit](https://github.com/oasysgames/verse-proxy/blob/master/docs/RateLimit.md)
+
+### Set contract deployer
+You can control deployer of a verse at `src/config/transactionAllowList.ts`.
 
 ```typescript
 // Only 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
@@ -258,16 +267,7 @@ export const getDeployAllowList = (): Array<string> => {
 };
 ```
 
-### Transaction access rate limit(Option)
-If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
-
-### Set allowed header
-You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
-```typescript
-inheritHostHeader: true,
-```
-
-### Batch Request
+## Batch Request
 You can execute batch requests to the proxy.
 
 If you want to make many transaction batch requests, change the parse limit in the body by environment variable.
