@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { IncomingHttpHeaders } from 'http';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
 import {
@@ -49,16 +48,15 @@ export class ProxyService {
   }
 
   async send(requestContext: RequestContext, body: JsonrpcRequestBody) {
-    const { ip, headers } = requestContext;
     try {
       const method = body.method;
       this.checkMethod(method);
 
       if (method !== 'eth_sendRawTransaction') {
-        return await this.verseService.post(headers, body);
+        return await this.verseService.post(requestContext.headers, body);
       }
 
-      return await this.sendTransaction(headers, body);
+      return await this.sendTransaction(requestContext, body);
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -83,7 +81,7 @@ export class ProxyService {
   }
 
   async sendTransaction(
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
     const rawTx = body.params ? body.params[0] : undefined;
@@ -97,20 +95,26 @@ export class ProxyService {
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.post(headers, body);
+      const result = await this.verseService.post(requestContext.headers, body);
       return result;
     }
 
     // transaction other than contract deploy
     const methodId = tx.data.substring(0, 10);
+    const webhookArg = {
+      requestContext,
+      body,
+      tx,
+    };
     const matchedTxAllowRule = await this.txService.getMatchedTxAllowRule(
       tx.from,
       tx.to,
       methodId,
       tx.value,
+      webhookArg,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.post(headers, body);
+    const result = await this.verseService.post(requestContext.headers, body);
 
     if (!this.typeCheckService.isJsonrpcTxResponse(result.data))
       throw new JsonrpcError('Can not get verse response', -32603);

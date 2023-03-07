@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  WebhookService,
 } from 'src/services';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -17,6 +18,7 @@ describe('TransactionService', () => {
   let verseService: VerseService;
   let allowCheckService: AllowCheckService;
   let rateLimitService: RateLimitService;
+  let webhookService: WebhookService;
   const transactionAllowListMock = jest.spyOn(
     transactionAllowList,
     'getTxAllowList',
@@ -52,6 +54,7 @@ describe('TransactionService', () => {
         AllowCheckService,
         TransactionService,
         RateLimitService,
+        WebhookService,
         DatastoreService,
       ],
     })
@@ -78,6 +81,7 @@ describe('TransactionService', () => {
     verseService = moduleRef.get<VerseService>(VerseService);
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
+    webhookService = moduleRef.get<WebhookService>(WebhookService);
   });
 
   describe('checkContractDeploy', () => {
@@ -98,6 +102,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       expect(() => transactionService.checkContractDeploy(from)).not.toThrow();
@@ -120,6 +125,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       try {
@@ -136,6 +142,44 @@ describe('TransactionService', () => {
     });
 
     it('from is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = [`!${from}`];
       const toList = ['*'];
 
@@ -163,6 +207,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       try {
@@ -171,6 +216,7 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
       } catch (e) {
         expect(e).toEqual(error);
@@ -178,6 +224,44 @@ describe('TransactionService', () => {
     });
 
     it('to is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = ['*'];
       const toList = [`!${to}`];
 
@@ -205,6 +289,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       try {
@@ -213,6 +298,7 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
       } catch (e) {
         expect(e).toEqual(error);
@@ -220,6 +306,44 @@ describe('TransactionService', () => {
     });
 
     it('value is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const tx = {
+        type,
+        chainId,
+        nonce,
+        maxPriorityFeePerGas,
+        maxFeePerGas,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        accessList,
+        hash,
+        v,
+        r,
+        s,
+        from,
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = ['*'];
       const toList = ['*'];
 
@@ -238,6 +362,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       try {
@@ -246,6 +371,7 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
       } catch (e) {
         expect(e).toEqual(error);
@@ -254,6 +380,44 @@ describe('TransactionService', () => {
 
     describe('from and to and value is OK', () => {
       it('rateLimit is not set', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const txAllowRule = {
@@ -273,6 +437,7 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
         );
 
         const result = await transactionService.getMatchedTxAllowRule(
@@ -280,12 +445,51 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
         expect(result).toBe(txAllowRule);
         expect(checkRateLimit).not.toHaveBeenCalled();
       });
 
       it('rateLimit is set, rateLimit check is failed', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const rateLimit = {
@@ -319,6 +523,7 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
         );
 
         try {
@@ -327,6 +532,7 @@ describe('TransactionService', () => {
             to,
             methodId,
             value,
+            webhookArg,
           );
         } catch (e) {
           expect(e).toEqual(error);
@@ -335,6 +541,44 @@ describe('TransactionService', () => {
       });
 
       it('rateLimit is set, rateLimit check is successfull', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const rateLimit = {
@@ -360,6 +604,7 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
         );
 
         const result = await transactionService.getMatchedTxAllowRule(
@@ -367,6 +612,7 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
         expect(result).toBe(txAllowRule);
         expect(checkRateLimit).toHaveBeenCalled();
@@ -404,6 +650,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       const jsonrpc = '2.0';
@@ -462,6 +709,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
       );
 
       const jsonrpc = '2.0';

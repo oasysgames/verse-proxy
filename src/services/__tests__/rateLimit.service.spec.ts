@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  WebhookService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
 import { JsonrpcError } from 'src/entities';
@@ -22,6 +23,7 @@ describe('RateLimitService', () => {
         VerseService,
         AllowCheckService,
         RateLimitService,
+        WebhookService,
         TransactionService,
         DatastoreService,
       ],

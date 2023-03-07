@@ -10,6 +10,7 @@ import {
   AllowCheckService,
   RateLimitService,
   TypeCheckService,
+  WebhookService,
 } from 'src/services';
 import { JsonrpcError } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
@@ -87,6 +88,7 @@ describe('ProxyService', () => {
         AllowCheckService,
         TypeCheckService,
         RateLimitService,
+        WebhookService,
         DatastoreService,
       ],
     })
@@ -707,7 +709,12 @@ describe('ProxyService', () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
+      const ip = '1.2.3.4';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -769,7 +776,7 @@ describe('ProxyService', () => {
       );
 
       try {
-        await proxyService.sendTransaction(headers, body);
+        await proxyService.sendTransaction(requestContext, body);
       } catch (e) {
         expect(e).toEqual(error);
         expect(parseRawTx).not.toHaveBeenCalled();
@@ -785,7 +792,12 @@ describe('ProxyService', () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
+      const ip = '1.2.3.4';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -868,7 +880,7 @@ describe('ProxyService', () => {
       );
 
       try {
-        await proxyService.sendTransaction(headers, body);
+        await proxyService.sendTransaction(requestContext, body);
       } catch (e) {
         expect(e).toEqual(error);
         expect(parseRawTx).toHaveBeenCalled();
@@ -885,7 +897,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -957,7 +974,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -973,7 +990,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1048,7 +1070,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1064,7 +1086,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1130,7 +1157,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).toHaveBeenCalled();
@@ -1144,7 +1171,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1203,7 +1235,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1221,7 +1253,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1281,7 +1318,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1297,7 +1334,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1372,7 +1414,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1388,7 +1430,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1447,7 +1494,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1463,7 +1510,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1530,7 +1582,7 @@ describe('ProxyService', () => {
         );
 
         try {
-          await proxyService.sendTransaction(headers, body);
+          await proxyService.sendTransaction(requestContext, body);
         } catch (e) {
           expect(e).toEqual(error);
           expect(parseRawTx).toHaveBeenCalled();
@@ -1546,7 +1598,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1612,7 +1669,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1625,7 +1682,12 @@ describe('ProxyService', () => {
       it('tx is successful and rateLimit is not set', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const method = 'eth_sendRawTransaction';
+        const ip = '1.2.3.4';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1685,7 +1747,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();

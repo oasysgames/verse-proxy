@@ -6,6 +6,7 @@ import {
   JsonrpcId,
   JsonrpcVersion,
   JsonrpcError,
+  WebhookTransferData,
 } from 'src/entities';
 import {
   TransactionAllow,
@@ -14,6 +15,7 @@ import {
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
+import { WebhookService } from './webhook.service';
 
 @Injectable()
 export class TransactionService {
@@ -22,6 +24,7 @@ export class TransactionService {
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
+    private readonly webhookService: WebhookService,
   ) {
     this.txAllowList = getTxAllowList();
     this.txAllowList.forEach((txAllow) => {
@@ -43,6 +46,7 @@ export class TransactionService {
     to: string,
     methodId: string,
     value: BigNumber,
+    webhookArg: WebhookTransferData,
   ): Promise<TransactionAllow> {
     let matchedTxAllowRule;
 
@@ -75,21 +79,12 @@ export class TransactionService {
             methodId,
             condition.rateLimit,
           );
-        // if (condition.webhooks) {
-        //   await Promise.all(
-        //     condition.webhooks.map(async (webhook): Promise<void> => {
-        //       const { status } = await this.webhookService.post(
-        //         ip,
-        //         headers,
-        //         body,
-        //         tx,
-        //         webhook,
-        //       );
-        //       if (status >= 400) {
-        //         webhookCheck = false;
-        //       }
-        //     }),
-        //   );
+        if (condition.webhooks) {
+          await this.webhookService.checkWebhook(
+            webhookArg,
+            condition.webhooks,
+          );
+        }
         matchedTxAllowRule = condition;
         break;
       }

@@ -1,34 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { Transaction } from 'ethers';
 import { lastValueFrom, catchError, retry } from 'rxjs';
-import { IncomingHttpHeaders } from 'http';
-import { JsonrpcRequestBody, WebhookResponse } from 'src/entities';
+import { JsonrpcError, WebhookTransferData } from 'src/entities';
 import { Webhook } from 'src/config/transactionAllowList';
 
 @Injectable()
 export class WebhookService {
   constructor(private readonly httpService: HttpService) {}
 
-  async post(
-    ip: string,
-    headers: IncomingHttpHeaders,
-    body: JsonrpcRequestBody,
-    tx: Transaction,
-    webhook: Webhook,
-  ): Promise<WebhookResponse> {
-    const verseHeaders: Record<string, string> = {};
-
-    if (headers['host']) {
-      verseHeaders['host'] = headers['host'];
-    }
-    if (headers['user-agent']) {
-      verseHeaders['user-agent'] = headers['user-agent'];
-    }
-
+  async post(webhookArg: WebhookTransferData, webhook: Webhook): Promise<void> {
     const webhookBody = {
-      ...(webhook.parse ? tx : body),
-      _meta: { ip, headers: verseHeaders },
+      ...(webhook.parse ? webhookArg.tx : webhookArg.body),
+      _meta: {
+        ip: webhookArg.requestContext.ip,
+        headers: webhookArg.requestContext.headers,
+      },
     };
 
     const axiosConfig = {
@@ -45,20 +31,21 @@ export class WebhookService {
           }),
         ),
       );
-      return { status: res.status };
+      if (res.status < 200 || res.status >= 300)
+        throw new Error('transaction is not allowed');
     } catch (e) {
       if (e instanceof Error) {
-        console.error(e.message);
-        return {
-          status: 400,
-          error: e.message,
-        };
+        throw new JsonrpcError(e.message, -32602);
       }
-      console.error(e);
-      return {
-        status: 400,
-        error: e,
-      };
+      throw e;
     }
+  }
+
+  async checkWebhook(webhookArg: WebhookTransferData, webhooks: Webhook[]) {
+    await Promise.all(
+      webhooks.map(async (webhook): Promise<void> => {
+        await this.post(webhookArg, webhook);
+      }),
+    );
   }
 }
