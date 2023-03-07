@@ -1,11 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { BigNumber } from 'ethers';
+import { AccessList } from 'ethers/lib/utils';
 import { HttpModule } from '@nestjs/axios';
 import {
+  TransactionAllow,
   ComparisonOperation,
-  AddressRestriction,
 } from 'src/config/transactionAllowList';
 import { AllowCheckService, WebhookService } from 'src/services';
+import * as transactionAllowList from 'src/config/transactionAllowList';
 
 describe('AllowCheckService', () => {
   beforeAll(async () => {
@@ -23,92 +25,203 @@ describe('AllowCheckService', () => {
       .compile();
   });
 
-  describe('isAllowedAddress', () => {
+  describe('isAllowedString', () => {
     const allowCheckService = new AllowCheckService();
 
-    test('allowList is set with wildcard', () => {
-      const addressRestriction: AddressRestriction = { allowList: ['*'] };
+    test('allowPattern equals input', () => {
+      const allowPattern = '0xaf395754eB6F542742784cE7702940C60465A46a';
       const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
-      );
+      const result = allowCheckService.isAllowedString(allowPattern, input);
       expect(result).toBe(true);
     });
 
-    test('allowList is set with empty string', () => {
-      const addressRestriction: AddressRestriction = { allowList: [''] };
+    test('allowPattern does not equal input', () => {
+      const allowPattern = '0xaf395754eB6F542742784cE7702940C60465A46c';
       const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
-      );
+      const result = allowCheckService.isAllowedString(allowPattern, input);
       expect(result).toBe(false);
     });
 
-    test('allowList has input', () => {
-      const addressRestriction: AddressRestriction = {
-        allowList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-          '0xaf395754eB6F542742784cE7702940C60465A46b',
-        ],
-      };
+    test('allowPattern is wildcard', () => {
+      const allowPattern = '*';
       const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
-      );
+      const result = allowCheckService.isAllowedString(allowPattern, input);
       expect(result).toBe(true);
     });
 
-    test('allowList does not have input', () => {
-      const addressRestriction: AddressRestriction = {
-        allowList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-          '0xaf395754eB6F542742784cE7702940C60465A46b',
-        ],
-      };
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46c';
-
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
-      );
-      expect(result).toBe(false);
-    });
-
-    test('deniedList has input', () => {
-      const addressRestriction: AddressRestriction = {
-        deniedList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-          '0xaf395754eB6F542742784cE7702940C60465A46b',
-        ],
-      };
+    test('allowPattern is denial of input', () => {
+      const allowPattern = '!0xaf395754eB6F542742784cE7702940C60465A46a';
       const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
-      );
+      const result = allowCheckService.isAllowedString(allowPattern, input);
       expect(result).toBe(false);
     });
 
-    test('deniedList does not have input', () => {
-      const addressRestriction: AddressRestriction = {
-        deniedList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-          '0xaf395754eB6F542742784cE7702940C60465A46b',
-        ],
-      };
+    test('allowPattern is not denial of input', () => {
+      const allowPattern = '!0xaf395754eB6F542742784cE7702940C60465A46a';
       const input = '0xaf395754eB6F542742784cE7702940C60465A46c';
 
-      const result = allowCheckService.isAllowedAddress(
-        addressRestriction,
-        input,
+      const result = allowCheckService.isAllowedString(allowPattern, input);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('isAllowedFrom', () => {
+    const allowCheckService = new AllowCheckService();
+
+    test('fromList is wildcard', () => {
+      const condition: TransactionAllow = {
+        fromList: ['*'],
+        toList: ['*'],
+      };
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedFrom(condition, from);
+      expect(result).toBe(true);
+    });
+
+    test('fromList includes from', () => {
+      const condition: TransactionAllow = {
+        fromList: [
+          '0xaf395754eB6F542742784cE7702940C60465A46c',
+          '0xaf395754eB6F542742784cE7702940C60465A46a',
+        ],
+        toList: ['*'],
+      };
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedFrom(condition, from);
+      expect(result).toBe(true);
+    });
+
+    test('fromList does not include from', () => {
+      const condition: TransactionAllow = {
+        fromList: [
+          '0xaf395754eB6F542742784cE7702940C60465A46c',
+          '0xaf395754eB6F542742784cE7702940C60465A46d',
+        ],
+        toList: ['*'],
+      };
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedFrom(condition, from);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('isAllowedTo', () => {
+    const allowCheckService = new AllowCheckService();
+
+    test('toList is wildcard', () => {
+      const condition: TransactionAllow = {
+        fromList: ['*'],
+        toList: ['*'],
+      };
+      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedTo(condition, to);
+      expect(result).toBe(true);
+    });
+
+    test('toList includes to', () => {
+      const condition: TransactionAllow = {
+        fromList: ['*'],
+        toList: [
+          '0xaf395754eB6F542742784cE7702940C60465A46c',
+          '0xaf395754eB6F542742784cE7702940C60465A46a',
+        ],
+      };
+      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedTo(condition, to);
+      expect(result).toBe(true);
+    });
+
+    test('toList does not include to', () => {
+      const condition: TransactionAllow = {
+        fromList: ['*'],
+        toList: [
+          '0xaf395754eB6F542742784cE7702940C60465A46c',
+          '0xaf395754eB6F542742784cE7702940C60465A46d',
+        ],
+      };
+      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isAllowedTo(condition, to);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('isAllowedDeploy', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    test('from is not included in deployAllowList', () => {
+      const getDeployAllowListMock = jest.spyOn(
+        transactionAllowList,
+        'getDeployAllowList',
       );
+      getDeployAllowListMock.mockReturnValue([
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+        '0xaf395754eB6F542742784cE7702940C60465A46d',
+      ]);
+
+      const allowCheckService = new AllowCheckService();
+
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+      const result = allowCheckService.isAllowedDeploy(from);
+      expect(result).toBe(false);
+    });
+
+    test('from is not allowed in deployAllowList', () => {
+      const getDeployAllowListMock = jest.spyOn(
+        transactionAllowList,
+        'getDeployAllowList',
+      );
+      getDeployAllowListMock.mockReturnValue([
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+      ]);
+
+      const allowCheckService = new AllowCheckService();
+
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+      const result = allowCheckService.isAllowedDeploy(from);
+      expect(result).toBe(false);
+    });
+
+    test('from is allowed in deployAllowList', () => {
+      const getDeployAllowListMock = jest.spyOn(
+        transactionAllowList,
+        'getDeployAllowList',
+      );
+      getDeployAllowListMock.mockReturnValue([
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+      ]);
+
+      const allowCheckService = new AllowCheckService();
+
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
+      const result = allowCheckService.isAllowedDeploy(from);
+      expect(result).toBe(true);
+    });
+
+    test('deployAllowList has wildcard', () => {
+      const getDeployAllowListMock = jest.spyOn(
+        transactionAllowList,
+        'getDeployAllowList',
+      );
+      getDeployAllowListMock.mockReturnValue(['*']);
+
+      const allowCheckService = new AllowCheckService();
+
+      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
+      const result = allowCheckService.isAllowedDeploy(from);
       expect(result).toBe(true);
     });
   });

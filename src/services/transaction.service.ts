@@ -11,8 +11,6 @@ import {
 import {
   TransactionAllow,
   getTxAllowList,
-  AddressRestriction,
-  getDeployAllowList,
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
@@ -21,14 +19,12 @@ import { WebhookService } from './webhook.service';
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
-  private deployAllowList: AddressRestriction;
   constructor(
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private webhookService: WebhookService,
   ) {
     this.txAllowList = getTxAllowList();
-    this.deployAllowList = getDeployAllowList();
   }
 
   async checkAllowedTx(
@@ -46,7 +42,7 @@ export class TransactionService {
 
     // Check for deploy transactions
     if (!to) {
-      if (this.allowCheckService.isAllowedAddress(this.deployAllowList, from)) {
+      if (this.allowCheckService.isAllowedDeploy(from)) {
         return;
       } else {
         throw new JsonrpcError('deploy transaction is not allowed', -32602);
@@ -56,14 +52,8 @@ export class TransactionService {
     // Check for transactions other than deploy
     let isAllow = false;
     for (const condition of this.txAllowList) {
-      const fromCheck = this.allowCheckService.isAllowedAddress(
-        condition.fromList,
-        from,
-      );
-      const toCheck = this.allowCheckService.isAllowedAddress(
-        condition.toList,
-        to,
-      );
+      const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
+      const toCheck = this.allowCheckService.isAllowedTo(condition, to);
 
       const contractCheck = this.allowCheckService.isAllowedContractMethod(
         condition.contractMethodList,
