@@ -17,6 +17,14 @@ export interface Webhook {
   retry: number;
   parse: boolean;
 }
+export interface RateLimit {
+  name: string;
+  perFrom?: boolean;
+  perTo?: boolean;
+  perMethod?: boolean;
+  interval: number;
+  limit: number;
+}
 
 export interface TransactionAllow {
   fromList: Array<string>;
@@ -24,6 +32,7 @@ export interface TransactionAllow {
   value?: ComparisonOperation;
   contractMethodList?: string[];
   webhooks?: Array<Webhook>;
+  rateLimit?: RateLimit;
 }
 
 export const getTxAllowList = (): Array<TransactionAllow> => {
@@ -36,5 +45,9 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 
 export const getDeployAllowList = (): Array<string> => {
+  return ['*'];
+};
+
+export const getUnlimitedTxRateAddresses = (): Array<string> => {
   return [''];
 };

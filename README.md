@@ -6,7 +6,7 @@ Verse-Proxy can control following items.
 - jsonrpc method
 - transaction's from, to, value
 - address which can deploy smart contract
-
+- transaction access rate
 
 ## Verse Proxy Build Steps
 
@@ -73,6 +73,12 @@ docker run --name verse-proxy -d -p $PORT:$PORT -v $PWD/src/config:/usr/src/app/
 
 ## Control items
 
+### Set allowed header
+You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
+```typescript
+inheritHostHeader: true,
+```
+
 ### Set allowed verse request methods
 You can set allowed verse request methods by regex at `src/config/configuration.ts`.
 ```typescript
@@ -127,13 +133,25 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       toList: ['*'],
     },
   ];
-}
+};
 ```
 
 ```typescript
-// ! is denial.
+// ! is exception_pattern.
 
-// everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
+// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a are allowed to be transacted.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
+      toList: ['*'],
+    },
+  ];
+};
+
+// Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
+// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
@@ -143,12 +161,32 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
   ];
 };
 
-// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to transact to all address.
+// Multiple Setting is enabled.
+// Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
+// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: ['!0xaf395754eB6F542742784cE7702940C60465A46a'],
-      toList: ['*'],
+      fromList: ['*'],
+      toList: [
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+        '!0xaf395754eB6F542742784cE7702940C60465A46c'
+      ],
+    },
+  ];
+};
+```
+
+```typescript
+// You can not set setting with normal_address and exception_pattern.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: [
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+        '!0xaf395754eB6F542742784cE7702940C60465A46c'
+      ],
     },
   ];
 };
@@ -179,6 +217,31 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 ```
 
+#### Value(Option)
+You can control the token value of a transaction.
+
+```typescript
+// Only transactions with more than 1000000000000000000unit values are allowed.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['*'],
+      value: { gt: '1000000000000000000' },
+      },
+  ];
+};
+```
+
+| value's key  |  Comparison Operation  |
+| ---- | ---- |
+|  eq  |  txValue == condition is allowed  |
+|  nq  |  txValue != condition is allowed  |
+|  gt  |  txValue > condition is allowed  |
+|  gte  |  txValue >= condition is allowed  |
+|  lt  |  txValue < condition is allowed  |
+|  lte  |  txValue <= condition is allowed  |
+
 #### Contract(Option)
 You cant restrict to transact contract method.
 
@@ -196,7 +259,6 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     },
   ];
 };
-
 // everyone can only transact to greet and setGreeting to 0x5FbDB2315678afecb367f032d93F642f64180aa3 and 0x5FbDB2315678afecb367f032d93F642f64180aa4
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
@@ -224,31 +286,6 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
   ];
 };
 ```
-
-#### Value(Option)
-You can control the token value of a transaction.
-
-```typescript
-// Only transactions with more than 1000000000000000000unit values are allowed.
-export const getTxAllowList = (): Array<TransactionAllow> => {
-  return [
-    {
-      fromList: ['*'],
-      toList: ['*'],
-      value: { gt: '1000000000000000000' },
-    }
-  ];
-};
-```
-
-| value's key  |  Comparison Operation  |
-| ---- | ---- |
-|  eq  |  txValue == condition is allowed  |
-|  nq  |  txValue != condition is allowed  |
-|  gt  |  txValue > condition is allowed  |
-|  gte  |  txValue >= condition is allowed  |
-|  lt  |  txValue < condition is allowed  |
-|  lte  |  txValue <= condition is allowed  |
 
 #### Webhook(Option)
 You can add webhook setting that execute your original transaction restriction.
@@ -281,7 +318,6 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     },
   ];
 };
-
 // You can set multiple webhook to `webhooks`.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
@@ -418,9 +454,11 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 }
 ```
 
+#### Transaction access rate limit(Option)
+If you set transaction access rate limit, follow [Transaction access rate limit](https://github.com/oasysgames/verse-proxy/blob/master/docs/RateLimit.md)
 
-#### Deployer
-You can control deployer of a verse.
+### Set contract deployer
+You can control deployer of a verse at `src/config/transactionAllowList.ts`.
 
 ```typescript
 // Only 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
@@ -428,23 +466,25 @@ export const getDeployAllowList = (): Array<string> => {
   return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
 };
 
+// wild card
 // Everyone can deploy
 export const getDeployAllowList = (): Array<string> => {
   return ['*'];
 };
 
-// 0xaf395754eB6F542742784cE7702940C60465A46c cannot deploy,
-// 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+// exception_pattern
+// any address other than 0xaf395754eB6F542742784cE7702940C60465A46c can deploy.
 export const getDeployAllowList = (): Array<string> => {
-  return [
-    '!0xaf395754eB6F542742784cE7702940C60465A46c',
-    '0xaf395754eB6F542742784cE7702940C60465A46a',
-  ];
+  return ['!0xaf395754eB6F542742784cE7702940C60465A46c'];
 };
 ```
 
-### Set allowed header
-You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
-```typescript
-inheritHostHeader: true,
+## Batch Request
+You can execute batch requests to the proxy.
+
+If you want to make many transaction batch requests, change the parse limit in the body by environment variable.
+The default body parse limit is 512kb.
+
+```bash
+MAX_BODY_BYTE_SIZE=1048576 # 1048576 byte is 1MB.
 ```

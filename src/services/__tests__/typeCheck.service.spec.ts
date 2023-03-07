@@ -1,8 +1,8 @@
-import { JsonrpcCheckService } from 'src/services';
+import { TypeCheckService } from 'src/services';
 
-const jsonrpcCheckService = new JsonrpcCheckService();
+const typeCheckService = new TypeCheckService();
 
-describe('isJsonrcp', () => {
+describe('isJsonrpc', () => {
   it('body is JsonrpcRequestBody', () => {
     const body = {
       jsonrpc: '2.0',
@@ -12,7 +12,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(true);
   });
 
   it('body.jsonrpc is not string', () => {
@@ -24,7 +24,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(false);
   });
 
   it('body.id is not string or number', () => {
@@ -36,7 +36,7 @@ describe('isJsonrcp', () => {
       ],
       id: true,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(false);
   });
 
   it('body.method is not string', () => {
@@ -48,7 +48,7 @@ describe('isJsonrcp', () => {
       ],
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(false);
   });
 
   it('body.params is not Array', () => {
@@ -58,7 +58,7 @@ describe('isJsonrcp', () => {
       params: true,
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(false);
   });
 
   it('body.params is empty Array', () => {
@@ -68,7 +68,7 @@ describe('isJsonrcp', () => {
       params: [],
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(true);
   });
 
   it('body.params is undefined', () => {
@@ -78,7 +78,7 @@ describe('isJsonrcp', () => {
       params: undefined,
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(true);
   });
 
   it('body.params is null', () => {
@@ -88,11 +88,11 @@ describe('isJsonrcp', () => {
       params: null,
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcp(body)).toBe(true);
+    expect(typeCheckService.isJsonrpcRequestBody(body)).toBe(true);
   });
 });
 
-describe('isJsonrcpArray', () => {
+describe('isJsonrpcArray', () => {
   it('body is JsonrpcRequestBodyArray', () => {
     const body = [
       {
@@ -110,7 +110,7 @@ describe('isJsonrcpArray', () => {
         id: 1,
       },
     ];
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(true);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(true);
   });
 
   it('body is not array', () => {
@@ -122,7 +122,7 @@ describe('isJsonrcpArray', () => {
       ],
       id: 1,
     };
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
   });
 
   it('body does not have string jsonrpc', () => {
@@ -142,7 +142,7 @@ describe('isJsonrcpArray', () => {
         id: 1,
       },
     ];
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
   });
 
   it('body does not have id which is string or number', () => {
@@ -162,7 +162,7 @@ describe('isJsonrcpArray', () => {
         id: 1,
       },
     ];
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
   });
 
   it('body does not have string method', () => {
@@ -182,7 +182,7 @@ describe('isJsonrcpArray', () => {
         id: 1,
       },
     ];
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
   });
 
   it('body does not have array params', () => {
@@ -200,6 +200,66 @@ describe('isJsonrcpArray', () => {
         id: 1,
       },
     ];
-    expect(jsonrpcCheckService.isJsonrcpArray(body)).toBe(false);
+    expect(typeCheckService.isJsonrpcArrayRequestBody(body)).toBe(false);
+  });
+});
+
+describe('isJsonrpcTxResponse', () => {
+  it('res is isJsonrpcTxResponse', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(true);
+  });
+
+  it('res.jsonrpc is not string', () => {
+    const res = {
+      jsonrpc: 2.0,
+      id: 1,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.id is not string or number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: true,
+      result:
+        '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is not string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 1,
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is string and is not 66 characters', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+  });
+
+  it('res.result is not tx hash string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result:
+        'aa4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
+    };
+    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
   });
 });

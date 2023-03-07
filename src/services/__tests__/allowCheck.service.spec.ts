@@ -1,469 +1,426 @@
-import { Test } from '@nestjs/testing';
 import { BigNumber } from 'ethers';
-import { AccessList } from 'ethers/lib/utils';
-import { HttpModule } from '@nestjs/axios';
-import {
-  TransactionAllow,
-  ComparisonOperation,
-} from 'src/config/transactionAllowList';
-import { AllowCheckService, WebhookService } from 'src/services';
-import * as transactionAllowList from 'src/config/transactionAllowList';
+import { ComparisonOperation } from 'src/config/transactionAllowList';
+import { AllowCheckService } from 'src/services';
 
-describe('AllowCheckService', () => {
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [HttpModule],
-      providers: [WebhookService],
-    })
-      .useMocker((token) => {
-        if (token === WebhookService) {
-          return {
-            post: jest.fn(),
-          };
-        }
-      })
-      .compile();
+describe('checkAddressList', () => {
+  const allowCheckService = new AllowCheckService();
+
+  test('addressList includes only wildcard', () => {
+    const addressList = ['*'];
+
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
   });
 
-  describe('isAllowedString', () => {
-    const allowCheckService = new AllowCheckService();
+  test('addressList includes wildcard and another address', () => {
+    const addressList = ['*', '0xaf395754eB6F542742784cE7702940C60465A46a'];
 
-    test('allowPattern equals input', () => {
-      const allowPattern = '0xaf395754eB6F542742784cE7702940C60465A46a';
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedString(allowPattern, input);
-      expect(result).toBe(true);
-    });
-
-    test('allowPattern does not equal input', () => {
-      const allowPattern = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedString(allowPattern, input);
-      expect(result).toBe(false);
-    });
-
-    test('allowPattern is wildcard', () => {
-      const allowPattern = '*';
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedString(allowPattern, input);
-      expect(result).toBe(true);
-    });
-
-    test('allowPattern is denial of input', () => {
-      const allowPattern = '!0xaf395754eB6F542742784cE7702940C60465A46a';
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedString(allowPattern, input);
-      expect(result).toBe(false);
-    });
-
-    test('allowPattern is not denial of input', () => {
-      const allowPattern = '!0xaf395754eB6F542742784cE7702940C60465A46a';
-      const input = '0xaf395754eB6F542742784cE7702940C60465A46c';
-
-      const result = allowCheckService.isAllowedString(allowPattern, input);
-      expect(result).toBe(false);
-    });
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error('You can not set wildcard with another address');
+      expect(e).toEqual(error);
+    }
   });
 
-  describe('isAllowedFrom', () => {
-    const allowCheckService = new AllowCheckService();
+  test('addressList includes only normal_address', () => {
+    const addressList = [
+      '0xaf395754eB6F542742784cE7702940C60465A46c',
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
 
-    test('fromList is wildcard', () => {
-      const condition: TransactionAllow = {
-        fromList: ['*'],
-        toList: ['*'],
-      };
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedFrom(condition, from);
-      expect(result).toBe(true);
-    });
-
-    test('fromList includes from', () => {
-      const condition: TransactionAllow = {
-        fromList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46c',
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-        ],
-        toList: ['*'],
-      };
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedFrom(condition, from);
-      expect(result).toBe(true);
-    });
-
-    test('fromList does not include from', () => {
-      const condition: TransactionAllow = {
-        fromList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46c',
-          '0xaf395754eB6F542742784cE7702940C60465A46d',
-        ],
-        toList: ['*'],
-      };
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedFrom(condition, from);
-      expect(result).toBe(false);
-    });
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
   });
 
-  describe('isAllowedTo', () => {
-    const allowCheckService = new AllowCheckService();
+  test('addressList includes only exception_pattern', () => {
+    const addressList = [
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+      '!0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
 
-    test('toList is wildcard', () => {
-      const condition: TransactionAllow = {
-        fromList: ['*'],
-        toList: ['*'],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedTo(condition, to);
-      expect(result).toBe(true);
-    });
-
-    test('toList includes to', () => {
-      const condition: TransactionAllow = {
-        fromList: ['*'],
-        toList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46c',
-          '0xaf395754eB6F542742784cE7702940C60465A46a',
-        ],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedTo(condition, to);
-      expect(result).toBe(true);
-    });
-
-    test('toList does not include to', () => {
-      const condition: TransactionAllow = {
-        fromList: ['*'],
-        toList: [
-          '0xaf395754eB6F542742784cE7702940C60465A46c',
-          '0xaf395754eB6F542742784cE7702940C60465A46d',
-        ],
-      };
-      const to = '0xaf395754eB6F542742784cE7702940C60465A46a';
-
-      const result = allowCheckService.isAllowedTo(condition, to);
-      expect(result).toBe(false);
-    });
+    expect(() => allowCheckService.checkAddressList(addressList)).not.toThrow();
   });
 
-  describe('isAllowedDeploy', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
+  test('addressList includes normal_address and exception_pattern', () => {
+    const addressList = [
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+    ];
 
-    test('from is not included in deployAllowList', () => {
-      const getDeployAllowListMock = jest.spyOn(
-        transactionAllowList,
-        'getDeployAllowList',
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error(
+        'You can not set setting with address and address_denial(!address)',
       );
-      getDeployAllowListMock.mockReturnValue([
+      expect(e).toEqual(error);
+    }
+  });
+
+  test('addressList includes normal_address and exception_pattern', () => {
+    const addressList = [
+      '0xaf395754eB6F542742784cE7702940C60465A46a',
+      '!0xaf395754eB6F542742784cE7702940C60465A46c',
+    ];
+
+    try {
+      allowCheckService.checkAddressList(addressList);
+    } catch (e) {
+      const error = new Error(
+        'You can not set setting with address and address_denial(!address)',
+      );
+      expect(e).toEqual(error);
+    }
+  });
+});
+
+describe('isIncludedAddress', () => {
+  const allowCheckService = new AllowCheckService();
+
+  describe('addressList and input have the same font case', () => {
+    test('addressList is wildcard', () => {
+      const addressList = ['*'];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
+
+    test('addressList includes to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
         '0xaf395754eB6F542742784cE7702940C60465A46a',
-        '0xaf395754eB6F542742784cE7702940C60465A46d',
-      ]);
-
-      const allowCheckService = new AllowCheckService();
-
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const result = allowCheckService.isAllowedDeploy(from);
-      expect(result).toBe(false);
-    });
-
-    test('from is not allowed in deployAllowList', () => {
-      const getDeployAllowListMock = jest.spyOn(
-        transactionAllowList,
-        'getDeployAllowList',
-      );
-      getDeployAllowListMock.mockReturnValue([
-        '!0xaf395754eB6F542742784cE7702940C60465A46c',
-        '0xaf395754eB6F542742784cE7702940C60465A46a',
-      ]);
-
-      const allowCheckService = new AllowCheckService();
-
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const result = allowCheckService.isAllowedDeploy(from);
-      expect(result).toBe(false);
-    });
-
-    test('from is allowed in deployAllowList', () => {
-      const getDeployAllowListMock = jest.spyOn(
-        transactionAllowList,
-        'getDeployAllowList',
-      );
-      getDeployAllowListMock.mockReturnValue([
-        '!0xaf395754eB6F542742784cE7702940C60465A46c',
-        '0xaf395754eB6F542742784cE7702940C60465A46a',
-      ]);
-
-      const allowCheckService = new AllowCheckService();
-
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
-      const result = allowCheckService.isAllowedDeploy(from);
-      expect(result).toBe(true);
-    });
-
-    test('deployAllowList has wildcard', () => {
-      const getDeployAllowListMock = jest.spyOn(
-        transactionAllowList,
-        'getDeployAllowList',
-      );
-      getDeployAllowListMock.mockReturnValue(['*']);
-
-      const allowCheckService = new AllowCheckService();
-
-      const from = '0xaf395754eB6F542742784cE7702940C60465A46c';
-      const result = allowCheckService.isAllowedDeploy(from);
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('isAllowedContractMethod', () => {
-    const allowCheckService = new AllowCheckService();
-
-    test('contractMethodList is undefined', () => {
-      const contractMethodList = undefined;
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
-
-      const result = allowCheckService.isAllowedContractMethod(
-        contractMethodList,
-        methodId,
-      );
-      expect(result).toBe(true);
-    });
-
-    test('contractMethodList is empty array', () => {
-      const contractMethodList: string[] = [];
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
-
-      const result = allowCheckService.isAllowedContractMethod(
-        contractMethodList,
-        methodId,
-      );
-      expect(result).toBe(true);
-    });
-
-    test('allowedMethod is not in contractMethodList', () => {
-      const contractMethodList = ['transfer(address,uint256)'];
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
-
-      const result = allowCheckService.isAllowedContractMethod(
-        contractMethodList,
-        methodId,
-      );
-      expect(result).toBe(false);
-    });
-
-    test('allowedMethod is in contractMethodList', () => {
-      const contractMethodList = [
-        'approve(address,uint256)',
-        'transfer(address,uint256)',
       ];
-      const methodId = '0x095ea7b3'; // approve(address,uint256)
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-      const result = allowCheckService.isAllowedContractMethod(
-        contractMethodList,
-        methodId,
-      );
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
+
+    test('addressList does not include to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46d',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
+
+    test('addressList has exception_pattern and input is exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(false);
+    });
+
+    test('addressList has exception_pattern and input is not exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46d';
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
       expect(result).toBe(true);
     });
   });
 
-  describe('isAllowedValue', () => {
-    const allowCheckService = new AllowCheckService();
+  describe('addressList and input do not have the same font case', () => {
+    test('addressList is wildcard', () => {
+      const addressList = ['*'];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
-    test('value == eq', () => {
-      const valueCondition: ComparisonOperation = {
-        eq: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
-
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
       expect(result).toBe(true);
     });
 
-    test('value != eq', () => {
-      const valueCondition: ComparisonOperation = {
-        eq: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+    test('addressList includes to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
+      expect(result).toBe(true);
+    });
+
+    test('addressList does not include to', () => {
+      const addressList = [
+        '0xaf395754eB6F542742784cE7702940C60465A46c',
+        '0xaf395754eB6F542742784cE7702940C60465A46d',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
+
+      const result = allowCheckService.isIncludedAddress(addressList, input);
       expect(result).toBe(false);
     });
 
-    test('value != nq', () => {
-      const valueCondition: ComparisonOperation = {
-        nq: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+    test('addressList has exception_pattern and input is exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46a'.toUpperCase();
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
-
-    test('value == nq', () => {
-      const valueCondition: ComparisonOperation = {
-        nq: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
-
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
       expect(result).toBe(false);
     });
 
-    test('value > gt', () => {
-      const valueCondition: ComparisonOperation = {
-        gt: '900000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+    test('addressList has exception_pattern and input is not exception_pattern', () => {
+      const addressList = [
+        '!0xaf395754eB6F542742784cE7702940C60465A46c',
+        '!0xaf395754eB6F542742784cE7702940C60465A46a',
+      ];
+      const input = '0xaf395754eB6F542742784cE7702940C60465A46d'.toUpperCase();
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
+      const result = allowCheckService.isIncludedAddress(addressList, input);
       expect(result).toBe(true);
     });
+  });
+});
 
-    test('value == gt', () => {
-      const valueCondition: ComparisonOperation = {
-        gt: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+describe('isAllowedContractMethod', () => {
+  const allowCheckService = new AllowCheckService();
+  test('contractMethodList is undefined', () => {
+    const contractMethodList = undefined;
+    const methodId = '0x095ea7b3'; // approve(address,uint256)
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+    const result = allowCheckService.isAllowedContractMethod(
+      contractMethodList,
+      methodId,
+    );
+    expect(result).toBe(true);
+  });
 
-    test('value < gt', () => {
-      const valueCondition: ComparisonOperation = {
-        gt: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+  test('contractMethodList is empty array', () => {
+    const contractMethodList: string[] = [];
+    const methodId = '0x095ea7b3'; // approve(address,uint256)
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+    const result = allowCheckService.isAllowedContractMethod(
+      contractMethodList,
+      methodId,
+    );
+    expect(result).toBe(true);
+  });
 
-    test('value > gte', () => {
-      const valueCondition: ComparisonOperation = {
-        gte: '900000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+  test('allowedMethod is not in contractMethodList', () => {
+    const contractMethodList = ['transfer(address,uint256)'];
+    const methodId = '0x095ea7b3'; // approve(address,uint256)
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+    const result = allowCheckService.isAllowedContractMethod(
+      contractMethodList,
+      methodId,
+    );
+    expect(result).toBe(false);
+  });
 
-    test('value == gte', () => {
-      const valueCondition: ComparisonOperation = {
-        gte: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+  test('allowedMethod is in contractMethodList', () => {
+    const contractMethodList = [
+      'approve(address,uint256)',
+      'transfer(address,uint256)',
+    ];
+    const methodId = '0x095ea7b3'; // approve(address,uint256)
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+    const result = allowCheckService.isAllowedContractMethod(
+      contractMethodList,
+      methodId,
+    );
+    expect(result).toBe(true);
+  });
+});
 
-    test('value < gte', () => {
-      const valueCondition: ComparisonOperation = {
-        gte: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+describe('isAllowedValue', () => {
+  const allowCheckService = new AllowCheckService();
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+  test('value == eq', () => {
+    const valueCondition: ComparisonOperation = {
+      eq: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value < lt', () => {
-      const valueCondition: ComparisonOperation = {
-        lt: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+  test('value != eq', () => {
+    const valueCondition: ComparisonOperation = {
+      eq: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
 
-    test('value == lt', () => {
-      const valueCondition: ComparisonOperation = {
-        lt: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+  test('value != nq', () => {
+    const valueCondition: ComparisonOperation = {
+      nq: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
 
-    test('value > lt', () => {
-      const valueCondition: ComparisonOperation = {
-        lt: '900000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+  test('value == nq', () => {
+    const valueCondition: ComparisonOperation = {
+      nq: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value < lte', () => {
-      const valueCondition: ComparisonOperation = {
-        lte: '1000000000000000000',
-      };
-      const value = BigNumber.from('900000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+  test('value > gt', () => {
+    const valueCondition: ComparisonOperation = {
+      gt: '900000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value == lte', () => {
-      const valueCondition: ComparisonOperation = {
-        lte: '1000000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+  test('value == gt', () => {
+    const valueCondition: ComparisonOperation = {
+      gt: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value > lte', () => {
-      const valueCondition: ComparisonOperation = {
-        lte: '900000000000000000',
-      };
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+  test('value < gt', () => {
+    const valueCondition: ComparisonOperation = {
+      gt: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
 
-    test('valueCondition has invalid key', () => {
-      const valueCondition = {
-        leq: '900000000000000000',
-      } as ComparisonOperation;
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(false);
-    });
+  test('value > gte', () => {
+    const valueCondition: ComparisonOperation = {
+      gte: '900000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value is empty object', () => {
-      const valueCondition = {};
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+  test('value == gte', () => {
+    const valueCondition: ComparisonOperation = {
+      gte: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
 
-    test('value is not set', () => {
-      const valueCondition = undefined;
-      const value = BigNumber.from('1000000000000000000');
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
 
-      const result = allowCheckService.isAllowedValue(valueCondition, value);
-      expect(result).toBe(true);
-    });
+  test('value < gte', () => {
+    const valueCondition: ComparisonOperation = {
+      gte: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value < lt', () => {
+    const valueCondition: ComparisonOperation = {
+      lt: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value == lt', () => {
+    const valueCondition: ComparisonOperation = {
+      lt: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value > lt', () => {
+    const valueCondition: ComparisonOperation = {
+      lt: '900000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value < lte', () => {
+    const valueCondition: ComparisonOperation = {
+      lte: '1000000000000000000',
+    };
+    const value = BigNumber.from('900000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value == lte', () => {
+    const valueCondition: ComparisonOperation = {
+      lte: '1000000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value > lte', () => {
+    const valueCondition: ComparisonOperation = {
+      lte: '900000000000000000',
+    };
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('valueCondition has invalid key', () => {
+    const valueCondition = {
+      leq: '900000000000000000',
+    } as ComparisonOperation;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(false);
+  });
+
+  test('value is empty object', () => {
+    const valueCondition = {};
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
+  });
+
+  test('value is not set', () => {
+    const valueCondition = undefined;
+    const value = BigNumber.from('1000000000000000000');
+
+    const result = allowCheckService.isAllowedValue(valueCondition, value);
+    expect(result).toBe(true);
   });
 });

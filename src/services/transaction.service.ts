@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
-import { IncomingHttpHeaders } from 'http';
 import {
   EthEstimateGasParams,
   JsonrpcRequestBody,
@@ -14,7 +13,7 @@ import {
 } from 'src/config/transactionAllowList';
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
-import { WebhookService } from './webhook.service';
+import { RateLimitService } from './rateLimit.service';
 
 @Injectable()
 export class TransactionService {
@@ -22,38 +21,40 @@ export class TransactionService {
   constructor(
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
-    private webhookService: WebhookService,
+    private readonly rateLimitService: RateLimitService,
   ) {
     this.txAllowList = getTxAllowList();
+    this.txAllowList.forEach((txAllow) => {
+      this.allowCheckService.checkAddressList(txAllow.fromList);
+      this.allowCheckService.checkAddressList(txAllow.toList);
+    });
   }
 
-  async checkAllowedTx(
-    ip: string,
-    headers: IncomingHttpHeaders,
-    body: JsonrpcRequestBody,
-    tx: Transaction,
-  ): Promise<void> {
-    const from = tx.from;
-    const to = tx.to;
-    const value = tx.value;
-    const methodId = tx.data.substring(0, 10);
-
-    if (!from) throw new JsonrpcError('transaction is invalid', -32602);
-
-    // Check for deploy transactions
-    if (!to) {
-      if (this.allowCheckService.isAllowedDeploy(from)) {
-        return;
-      } else {
-        throw new JsonrpcError('deploy transaction is not allowed', -32602);
-      }
+  checkContractDeploy(from: string) {
+    if (this.allowCheckService.isAllowedDeploy(from)) {
+      return;
+    } else {
+      throw new JsonrpcError('deploy transaction is not allowed', -32602);
     }
+  }
 
-    // Check for transactions other than deploy
-    let isAllow = false;
+  async getMatchedTxAllowRule(
+    from: string,
+    to: string,
+    methodId: string,
+    value: BigNumber,
+  ): Promise<TransactionAllow> {
+    let matchedTxAllowRule;
+
     for (const condition of this.txAllowList) {
-      const fromCheck = this.allowCheckService.isAllowedFrom(condition, from);
-      const toCheck = this.allowCheckService.isAllowedTo(condition, to);
+      const fromCheck = this.allowCheckService.isIncludedAddress(
+        condition.fromList,
+        from,
+      );
+      const toCheck = this.allowCheckService.isIncludedAddress(
+        condition.toList,
+        to,
+      );
 
       const contractCheck = this.allowCheckService.isAllowedContractMethod(
         condition.contractMethodList,
@@ -66,31 +67,38 @@ export class TransactionService {
         value,
       );
 
-      let webhookCheck = true;
-      if (condition.webhooks) {
-        await Promise.all(
-          condition.webhooks.map(async (webhook): Promise<void> => {
-            const { status } = await this.webhookService.post(
-              ip,
-              headers,
-              body,
-              tx,
-              webhook,
-            );
-            if (status >= 400) {
-              webhookCheck = false;
-            }
-          }),
-        );
-      }
-
-      if (fromCheck && toCheck && contractCheck && valueCheck && webhookCheck) {
-        isAllow = true;
+      if (fromCheck && toCheck && contractCheck && valueCheck) {
+        if (condition.rateLimit)
+          await this.rateLimitService.checkRateLimit(
+            from,
+            to,
+            methodId,
+            condition.rateLimit,
+          );
+        // if (condition.webhooks) {
+        //   await Promise.all(
+        //     condition.webhooks.map(async (webhook): Promise<void> => {
+        //       const { status } = await this.webhookService.post(
+        //         ip,
+        //         headers,
+        //         body,
+        //         tx,
+        //         webhook,
+        //       );
+        //       if (status >= 400) {
+        //         webhookCheck = false;
+        //       }
+        //     }),
+        //   );
+        matchedTxAllowRule = condition;
         break;
       }
     }
 
-    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
+    if (!matchedTxAllowRule)
+      throw new JsonrpcError('transaction is not allowed', -32602);
+
+    return matchedTxAllowRule;
   }
 
   async checkAllowedGas(
