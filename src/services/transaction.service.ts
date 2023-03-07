@@ -60,7 +60,7 @@ export class TransactionService {
         to,
       );
 
-      const contractCheck = this.allowCheckService.isAllowedContractMethod(
+      const methodCheck = this.allowCheckService.isAllowedContractMethod(
         condition.contractMethodList,
         methodId,
       );
@@ -71,7 +71,7 @@ export class TransactionService {
         value,
       );
 
-      if (fromCheck && toCheck && contractCheck && valueCheck) {
+      if (fromCheck && toCheck && methodCheck && valueCheck) {
         if (condition.rateLimit)
           await this.rateLimitService.checkRateLimit(
             from,
