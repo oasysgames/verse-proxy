@@ -20,25 +20,29 @@ export class DatastoreService {
     to: string,
     methodId: string,
     txHash: string,
-    rateLimit: RateLimit,
+    rateLimits: RateLimit[],
   ) {
     const txHashByte = Buffer.from(txHash.slice(2), 'hex');
 
-    switch (this.datastore) {
-      case 'redis':
-        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
-        const now = Date.now();
-        const removeDataTimestamp =
-          this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
-        const pipeline = this.redis.pipeline();
-        pipeline.zadd(redisKey, now, txHashByte);
-        if (now % 5 === 0)
-          pipeline.zremrangebyscore(redisKey, 0, removeDataTimestamp);
-        await pipeline.exec((err) => {
-          if (err) console.error(err);
-        });
-        break;
-    }
+    await Promise.all(
+      rateLimits.map(async (rateLimit): Promise<void> => {
+        switch (this.datastore) {
+          case 'redis':
+            const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+            const now = Date.now();
+            const removeDataTimestamp =
+              this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
+            const pipeline = this.redis.pipeline();
+            pipeline.zadd(redisKey, now, txHashByte);
+            if (now % 5 === 0)
+              pipeline.zremrangebyscore(redisKey, 0, removeDataTimestamp);
+            await pipeline.exec((err) => {
+              if (err) console.error(err);
+            });
+            break;
+        }
+      }),
+    );
   }
 
   async getTransactionHistoryCount(

@@ -115,13 +115,13 @@ export class ProxyService {
     const txHash = result.data.result;
 
     const isSetRateLimit = !!this.configService.get<string>('datastore');
-    if (isSetRateLimit && matchedTxAllowRule.rateLimit)
+    if (isSetRateLimit && matchedTxAllowRule.rateLimits)
       await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
         methodId,
         txHash,
-        matchedTxAllowRule.rateLimit,
+        matchedTxAllowRule.rateLimits,
       );
     return result;
   }

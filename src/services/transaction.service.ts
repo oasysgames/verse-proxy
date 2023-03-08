@@ -63,12 +63,12 @@ export class TransactionService {
       );
 
       if (fromCheck && toCheck && valueCheck) {
-        if (condition.rateLimit)
-          await this.rateLimitService.checkRateLimit(
+        if (condition.rateLimits)
+          await this.rateLimitService.checkRateLimits(
             from,
             to,
             methodId,
-            condition.rateLimit,
+            condition.rateLimits,
           );
         matchedTxAllowRule = condition;
         break;

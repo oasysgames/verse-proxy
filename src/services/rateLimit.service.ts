@@ -34,4 +34,17 @@ export class RateLimitService {
         -32602,
       );
   }
+
+  async checkRateLimits(
+    from: string,
+    to: string,
+    methodId: string,
+    rateLimits: RateLimit[],
+  ) {
+    await Promise.all(
+      rateLimits.map(async (rateLimit): Promise<void> => {
+        await this.checkRateLimit(from, to, methodId, rateLimit);
+      }),
+    );
+  }
 }
