@@ -1203,7 +1203,7 @@ describe('single request', () => {
           {
             fromList: [`!${from}`],
             toList: ['*'],
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1318,7 +1318,7 @@ describe('single request', () => {
           {
             fromList: ['*'],
             toList: [`!${to}`],
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1423,7 +1423,7 @@ describe('single request', () => {
           {
             fromList: ['*'],
             toList: ['*'],
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1545,7 +1545,7 @@ describe('single request', () => {
           {
             fromList: ['*'],
             toList: ['*'],
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1652,7 +1652,7 @@ describe('single request', () => {
           {
             fromList: ['*'],
             toList: ['*'],
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1765,7 +1765,7 @@ describe('single request', () => {
             fromList: [`!${from}`],
             toList: ['*'],
             value: { eq: `${valueAmount}` },
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1881,7 +1881,7 @@ describe('single request', () => {
             fromList: ['*'],
             toList: [`!${to}`],
             value: { eq: `${valueAmount}` },
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -1997,7 +1997,7 @@ describe('single request', () => {
             fromList: ['*'],
             toList: ['*'],
             value: { gt: `${valueAmount}` },
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -2103,7 +2103,7 @@ describe('single request', () => {
             fromList: ['*'],
             toList: ['*'],
             value: { eq: `${valueAmount}` },
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -2226,7 +2226,7 @@ describe('single request', () => {
             fromList: ['*'],
             toList: ['*'],
             value: { eq: `${valueAmount}` },
-            rateLimit,
+            rateLimits: [rateLimit],
           },
         ];
         const deployAllowList = [''];
@@ -2329,7 +2329,7 @@ describe('single request', () => {
           fromList: ['*'],
           toList: ['*'],
           value: { eq: `${valueAmount}` },
-          rateLimit,
+          rateLimits: [rateLimit],
         },
       ];
       const deployAllowList = [''];
@@ -2452,7 +2452,7 @@ describe('single request', () => {
           fromList: ['*'],
           toList: ['*'],
           value: { gt: `${valueAmount}` },
-          rateLimit,
+          rateLimits: [rateLimit],
         },
       ];
       const deployAllowList = [from];
