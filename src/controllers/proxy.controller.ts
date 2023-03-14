@@ -50,4 +50,35 @@ export class ProxyController {
       throw new ForbiddenException(`invalid request`);
     }
   }
+
+  @Post('master')
+  async postMaster(
+    @Headers() headers: IncomingHttpHeaders,
+    @Body() body: any,
+    @Res() res: Response,
+  ) {
+    const callback = (result: VerseRequestResponse) => {
+      const { status, data } = result;
+      res.status(status).send(data);
+    };
+    const isUseReadNode = false;
+
+    if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
+      await this.proxyService.handleBatchRequest(
+        isUseReadNode,
+        headers,
+        body,
+        callback,
+      );
+    } else if (this.typeCheckService.isJsonrpcRequestBody(body)) {
+      await this.proxyService.handleSingleRequest(
+        isUseReadNode,
+        headers,
+        body,
+        callback,
+      );
+    } else {
+      throw new ForbiddenException(`invalid request`);
+    }
+  }
 }
