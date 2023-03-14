@@ -8,7 +8,7 @@ import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from 'src/services';
 import { JsonrpcError } from 'src/entities';
 
-const verseUrl = 'http://localhost:8545';
+const verseMasterNodeUrl = 'http://localhost:8545';
 
 describe('VerseService', () => {
   let httpService: HttpService;
@@ -54,8 +54,8 @@ describe('VerseService', () => {
     jest.spyOn(httpService, 'post').mockImplementation(() => of(res));
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
       switch (key) {
-        case 'verseUrl':
-          return verseUrl;
+        case 'verseMasterNodeUrl':
+          return verseMasterNodeUrl;
         case 'inheritHostHeader':
           return inheritHostHeader;
       }
@@ -63,7 +63,7 @@ describe('VerseService', () => {
   });
 
   describe('post', () => {
-    const verseUrl = 'http://localhost:8545';
+    const verseMasterNodeUrl = 'http://localhost:8545';
 
     const type = 2;
     const chainId = 5;
@@ -140,8 +140,8 @@ describe('VerseService', () => {
       postMock.mockImplementation(() => of(res));
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         switch (key) {
-          case 'verseUrl':
-            return verseUrl;
+          case 'verseMasterNodeUrl':
+            return verseMasterNodeUrl;
           case 'inheritHostHeader':
             return inheritHostHeader;
         }
@@ -165,7 +165,7 @@ describe('VerseService', () => {
       };
 
       const result = await verseService.post(proxyRequestHeaders, body);
-      expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
+      expect(postMock).toHaveBeenCalledWith(verseMasterNodeUrl, body, axiosConfig);
       expect(result).toEqual(responseResult);
     });
 
@@ -194,8 +194,8 @@ describe('VerseService', () => {
       postMock.mockImplementation(() => of(res));
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         switch (key) {
-          case 'verseUrl':
-            return verseUrl;
+          case 'verseMasterNodeUrl':
+            return verseMasterNodeUrl;
           case 'inheritHostHeader':
             return inheritHostHeader;
         }
@@ -217,7 +217,7 @@ describe('VerseService', () => {
       };
 
       const result = await verseService.post(proxyRequestHeaders, body);
-      expect(postMock).toHaveBeenCalledWith(verseUrl, body, axiosConfig);
+      expect(postMock).toHaveBeenCalledWith(verseMasterNodeUrl, body, axiosConfig);
       expect(result).toEqual(responseResult);
     });
 
@@ -232,8 +232,8 @@ describe('VerseService', () => {
       });
       jest.spyOn(configService, 'get').mockImplementation((key: string) => {
         switch (key) {
-          case 'verseUrl':
-            return verseUrl;
+          case 'verseMasterNodeUrl':
+            return verseMasterNodeUrl;
           case 'inheritHostHeader':
             return inheritHostHeader;
         }

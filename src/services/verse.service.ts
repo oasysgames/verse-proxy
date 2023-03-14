@@ -7,14 +7,15 @@ import { JsonrpcRequestBody, VerseRequestResponse } from 'src/entities';
 
 @Injectable()
 export class VerseService {
-  private verseUrl: string;
+  private verseMasterNodeUrl: string;
   private inheritHostHeader: boolean;
   constructor(
     private readonly httpService: HttpService,
     private configService: ConfigService,
   ) {
-    this.verseUrl =
-      this.configService.get<string>('verseUrl') ?? 'http://localhost:8545';
+    this.verseMasterNodeUrl =
+      this.configService.get<string>('verseMasterNodeUrl') ??
+      'http://localhost:8545';
     this.inheritHostHeader =
       this.configService.get<boolean>('inheritHostHeader') ?? false;
   }
@@ -36,7 +37,7 @@ export class VerseService {
     const axiosConfig = { headers: verseHeaders };
 
     const res = await lastValueFrom(
-      this.httpService.post(this.verseUrl, body, axiosConfig).pipe(
+      this.httpService.post(this.verseMasterNodeUrl, body, axiosConfig).pipe(
         // when response status is 400 or higher
         catchError((e) => {
           throw e;
