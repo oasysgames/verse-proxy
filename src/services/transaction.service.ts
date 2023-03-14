@@ -15,11 +15,13 @@ import {
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
+import { TypeCheckService } from './typeCheck.service';
 
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
   constructor(
+    private typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
@@ -126,8 +128,9 @@ export class TransactionService {
       res = await this.verseService.postVerseMasterNode(headers, body);
     }
 
-    if (res.data.error) {
-      throw new JsonrpcError(res.data.error.message, -32602);
+    if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
+      const { code, message } = res.data.error;
+      throw new JsonrpcError(message, code);
     }
   }
 

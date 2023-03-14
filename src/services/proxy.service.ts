@@ -129,8 +129,8 @@ export class ProxyService {
     );
     const result = await this.verseService.postVerseMasterNode(headers, body);
 
-    if (!this.typeCheckService.isJsonrpcTxResponse(result.data))
-      throw new JsonrpcError('Can not get verse response', -32603);
+    if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
+      return result;
     const txHash = result.data.result;
 
     const isSetRateLimit = !!this.configService.get<string>('datastore');
