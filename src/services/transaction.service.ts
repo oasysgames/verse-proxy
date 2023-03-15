@@ -6,7 +6,6 @@ import {
   JsonrpcId,
   JsonrpcVersion,
   JsonrpcError,
-  VerseRequestResponse,
 } from 'src/entities';
 import {
   TransactionAllow,
@@ -85,7 +84,6 @@ export class TransactionService {
   }
 
   async checkAllowedGas(
-    isUseReadNode: boolean,
     tx: Transaction,
     jsonrpc: JsonrpcVersion,
     id: JsonrpcId,
@@ -121,12 +119,7 @@ export class TransactionService {
       params: params,
     };
 
-    let res: VerseRequestResponse;
-    if (isUseReadNode) {
-      res = await this.verseService.postVerseReadNode(headers, body);
-    } else {
-      res = await this.verseService.postVerseMasterNode(headers, body);
-    }
+    const res = await this.verseService.postVerseMasterNode(headers, body);
 
     if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
       const { code, message } = res.data.error;

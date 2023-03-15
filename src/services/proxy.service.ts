@@ -58,13 +58,17 @@ export class ProxyService {
       const method = body.method;
       this.checkMethod(method);
 
-      if (method !== 'eth_sendRawTransaction' && isUseReadNode) {
-        return await this.verseService.postVerseReadNode(headers, body);
-      } else if (method !== 'eth_sendRawTransaction' && !isUseReadNode) {
+      if (method === 'eth_sendRawTransaction') {
+        return await this.sendTransaction(headers, body);
+      } else if (method === 'eth_estimateGas') {
         return await this.verseService.postVerseMasterNode(headers, body);
       }
 
-      return await this.sendTransaction(isUseReadNode, headers, body);
+      if (isUseReadNode) {
+        return await this.verseService.postVerseReadNode(headers, body);
+      } else {
+        return await this.verseService.postVerseMasterNode(headers, body);
+      }
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -89,7 +93,6 @@ export class ProxyService {
   }
 
   async sendTransaction(
-    isUseReadNode: boolean,
     headers: IncomingHttpHeaders,
     body: JsonrpcRequestBody,
   ) {
@@ -103,12 +106,7 @@ export class ProxyService {
     // contract deploy transaction
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
-      await this.txService.checkAllowedGas(
-        isUseReadNode,
-        tx,
-        body.jsonrpc,
-        body.id,
-      );
+      await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
       const result = await this.verseService.postVerseMasterNode(headers, body);
       return result;
     }
@@ -121,12 +119,7 @@ export class ProxyService {
       methodId,
       tx.value,
     );
-    await this.txService.checkAllowedGas(
-      isUseReadNode,
-      tx,
-      body.jsonrpc,
-      body.id,
-    );
+    await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const result = await this.verseService.postVerseMasterNode(headers, body);
 
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
