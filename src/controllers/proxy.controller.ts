@@ -26,29 +26,8 @@ export class ProxyController {
     @Body() body: any,
     @Res() res: Response,
   ) {
-    const callback = (result: VerseRequestResponse) => {
-      const { status, data } = result;
-      res.status(status).send(data);
-    };
     const isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
-
-    if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
-      await this.proxyService.handleBatchRequest(
-        isUseReadNode,
-        headers,
-        body,
-        callback,
-      );
-    } else if (this.typeCheckService.isJsonrpcRequestBody(body)) {
-      await this.proxyService.handleSingleRequest(
-        isUseReadNode,
-        headers,
-        body,
-        callback,
-      );
-    } else {
-      throw new ForbiddenException(`invalid request`);
-    }
+    await this.handler(isUseReadNode, headers, body, res);
   }
 
   @Post('master')
@@ -57,11 +36,20 @@ export class ProxyController {
     @Body() body: any,
     @Res() res: Response,
   ) {
+    const isUseReadNode = false;
+    await this.handler(isUseReadNode, headers, body, res);
+  }
+
+  private async handler(
+    isUseReadNode: boolean,
+    headers: IncomingHttpHeaders,
+    body: any,
+    res: Response,
+  ) {
     const callback = (result: VerseRequestResponse) => {
       const { status, data } = result;
       res.status(status).send(data);
     };
-    const isUseReadNode = false;
 
     if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
       await this.proxyService.handleBatchRequest(
