@@ -39,6 +39,13 @@ if (cluster.isPrimary) {
     console.log('cluster fork :', i);
     cluster.fork();
   }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(
+      `Worker ${worker.process.pid} died with code(${code}) and signal(${signal}). Restarting...`,
+    );
+    cluster.fork();
+  });
 } else {
   console.log('worker pid is', cluster.worker?.process.pid);
   bootstrap();
