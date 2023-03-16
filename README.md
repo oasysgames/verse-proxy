@@ -276,3 +276,11 @@ The default body parse limit is 512kb.
 ```bash
 MAX_BODY_BYTE_SIZE=1048576 # 1048576 byte is 1MB.
 ```
+
+## Multi Processing
+If you want to build proxy in multi-process, set worker count to environment variables.
+The default worker count is 1.
+
+```bash
+CLUSTER_PROCESS=4
+```
