@@ -40,7 +40,7 @@ export class ProxyController {
     await this.handler(isUseReadNode, headers, body, res);
   }
 
-  private async handler(
+  async handler(
     isUseReadNode: boolean,
     headers: IncomingHttpHeaders,
     body: any,
