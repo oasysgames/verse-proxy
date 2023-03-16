@@ -37,7 +37,7 @@ export class VerseService {
     return await this.post(this.verseReadNodeUrl, headers, body);
   }
 
-  private async post(
+  async post(
     verseUrl: string,
     headers: IncomingHttpHeaders,
     body: JsonrpcRequestBody | Array<JsonrpcRequestBody>,
