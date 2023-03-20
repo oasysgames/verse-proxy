@@ -7,6 +7,7 @@ import {
   JsonrpcId,
   JsonrpcVersion,
   JsonrpcError,
+  VerseRequestResponse,
 } from 'src/entities';
 import {
   TransactionAllow,
@@ -15,11 +16,13 @@ import {
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
+import { TypeCheckService } from './typeCheck.service';
 
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
   constructor(
+    private typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
@@ -120,20 +123,32 @@ export class TransactionService {
     };
 
     const { data } = await this.verseService.post(headers, body);
-    if (data.error) {
-      throw new JsonrpcError(data.error.message, -32602);
+    if (this.typeCheckService.isJsonrpcErrorResponse(data)) {
+      const { code, message } = data.error;
+      throw new JsonrpcError(message, code);
     }
   }
 
-  async getBlockNumberCacheRes(jsonrpc: JsonrpcVersion, id: JsonrpcId) {
+  async getBlockNumberCacheRes(
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
+  ): Promise<VerseRequestResponse> {
     const key = 'block_number';
     const blockNumberCache = await this.cacheManager.get<string>(key);
 
     if (blockNumberCache) {
-      return blockNumberCache;
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumberCache,
+      };
+      return {
+        status: 200,
+        data,
+      };
     }
 
-    const headers = {}; // todo: set from argument
+    const headers = {};
     const body: JsonrpcRequestBody = {
       jsonrpc: jsonrpc,
       id: id,
@@ -141,16 +156,17 @@ export class TransactionService {
       params: [],
     };
 
-    // todo: type check
-    const { data } = await this.verseService.post(headers, body);
+    const res = await this.verseService.post(headers, body);
+    if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
+      await this.cacheManager.set(key, res.data.result, 15);
+      return res;
+    }
 
-    if (typeof data.result !== 'string')
-      throw new Error('can not get blockNumber');
-
-    const blockNumber = data.result;
-    await this.cacheManager.set(key, blockNumber, 864000);
-
-    return blockNumber;
+    if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
+      const { code, message } = res.data.error;
+      throw new JsonrpcError(message, code);
+    }
+    throw new JsonrpcError('can not get blockNumber', -32603);
   }
 
   parseRawTx(rawTx: string): ethers.Transaction {

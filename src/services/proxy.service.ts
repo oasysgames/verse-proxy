@@ -58,20 +58,10 @@ export class ProxyService {
         method === 'eth_blockNumber' &&
         headers.origin === 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn'
       ) {
-        const blockNumber = await this.txService.getBlockNumberCacheRes(
+        return await this.txService.getBlockNumberCacheRes(
           body.jsonrpc,
           body.id,
         );
-
-        const data = {
-          jsonrpc: body.jsonrpc,
-          id: body.id,
-          result: blockNumber,
-        };
-        return {
-          status: 200,
-          data: data,
-        };
       } else {
         return await this.verseService.post(headers, body);
       }
@@ -130,8 +120,8 @@ export class ProxyService {
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const result = await this.verseService.post(headers, body);
 
-    if (!this.typeCheckService.isJsonrpcTxResponse(result.data))
-      throw new JsonrpcError('Can not get verse response', -32603);
+    if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
+      return result;
     const txHash = result.data.result;
 
     const isSetRateLimit = !!this.configService.get<string>('datastore');
