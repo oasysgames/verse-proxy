@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, CACHE_MANAGER } from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import {
   EthEstimateGasParams,
@@ -22,6 +23,7 @@ export class TransactionService {
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.txAllowList = getTxAllowList();
     this.txAllowList.forEach((txAllow) => {
@@ -121,6 +123,34 @@ export class TransactionService {
     if (data.error) {
       throw new JsonrpcError(data.error.message, -32602);
     }
+  }
+
+  async getBlockNumberCacheRes(jsonrpc: JsonrpcVersion, id: JsonrpcId) {
+    const key = 'block_number';
+    const blockNumberCache = await this.cacheManager.get<string>(key);
+
+    if (blockNumberCache) {
+      return blockNumberCache;
+    }
+
+    const headers = {}; // todo: set from argument
+    const body: JsonrpcRequestBody = {
+      jsonrpc: jsonrpc,
+      id: id,
+      method: 'eth_blockNumber',
+      params: [],
+    };
+
+    // todo: type check
+    const { data } = await this.verseService.post(headers, body);
+
+    if (typeof data.result !== 'string')
+      throw new Error('can not get blockNumber');
+
+    const blockNumber = data.result;
+    await this.cacheManager.set(key, blockNumber, 864000);
+
+    return blockNumber;
   }
 
   parseRawTx(rawTx: string): ethers.Transaction {

@@ -52,11 +52,29 @@ export class ProxyService {
       const method = body.method;
       this.checkMethod(method);
 
-      if (method !== 'eth_sendRawTransaction') {
+      if (method === 'eth_sendRawTransaction') {
+        return await this.sendTransaction(headers, body);
+      } else if (
+        method === 'eth_blockNumber' &&
+        headers.origin === 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn'
+      ) {
+        const blockNumber = await this.txService.getBlockNumberCacheRes(
+          body.jsonrpc,
+          body.id,
+        );
+
+        const data = {
+          jsonrpc: body.jsonrpc,
+          id: body.id,
+          result: blockNumber,
+        };
+        return {
+          status: 200,
+          data: data,
+        };
+      } else {
         return await this.verseService.post(headers, body);
       }
-
-      return await this.sendTransaction(headers, body);
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -68,11 +86,13 @@ export class ProxyService {
             message: err.message,
           },
         };
+        console.error(err.message);
         return {
           status,
           data,
         };
       }
+      console.error(err);
       return {
         status,
         data: err,
