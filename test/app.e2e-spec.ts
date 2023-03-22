@@ -12,6 +12,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -123,6 +124,7 @@ describe('single request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
     })
       .useMocker((token) => {
@@ -2570,6 +2572,7 @@ describe('batch request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
     })
       .useMocker((token) => {
