@@ -119,10 +119,6 @@ describe('TransactionService', () => {
           toList: ['*'],
         },
       ]);
-      const error = new JsonrpcError(
-        'deploy transaction is not allowed',
-        -32602,
-      );
 
       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
       const transactionService = new TransactionService(
@@ -132,11 +128,9 @@ describe('TransactionService', () => {
         rateLimitService,
       );
 
-      try {
-        transactionService.checkContractDeploy(from);
-      } catch (e) {
-        expect(e).toEqual(error);
-      }
+      expect(() => transactionService.checkContractDeploy(from)).toThrow(
+        'deploy transaction is not allowed',
+      );
     });
   });
 
@@ -156,7 +150,6 @@ describe('TransactionService', () => {
         },
       ]);
       const methodId = data.substring(0, 10);
-      const error = new JsonrpcError('transaction is not allowed', -32602);
 
       jest
         .spyOn(allowCheckService, 'isIncludedAddress')
@@ -176,16 +169,9 @@ describe('TransactionService', () => {
         rateLimitService,
       );
 
-      try {
-        await transactionService.getMatchedTxAllowRule(
-          from,
-          to,
-          methodId,
-          value,
-        );
-      } catch (e) {
-        expect(e).toEqual(error);
-      }
+      await expect(
+        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+      ).rejects.toThrow('transaction is not allowed');
     });
 
     it('to is not allowed', async () => {
@@ -199,7 +185,6 @@ describe('TransactionService', () => {
         },
       ]);
       const methodId = data.substring(0, 10);
-      const error = new JsonrpcError('transaction is not allowed', -32602);
 
       jest
         .spyOn(allowCheckService, 'isIncludedAddress')
@@ -219,16 +204,9 @@ describe('TransactionService', () => {
         rateLimitService,
       );
 
-      try {
-        await transactionService.getMatchedTxAllowRule(
-          from,
-          to,
-          methodId,
-          value,
-        );
-      } catch (e) {
-        expect(e).toEqual(error);
-      }
+      await expect(
+        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+      ).rejects.toThrow('transaction is not allowed');
     });
 
     it('value is not allowed', async () => {
@@ -242,7 +220,6 @@ describe('TransactionService', () => {
         },
       ]);
       const methodId = data.substring(0, 10);
-      const error = new JsonrpcError('transaction is not allowed', -32602);
 
       jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(false);
@@ -253,16 +230,9 @@ describe('TransactionService', () => {
         rateLimitService,
       );
 
-      try {
-        await transactionService.getMatchedTxAllowRule(
-          from,
-          to,
-          methodId,
-          value,
-        );
-      } catch (e) {
-        expect(e).toEqual(error);
-      }
+      await expect(
+        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+      ).rejects.toThrow('transaction is not allowed');
     });
 
     describe('from and to and value is OK', () => {
@@ -336,17 +306,10 @@ describe('TransactionService', () => {
           rateLimitService,
         );
 
-        try {
-          await transactionService.getMatchedTxAllowRule(
-            from,
-            to,
-            methodId,
-            value,
-          );
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(checkRateLimit).toHaveBeenCalled();
-        }
+        await expect(
+          transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+        ).rejects.toThrow(error.message);
+        expect(checkRateLimit).toHaveBeenCalled();
       });
 
       it('rateLimit is set, rateLimit check is successfull', async () => {
@@ -509,12 +472,9 @@ describe('TransactionService', () => {
         from,
       };
 
-      try {
-        await transactionService.checkAllowedGas(tx, jsonrpc, id);
-      } catch (e) {
-        const error = new JsonrpcError(errMsg, errCode);
-        expect(e).toEqual(error);
-      }
+      await expect(
+        transactionService.checkAllowedGas(tx, jsonrpc, id),
+      ).rejects.toThrow(errMsg);
     });
   });
 });
