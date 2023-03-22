@@ -2921,13 +2921,6 @@ describe('batch request', () => {
         message: errMsg,
       },
     };
-    const res: AxiosResponse = {
-      status: 200,
-      data: responseData,
-      statusText: '',
-      headers: {},
-      config: {},
-    };
     const results = [
       {
         jsonrpc: '2.0',

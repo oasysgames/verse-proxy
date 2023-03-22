@@ -417,7 +417,6 @@ describe('TransactionService', () => {
 
     it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      const errCode = -32602;
       const verseStatus = 200;
       const verseData = {
         jsonrpc: '2.0',

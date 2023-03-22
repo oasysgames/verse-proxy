@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { ForbiddenException } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { Response } from 'express';
 import {
