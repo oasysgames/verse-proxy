@@ -248,13 +248,9 @@ describe('VerseService', () => {
         'user-agent': 'PostmanRuntime/7.29.0',
       };
 
-      try {
-        await verseService.post(proxyRequestHeaders, body);
-      } catch (e) {
-        const error = new JsonrpcError(errMsg, errCode);
-        expect(e.code).toEqual(error.code);
-        expect(e.message).toEqual(error.message);
-      }
+      await expect(
+        verseService.post(proxyRequestHeaders, body),
+      ).rejects.toThrow(errMsg);
     });
   });
 });
