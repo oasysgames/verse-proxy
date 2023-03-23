@@ -100,12 +100,11 @@ describe('RateLimitService', () => {
         datastoreService,
         allowCheckService,
       );
+      const errMsg = `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`;
 
       await expect(
         rateLimitService.checkRateLimit(from, to, methodId, rateLimit),
-      ).rejects.toThrow(
-        `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`,
-      );
+      ).rejects.toThrow(errMsg);
       expect(getTransactionHistoryCount).toHaveBeenCalled();
     });
 
