@@ -19,11 +19,15 @@ import * as transactionAllowList from 'src/config/transactionAllowList';
 import { TransactionAllow } from 'src/config/transactionAllowList';
 import { INestApplication } from '@nestjs/common';
 
+const webhookUrl = 'https://webhook.example.com';
+const webhookHost = new URL(webhookUrl).host;
+
 const mockHttpServicePost = (
   httpService: HttpService,
   noTxRes: AxiosResponse,
   estimateGasRes: AxiosResponse,
   txRes: AxiosResponse,
+  webhookRes: AxiosResponse,
 ) => {
   jest
     .spyOn(httpService, 'post')
@@ -33,6 +37,7 @@ const mockHttpServicePost = (
         data?: any,
         config?: AxiosRequestConfig<any> | undefined,
       ) => {
+        if (url === webhookUrl) return of(webhookRes);
         switch (data.method) {
           case 'eth_sendRawTransaction':
             return of(txRes);
@@ -252,7 +257,20 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const webhookRes: AxiosResponse = {
+        status: 200,
+        data: {},
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+      mockHttpServicePost(
+        httpService,
+        noTxRes,
+        estimateGasRes,
+        txRes,
+        webhookRes,
+      );
 
       return await request(app.getHttpServer())
         .post('/')
@@ -412,7 +430,20 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const webhookRes: AxiosResponse = {
+        status: 200,
+        data: {},
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+      mockHttpServicePost(
+        httpService,
+        noTxRes,
+        estimateGasRes,
+        txRes,
+        webhookRes,
+      );
 
       return await request(app.getHttpServer())
         .post('/')
@@ -519,7 +550,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -625,7 +669,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -723,7 +780,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -833,7 +903,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -941,7 +1024,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -950,7 +1046,7 @@ describe('single request', () => {
           .expect(responseData);
       });
 
-      it('method is not allowed', async () => {
+      it('methodId is not allowed', async () => {
         const inheritHostHeader = true;
         const allowedMethods = [/^.*$/];
         const datastore = '';
@@ -1049,7 +1145,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1149,7 +1258,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1258,7 +1380,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1365,7 +1500,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1472,7 +1620,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1571,7 +1732,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1685,7 +1859,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1800,7 +1987,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1915,7 +2115,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
@@ -2022,7 +2235,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2129,10 +2355,545 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+    });
+
+    describe('txAllow rule includes webhooks', () => {
+      it('from is not allowed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = 'redis';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const errCode = -32602;
+        const errMsg = 'transaction is not allowed';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: [`!${from}`],
+            toList: ['*'],
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('to is not allowed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = 'redis';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const errCode = -32602;
+        const errMsg = 'transaction is not allowed';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: [`!${to}`],
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('webhook is failed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = 'redis';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        const errCode = -32602;
+        const errMsg = 'transaction is not allowed';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 400,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('successful', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = 'redis';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const txHash =
+          '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result: txHash,
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: responseData,
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -2189,12 +2950,23 @@ describe('single request', () => {
           interval: 1,
           limit: 1,
         };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
         const txAllowList = [
           {
             fromList: [`!${from}`],
             toList: ['*'],
+            contractMethodList: ['approve(address,uint256)'],
             value: { eq: `${valueAmount}` },
             rateLimit,
+            webhooks: [webhook],
           },
         ];
         const deployAllowList = [''];
@@ -2247,7 +3019,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2305,12 +3090,23 @@ describe('single request', () => {
           interval: 1,
           limit: 1,
         };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
         const txAllowList = [
           {
             fromList: ['*'],
             toList: [`!${to}`],
+            contractMethodList: ['approve(address,uint256)'],
             value: { eq: `${valueAmount}` },
             rateLimit,
+            webhooks: [webhook],
           },
         ];
         const deployAllowList = [''];
@@ -2363,7 +3159,161 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('methodId is not allowed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = '';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        // tx method is approve(address,uint256)
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const errCode = -32602;
+        const errMsg = 'transaction is not allowed';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        const rateLimit = {
+          name: 'wildcard',
+          interval: 1,
+          limit: 1,
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+            contractMethodList: ['transfer(address,uint256)'],
+            value: { eq: `${valueAmount}` },
+            rateLimit,
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2421,12 +3371,23 @@ describe('single request', () => {
           interval: 1,
           limit: 1,
         };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
         const txAllowList = [
           {
             fromList: ['*'],
             toList: ['*'],
+            contractMethodList: ['approve(address,uint256)'],
             value: { gt: `${valueAmount}` },
             rateLimit,
+            webhooks: [webhook],
           },
         ];
         const deployAllowList = [''];
@@ -2479,7 +3440,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2527,12 +3501,23 @@ describe('single request', () => {
           interval: 1,
           limit: 1,
         };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
         const txAllowList = [
           {
             fromList: ['*'],
             toList: ['*'],
+            contractMethodList: ['approve(address,uint256)'],
             value: { eq: `${valueAmount}` },
             rateLimit,
+            webhooks: [webhook],
           },
         ];
         const deployAllowList = [''];
@@ -2595,10 +3580,163 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+
+        return await request(app.getHttpServer())
+          .post('/')
+          .send(body)
+          .expect(200)
+          .expect(responseData);
+      });
+
+      it('webhook is failed', async () => {
+        const inheritHostHeader = true;
+        const allowedMethods = [/^.*$/];
+        const datastore = 'redis';
+        const method = 'eth_sendRawTransaction';
+        const rawTx =
+          '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [rawTx],
+        };
+        const tx = {
+          type,
+          chainId,
+          nonce,
+          maxPriorityFeePerGas,
+          maxFeePerGas,
+          gasPrice,
+          gasLimit,
+          to,
+          value,
+          data,
+          accessList,
+          hash,
+          v,
+          r,
+          s,
+          from,
+        };
+        const rateLimit = {
+          name: 'wildcard',
+          interval: 1,
+          limit: 1,
+        };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowList = [
+          {
+            fromList: ['*'],
+            toList: ['*'],
+            contractMethodList: ['approve(address,uint256)'],
+            value: { eq: `${valueAmount}` },
+            rateLimit,
+            webhooks: [webhook],
+          },
+        ];
+        const deployAllowList = [''];
+        const unlimitedTxRateAddresses = [''];
+        const errCode = -32602;
+        const errMsg = 'transaction is not allowed';
+        const responseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          error: {
+            code: errCode,
+            message: errMsg,
+          },
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+        );
+
+        mockConfigServiceGet(
+          configService,
+          verseUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        const noTxRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const estimateGasRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '0x',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const txRes: AxiosResponse = {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result:
+              '0x2fc8b539232f2cbd8316106e58918842a5d38f0bd8856679bf625f53bb8657f1',
+          },
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        const webhookRes: AxiosResponse = {
+          status: 400,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
+        jest
+          .spyOn(datastoreService, 'getTransactionHistoryCount')
+          .mockResolvedValue(0);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -2650,12 +3788,23 @@ describe('single request', () => {
           interval: 1,
           limit: 1,
         };
+        const webhook = {
+          url: webhookUrl,
+          headers: {
+            host: webhookHost,
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
         const txAllowList = [
           {
             fromList: ['*'],
             toList: ['*'],
+            contractMethodList: ['approve(address,uint256)'],
             value: { eq: `${valueAmount}` },
             rateLimit,
+            webhooks: [webhook],
           },
         ];
         const deployAllowList = [''];
@@ -2703,7 +3852,20 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const webhookRes: AxiosResponse = {
+          status: 200,
+          data: {},
+          statusText: '',
+          headers: {},
+          config: {},
+        };
+        mockHttpServicePost(
+          httpService,
+          noTxRes,
+          estimateGasRes,
+          txRes,
+          webhookRes,
+        );
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2821,7 +3983,20 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const webhookRes: AxiosResponse = {
+        status: 200,
+        data: {},
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+      mockHttpServicePost(
+        httpService,
+        noTxRes,
+        estimateGasRes,
+        txRes,
+        webhookRes,
+      );
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(0);
@@ -2929,7 +4104,20 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const webhookRes: AxiosResponse = {
+        status: 200,
+        data: {},
+        statusText: '',
+        headers: {},
+        config: {},
+      };
+      mockHttpServicePost(
+        httpService,
+        noTxRes,
+        estimateGasRes,
+        txRes,
+        webhookRes,
+      );
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(10);
@@ -3127,7 +4315,20 @@ describe('batch request', () => {
       headers: {},
       config: {},
     };
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    const webhookRes: AxiosResponse = {
+      status: 200,
+      data: {},
+      statusText: '',
+      headers: {},
+      config: {},
+    };
+    mockHttpServicePost(
+      httpService,
+      noTxRes,
+      estimateGasRes,
+      txRes,
+      webhookRes,
+    );
 
     return await request(app.getHttpServer())
       .post('/')
@@ -3425,7 +4626,20 @@ describe('batch request', () => {
       unlimitedTxRateAddresses,
     );
 
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    const webhookRes: AxiosResponse = {
+      status: 200,
+      data: {},
+      statusText: '',
+      headers: {},
+      config: {},
+    };
+    mockHttpServicePost(
+      httpService,
+      noTxRes,
+      estimateGasRes,
+      txRes,
+      webhookRes,
+    );
 
     return await request(app.getHttpServer())
       .post('/')
@@ -3543,7 +4757,20 @@ describe('batch request', () => {
       headers: {},
       config: {},
     };
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    const webhookRes: AxiosResponse = {
+      status: 200,
+      data: {},
+      statusText: '',
+      headers: {},
+      config: {},
+    };
+    mockHttpServicePost(
+      httpService,
+      noTxRes,
+      estimateGasRes,
+      txRes,
+      webhookRes,
+    );
 
     return await request(app.getHttpServer())
       .post('/')
