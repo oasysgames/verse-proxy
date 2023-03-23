@@ -52,11 +52,18 @@ export class ProxyService {
       const method = body.method;
       this.checkMethod(method);
 
+      const isUseBlockNumberCache =
+        this.configService.get<boolean>('isUseBlockNumberCache') ?? false;
+      const isMetamaskAccess =
+        headers.origin ===
+        'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn';
+
       if (method === 'eth_sendRawTransaction') {
         return await this.sendTransaction(headers, body);
       } else if (
         method === 'eth_blockNumber' &&
-        headers.origin === 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn'
+        isUseBlockNumberCache &&
+        isMetamaskAccess
       ) {
         return await this.txService.getBlockNumberCacheRes(
           body.jsonrpc,
