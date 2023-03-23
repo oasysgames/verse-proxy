@@ -14,12 +14,9 @@ describe('checkAddressList', () => {
   test('addressList includes wildcard and another address', () => {
     const addressList = ['*', '0xaf395754eB6F542742784cE7702940C60465A46a'];
 
-    try {
-      allowCheckService.checkAddressList(addressList);
-    } catch (e) {
-      const error = new Error('You can not set wildcard with another address');
-      expect(e).toEqual(error);
-    }
+    expect(() => allowCheckService.checkAddressList(addressList)).toThrow(
+      'You can not set wildcard with another address',
+    );
   });
 
   test('addressList includes only normal_address', () => {
@@ -46,14 +43,9 @@ describe('checkAddressList', () => {
       '0xaf395754eB6F542742784cE7702940C60465A46a',
     ];
 
-    try {
-      allowCheckService.checkAddressList(addressList);
-    } catch (e) {
-      const error = new Error(
-        'You can not set setting with address and address_denial(!address)',
-      );
-      expect(e).toEqual(error);
-    }
+    expect(() => allowCheckService.checkAddressList(addressList)).toThrow(
+      'You can not set setting with address and address_denial(!address)',
+    );
   });
 
   test('addressList includes normal_address and exception_pattern', () => {
@@ -62,14 +54,9 @@ describe('checkAddressList', () => {
       '!0xaf395754eB6F542742784cE7702940C60465A46c',
     ];
 
-    try {
-      allowCheckService.checkAddressList(addressList);
-    } catch (e) {
-      const error = new Error(
-        'You can not set setting with address and address_denial(!address)',
-      );
-      expect(e).toEqual(error);
-    }
+    expect(() => allowCheckService.checkAddressList(addressList)).toThrow(
+      'You can not set setting with address and address_denial(!address)',
+    );
   });
 });
 

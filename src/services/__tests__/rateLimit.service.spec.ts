@@ -101,17 +101,12 @@ describe('RateLimitService', () => {
         datastoreService,
         allowCheckService,
       );
-      const error = new JsonrpcError(
-        `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`,
-        -32602,
-      );
+      const errMsg = `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`;
 
-      try {
-        await rateLimitService.checkRateLimit(from, to, methodId, rateLimit);
-      } catch (e) {
-        expect(e).toEqual(error);
-        expect(getTransactionHistoryCount).toHaveBeenCalled();
-      }
+      await expect(
+        rateLimitService.checkRateLimit(from, to, methodId, rateLimit),
+      ).rejects.toThrow(errMsg);
+      expect(getTransactionHistoryCount).toHaveBeenCalled();
     });
 
     it('tx count is less limit', async () => {

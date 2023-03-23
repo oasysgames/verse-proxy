@@ -741,7 +741,7 @@ describe('ProxyService', () => {
         status: verseStatus,
         data: verseData,
       };
-      const error = new JsonrpcError('rawTransaction is not found', -32602);
+      const errMsg = 'rawTransaction is not found';
 
       jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
         if (arg === 'allowedMethods') {
@@ -775,17 +775,15 @@ describe('ProxyService', () => {
         datastoreService,
       );
 
-      try {
-        await proxyService.sendTransaction(requestContext, body);
-      } catch (e) {
-        expect(e).toEqual(error);
-        expect(parseRawTx).not.toHaveBeenCalled();
-        expect(checkContractDeploy).not.toHaveBeenCalled();
-        expect(checkAllowedGas).not.toHaveBeenCalled();
-        expect(versePost).not.toHaveBeenCalled();
-        expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
-        expect(setTransactionHistory).not.toHaveBeenCalled();
-      }
+      await expect(
+        proxyService.sendTransaction(requestContext, body),
+      ).rejects.toThrow(errMsg);
+      expect(parseRawTx).not.toHaveBeenCalled();
+      expect(checkContractDeploy).not.toHaveBeenCalled();
+      expect(checkAllowedGas).not.toHaveBeenCalled();
+      expect(versePost).not.toHaveBeenCalled();
+      expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
+      expect(setTransactionHistory).not.toHaveBeenCalled();
     });
 
     it('transaction from is not set', async () => {
@@ -827,7 +825,7 @@ describe('ProxyService', () => {
         status: verseStatus,
         data: verseData,
       };
-      const error = new JsonrpcError('transaction is invalid', -32602);
+      const errMsg = 'transaction is invalid';
 
       const invalidTx = {
         type,
@@ -879,17 +877,15 @@ describe('ProxyService', () => {
         datastoreService,
       );
 
-      try {
-        await proxyService.sendTransaction(requestContext, body);
-      } catch (e) {
-        expect(e).toEqual(error);
-        expect(parseRawTx).toHaveBeenCalled();
-        expect(checkContractDeploy).not.toHaveBeenCalled();
-        expect(checkAllowedGas).not.toHaveBeenCalled();
-        expect(versePost).not.toHaveBeenCalled();
-        expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
-        expect(setTransactionHistory).not.toHaveBeenCalled();
-      }
+      await expect(
+        proxyService.sendTransaction(requestContext, body),
+      ).rejects.toThrow(errMsg);
+      expect(parseRawTx).toHaveBeenCalled();
+      expect(checkContractDeploy).not.toHaveBeenCalled();
+      expect(checkAllowedGas).not.toHaveBeenCalled();
+      expect(versePost).not.toHaveBeenCalled();
+      expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
+      expect(setTransactionHistory).not.toHaveBeenCalled();
     });
 
     describe('contract deploy transaction', () => {
@@ -973,17 +969,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).toHaveBeenCalled();
-          expect(checkAllowedGas).not.toHaveBeenCalled();
-          expect(versePost).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).toHaveBeenCalled();
+        expect(checkAllowedGas).not.toHaveBeenCalled();
+        expect(versePost).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('checkAllowedGas is failed', async () => {
@@ -1069,17 +1063,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).toHaveBeenCalled();
-          expect(checkAllowedGas).toHaveBeenCalled();
-          expect(versePost).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('tx is successful', async () => {
@@ -1234,17 +1226,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).toHaveBeenCalled();
-          expect(checkAllowedGas).toHaveBeenCalled();
-          expect(versePost).toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
     });
 
@@ -1317,17 +1307,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).toHaveBeenCalled();
-          expect(checkAllowedGas).not.toHaveBeenCalled();
-          expect(versePost).not.toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).toHaveBeenCalled();
+        expect(checkAllowedGas).not.toHaveBeenCalled();
+        expect(versePost).not.toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('checkAllowedGas is failed', async () => {
@@ -1413,17 +1401,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).toHaveBeenCalled();
-          expect(checkAllowedGas).toHaveBeenCalled();
-          expect(versePost).not.toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).not.toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('verse post is failed', async () => {
@@ -1493,17 +1479,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).toHaveBeenCalled();
-          expect(checkAllowedGas).toHaveBeenCalled();
-          expect(versePost).toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(error.message);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('verse response is invalid', async () => {
@@ -1544,7 +1528,7 @@ describe('ProxyService', () => {
           status: verseStatus,
           data: verseData,
         };
-        const error = new JsonrpcError('Can not get verse response', -32603);
+        const errMsg = 'Can not get verse response';
 
         jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
           if (arg === 'allowedMethods') {
@@ -1581,17 +1565,15 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        try {
-          await proxyService.sendTransaction(requestContext, body);
-        } catch (e) {
-          expect(e).toEqual(error);
-          expect(parseRawTx).toHaveBeenCalled();
-          expect(checkContractDeploy).not.toHaveBeenCalled();
-          expect(getMatchedTxAllowRule).toHaveBeenCalled();
-          expect(checkAllowedGas).toHaveBeenCalled();
-          expect(versePost).toHaveBeenCalled();
-          expect(setTransactionHistory).not.toHaveBeenCalled();
-        }
+        await expect(
+          proxyService.sendTransaction(requestContext, body),
+        ).rejects.toThrow(errMsg);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).not.toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('tx is successful and rateLimit is set', async () => {

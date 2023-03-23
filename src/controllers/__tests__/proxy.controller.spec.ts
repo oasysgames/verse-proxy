@@ -170,12 +170,9 @@ describe('ProxyController', () => {
       );
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
-      try {
-        await controller.post(ip, headers, body, res);
-      } catch (e) {
-        const error = new ForbiddenException(errMsg);
-        expect(e).toEqual(error);
-      }
+      await expect(controller.post(ip, headers, body, res)).rejects.toThrow(
+        errMsg,
+      );
       expect(handleBatchRequestMock).not.toHaveBeenCalled();
       expect(handleSingleRequestMock).not.toHaveBeenCalled();
     });
