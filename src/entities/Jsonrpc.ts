@@ -10,8 +10,20 @@ export interface JsonrpcRequestBody {
   params?: JsonrpcParams | null;
 }
 
-export interface JsonrpcTxResponse {
+export interface JsonrpcTxSuccessResponse {
   jsonrpc: JsonrpcVersion;
   id: JsonrpcId;
   result: string;
+}
+
+interface JsonrpcError {
+  code: number;
+  message: string;
+  data?: any;
+}
+
+export interface JsonrpcErrorResponse {
+  jsonrpc: JsonrpcVersion;
+  id: JsonrpcId;
+  error: JsonrpcError;
 }

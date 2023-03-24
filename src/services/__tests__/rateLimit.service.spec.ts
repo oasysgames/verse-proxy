@@ -6,9 +6,9 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
-import { JsonrpcError } from 'src/entities';
 
 describe('RateLimitService', () => {
   let allowCheckService: AllowCheckService;
@@ -24,6 +24,7 @@ describe('RateLimitService', () => {
         RateLimitService,
         TransactionService,
         DatastoreService,
+        TypeCheckService,
       ],
     })
       .useMocker((token) => {

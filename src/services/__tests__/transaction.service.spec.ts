@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -14,6 +15,7 @@ import { JsonrpcError } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
 
 describe('TransactionService', () => {
+  let typeCheckService: TypeCheckService;
   let verseService: VerseService;
   let allowCheckService: AllowCheckService;
   let rateLimitService: RateLimitService;
@@ -47,6 +49,7 @@ describe('TransactionService', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [HttpModule],
       providers: [
+        TypeCheckService,
         ConfigService,
         VerseService,
         AllowCheckService,
@@ -57,6 +60,10 @@ describe('TransactionService', () => {
     })
       .useMocker((token) => {
         switch (token) {
+          case TypeCheckService:
+            return {
+              isJsonrpcErrorResponse: jest.fn(),
+            };
           case VerseService:
             return {
               post: jest.fn(),
@@ -75,6 +82,7 @@ describe('TransactionService', () => {
       })
       .compile();
 
+    typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     verseService = moduleRef.get<VerseService>(VerseService);
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
@@ -95,6 +103,7 @@ describe('TransactionService', () => {
 
       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -113,6 +122,7 @@ describe('TransactionService', () => {
 
       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -153,6 +163,7 @@ describe('TransactionService', () => {
         });
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -187,6 +198,7 @@ describe('TransactionService', () => {
         });
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -212,6 +224,7 @@ describe('TransactionService', () => {
       jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(false);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -240,6 +253,7 @@ describe('TransactionService', () => {
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
@@ -286,6 +300,7 @@ describe('TransactionService', () => {
             throw error;
           });
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
@@ -320,6 +335,7 @@ describe('TransactionService', () => {
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
@@ -355,6 +371,9 @@ describe('TransactionService', () => {
       };
 
       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+        .mockReturnValue(false);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -364,6 +383,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
@@ -397,7 +417,6 @@ describe('TransactionService', () => {
 
     it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      const errCode = -32602;
       const verseStatus = 200;
       const verseData = {
         jsonrpc: '2.0',
@@ -413,6 +432,9 @@ describe('TransactionService', () => {
       };
 
       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+        .mockReturnValue(true);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -422,6 +444,7 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,

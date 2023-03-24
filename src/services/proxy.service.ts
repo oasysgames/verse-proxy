@@ -22,22 +22,24 @@ export class ProxyService {
   ) {}
 
   async handleSingleRequest(
+    isUseReadNode: boolean,
     headers: IncomingHttpHeaders,
     body: JsonrpcRequestBody,
     callback: (result: VerseRequestResponse) => void,
   ) {
-    const result = await this.send(headers, body);
+    const result = await this.send(isUseReadNode, headers, body);
     callback(result);
   }
 
   async handleBatchRequest(
+    isUseReadNode: boolean,
     headers: IncomingHttpHeaders,
     body: Array<JsonrpcRequestBody>,
     callback: (result: VerseRequestResponse) => void,
   ) {
     const results = await Promise.all(
       body.map(async (verseRequest): Promise<any> => {
-        const result = await this.send(headers, verseRequest);
+        const result = await this.send(isUseReadNode, headers, verseRequest);
         return result.data;
       }),
     );
@@ -47,16 +49,26 @@ export class ProxyService {
     });
   }
 
-  async send(headers: IncomingHttpHeaders, body: JsonrpcRequestBody) {
+  async send(
+    isUseReadNode: boolean,
+    headers: IncomingHttpHeaders,
+    body: JsonrpcRequestBody,
+  ) {
     try {
       const method = body.method;
       this.checkMethod(method);
 
-      if (method !== 'eth_sendRawTransaction') {
-        return await this.verseService.post(headers, body);
+      if (method === 'eth_sendRawTransaction') {
+        return await this.sendTransaction(headers, body);
+      } else if (method === 'eth_estimateGas') {
+        return await this.verseService.postVerseMasterNode(headers, body);
       }
 
-      return await this.sendTransaction(headers, body);
+      if (isUseReadNode) {
+        return await this.verseService.postVerseReadNode(headers, body);
+      } else {
+        return await this.verseService.postVerseMasterNode(headers, body);
+      }
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -95,7 +107,7 @@ export class ProxyService {
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.post(headers, body);
+      const result = await this.verseService.postVerseMasterNode(headers, body);
       return result;
     }
 
@@ -108,10 +120,10 @@ export class ProxyService {
       tx.value,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.post(headers, body);
+    const result = await this.verseService.postVerseMasterNode(headers, body);
 
-    if (!this.typeCheckService.isJsonrpcTxResponse(result.data))
-      throw new JsonrpcError('Can not get verse response', -32603);
+    if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
+      return result;
     const txHash = result.data.result;
 
     const isSetRateLimit = !!this.configService.get<string>('datastore');
