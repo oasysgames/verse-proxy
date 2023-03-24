@@ -1,6 +1,8 @@
 export default () => ({
   verseMasterNodeUrl:
-    process.env.VERSE_MASTER_NODE_URL ?? 'http://localhost:8545',
+    process.env.VERSE_MASTER_NODE_URL ||
+    process.env.VERSE_URL ||
+    'http://localhost:8545',
   verseReadNodeUrl: process.env.VERSE_READ_NODE_URL,
   datastore: process.env.DATASTORE ?? '',
   allowedMethods: [
