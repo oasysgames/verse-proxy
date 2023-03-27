@@ -498,6 +498,147 @@ describe('ProxyService', () => {
       expect(sendTransactionMock).not.toHaveBeenCalled();
     });
 
+    it('tx method is eth_blockNumber and metamaskAccess', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const isUseBlockNumberCache = true;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const headers = {
+        host: 'localhost',
+        origin: 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn',
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'isUseBlockNumberCache') {
+          return isUseBlockNumberCache;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(isUseReadNode, headers, body);
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).toHaveBeenCalledWith(
+        body.jsonrpc,
+        body.id,
+      );
+      expect(postVerseReadNode).not.toHaveBeenCalled();
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_blockNumber and is not metamaskAccess', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const isUseBlockNumberCache = true;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const headers = {
+        host: 'localhost',
+        origin: 'localhost:3000',
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'isUseBlockNumberCache') {
+          return isUseBlockNumberCache;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(isUseReadNode, headers, body);
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).not.toHaveBeenCalled();
+      expect(postVerseReadNode).toHaveBeenCalledWith(headers, body);
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
     it('tx method is read-method and successful(using ReadNode)', async () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
