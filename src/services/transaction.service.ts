@@ -1,5 +1,4 @@
-import { Injectable, Inject, CACHE_MANAGER } from '@nestjs/common';
-import { Cache } from 'cache-manager';
+import { Injectable } from '@nestjs/common';
 import { ethers, BigNumber, Transaction } from 'ethers';
 import {
   EthEstimateGasParams,
@@ -17,6 +16,7 @@ import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
 import { TypeCheckService } from './typeCheck.service';
+import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class TransactionService {
@@ -26,7 +26,7 @@ export class TransactionService {
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly datastoreService: DatastoreService,
   ) {
     this.txAllowList = getTxAllowList();
     this.txAllowList.forEach((txAllow) => {
@@ -133,8 +133,7 @@ export class TransactionService {
     jsonrpc: JsonrpcVersion,
     id: JsonrpcId,
   ): Promise<VerseRequestResponse> {
-    const key = 'block_number';
-    const blockNumberCache = await this.cacheManager.get<string>(key);
+    const blockNumberCache = await this.datastoreService.getBlockNumberCache();
 
     if (blockNumberCache) {
       const data = {
@@ -158,7 +157,7 @@ export class TransactionService {
 
     const res = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
-      await this.cacheManager.set(key, res.data.result, 15);
+      await this.datastoreService.setBlockNumberCache(res.data.result);
       return res;
     }
 

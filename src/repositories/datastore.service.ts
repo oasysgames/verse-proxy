@@ -26,7 +26,12 @@ export class DatastoreService {
 
     switch (this.datastore) {
       case 'redis':
-        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        const redisKey = this.getTransactionHistoryKey(
+          from,
+          to,
+          methodId,
+          rateLimit,
+        );
         const now = Date.now();
         const removeDataTimestamp =
           this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
@@ -51,7 +56,12 @@ export class DatastoreService {
 
     switch (this.datastore) {
       case 'redis':
-        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        const redisKey = this.getTransactionHistoryKey(
+          from,
+          to,
+          methodId,
+          rateLimit,
+        );
         const now = Date.now();
         const intervalAgo = this.getTimeSecondsAgo(now, rateLimit.interval);
         txCounter = await this.redis.zcount(redisKey, intervalAgo, now);
@@ -60,7 +70,30 @@ export class DatastoreService {
     return txCounter;
   }
 
-  private getRedisKey(
+  async getBlockNumberCache() {
+    let blockNumberCache = '';
+
+    switch (this.datastore) {
+      case 'redis':
+        const key = this.getBlockNumberCacheKey();
+        blockNumberCache = (await this.redis.get(key)) ?? '';
+        break;
+    }
+
+    return blockNumberCache;
+  }
+
+  async setBlockNumberCache(blockNumber: string) {
+    switch (this.datastore) {
+      case 'redis':
+        const key = this.getBlockNumberCacheKey();
+        await this.redis.set(key, blockNumber);
+        await this.redis.expire(key, 15);
+        break;
+    }
+  }
+
+  private getTransactionHistoryKey(
     from: string,
     to: string,
     methodId: string,
@@ -76,6 +109,10 @@ export class DatastoreService {
     const key = keyArray.join(':');
 
     return key;
+  }
+
+  private getBlockNumberCacheKey() {
+    return 'blockNumber_cache';
   }
 
   private getTimeSecondsAgo(timestamp: number, interval: number) {
