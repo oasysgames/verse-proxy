@@ -12,6 +12,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -46,15 +47,15 @@ const mockHttpServicePost = (
 
 const mockConfigServiceGet = (
   configService: ConfigService,
-  verseUrl: string,
+  verseMasterNodeUrl: string,
   inheritHostHeader: boolean,
   allowedMethods: RegExp[],
   datastore: string,
 ) => {
   jest.spyOn(configService, 'get').mockImplementation((key: string) => {
     switch (key) {
-      case 'verseUrl':
-        return verseUrl;
+      case 'verseMasterNodeUrl':
+        return verseMasterNodeUrl;
       case 'inheritHostHeader':
         return inheritHostHeader;
       case 'allowedMethods':
@@ -83,7 +84,7 @@ describe('single request', () => {
     'getUnlimitedTxRateAddresses',
   );
 
-  const verseUrl = 'http://localhost:8545';
+  const verseMasterNodeUrl = 'http://localhost:8545';
   const type = 2;
   const chainId = 5;
   const nonce = 3;
@@ -123,6 +124,7 @@ describe('single request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
     })
       .useMocker((token) => {
@@ -218,7 +220,7 @@ describe('single request', () => {
 
       mockConfigServiceGet(
         configService,
-        verseUrl,
+        verseMasterNodeUrl,
         inheritHostHeader,
         allowedMethods,
         datastore,
@@ -298,7 +300,7 @@ describe('single request', () => {
 
       mockConfigServiceGet(
         configService,
-        verseUrl,
+        verseMasterNodeUrl,
         inheritHostHeader,
         allowedMethods,
         datastore,
@@ -373,7 +375,7 @@ describe('single request', () => {
 
       mockConfigServiceGet(
         configService,
-        verseUrl,
+        verseMasterNodeUrl,
         inheritHostHeader,
         allowedMethods,
         datastore,
@@ -476,7 +478,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -582,7 +584,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -685,7 +687,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -789,7 +791,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -896,7 +898,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1003,7 +1005,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1107,7 +1109,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1216,7 +1218,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1331,7 +1333,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1446,7 +1448,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1558,7 +1560,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1665,7 +1667,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1778,7 +1780,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -1894,7 +1896,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -2010,7 +2012,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -2126,7 +2128,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -2239,7 +2241,7 @@ describe('single request', () => {
 
         mockConfigServiceGet(
           configService,
-          verseUrl,
+          verseMasterNodeUrl,
           inheritHostHeader,
           allowedMethods,
           datastore,
@@ -2352,7 +2354,7 @@ describe('single request', () => {
 
       mockConfigServiceGet(
         configService,
-        verseUrl,
+        verseMasterNodeUrl,
         inheritHostHeader,
         allowedMethods,
         datastore,
@@ -2465,7 +2467,7 @@ describe('single request', () => {
 
       mockConfigServiceGet(
         configService,
-        verseUrl,
+        verseMasterNodeUrl,
         inheritHostHeader,
         allowedMethods,
         datastore,
@@ -2531,7 +2533,7 @@ describe('batch request', () => {
     'getUnlimitedTxRateAddresses',
   );
 
-  const verseUrl = 'http://localhost:8545';
+  const verseMasterNodeUrl = 'http://localhost:8545';
   const type = 2;
   const chainId = 5;
   const nonce = 3;
@@ -2570,6 +2572,7 @@ describe('batch request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
     })
       .useMocker((token) => {
@@ -2662,7 +2665,7 @@ describe('batch request', () => {
 
     mockConfigServiceGet(
       configService,
-      verseUrl,
+      verseMasterNodeUrl,
       inheritHostHeader,
       allowedMethods,
       datastore,
@@ -2765,7 +2768,7 @@ describe('batch request', () => {
 
     mockConfigServiceGet(
       configService,
-      verseUrl,
+      verseMasterNodeUrl,
       inheritHostHeader,
       allowedMethods,
       datastore,
@@ -2853,7 +2856,7 @@ describe('batch request', () => {
 
     mockConfigServiceGet(
       configService,
-      verseUrl,
+      verseMasterNodeUrl,
       inheritHostHeader,
       allowedMethods,
       datastore,
@@ -2918,13 +2921,6 @@ describe('batch request', () => {
         message: errMsg,
       },
     };
-    const res: AxiosResponse = {
-      status: 200,
-      data: responseData,
-      statusText: '',
-      headers: {},
-      config: {},
-    };
     const results = [
       {
         jsonrpc: '2.0',
@@ -2945,7 +2941,7 @@ describe('batch request', () => {
     ];
     mockConfigServiceGet(
       configService,
-      verseUrl,
+      verseMasterNodeUrl,
       inheritHostHeader,
       allowedMethods,
       datastore,
@@ -3078,7 +3074,7 @@ describe('batch request', () => {
 
     mockConfigServiceGet(
       configService,
-      verseUrl,
+      verseMasterNodeUrl,
       inheritHostHeader,
       allowedMethods,
       datastore,

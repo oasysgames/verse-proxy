@@ -122,7 +122,7 @@ export class TransactionService {
       params: params,
     };
 
-    const { data } = await this.verseService.post(headers, body);
+    const { data } = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcErrorResponse(data)) {
       const { code, message } = data.error;
       throw new JsonrpcError(message, code);
@@ -156,7 +156,7 @@ export class TransactionService {
       params: [],
     };
 
-    const res = await this.verseService.post(headers, body);
+    const res = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
       await this.cacheManager.set(key, res.data.result, 15);
       return res;

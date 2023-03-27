@@ -6,6 +6,7 @@
 //   VerseService,
 //   AllowCheckService,
 //   RateLimitService,
+//   TypeCheckService,
 // } from 'src/services';
 // import { BigNumber } from 'ethers';
 // import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -14,6 +15,7 @@
 // import { DatastoreService } from 'src/repositories';
 
 // describe('TransactionService', () => {
+//   let typeCheckService: TypeCheckService;
 //   let verseService: VerseService;
 //   let allowCheckService: AllowCheckService;
 //   let rateLimitService: RateLimitService;
@@ -47,6 +49,7 @@
 //     const moduleRef = await Test.createTestingModule({
 //       imports: [HttpModule],
 //       providers: [
+//         TypeCheckService,
 //         ConfigService,
 //         VerseService,
 //         AllowCheckService,
@@ -57,6 +60,10 @@
 //     })
 //       .useMocker((token) => {
 //         switch (token) {
+//           case TypeCheckService:
+//             return {
+//               isJsonrpcErrorResponse: jest.fn(),
+//             };
 //           case VerseService:
 //             return {
 //               post: jest.fn(),
@@ -75,6 +82,7 @@
 //       })
 //       .compile();
 
+//     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
 //     verseService = moduleRef.get<VerseService>(VerseService);
 //     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
 //     rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
@@ -95,6 +103,7 @@
 
 //       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(true);
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
@@ -110,23 +119,18 @@
 //           toList: ['*'],
 //         },
 //       ]);
-//       const error = new JsonrpcError(
-//         'deploy transaction is not allowed',
-//         -32602,
-//       );
 
 //       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
 //       );
 
-//       try {
-//         transactionService.checkContractDeploy(from);
-//       } catch (e) {
-//         expect(e).toEqual(error);
-//       }
+//       expect(() => transactionService.checkContractDeploy(from)).toThrow(
+//         'deploy transaction is not allowed',
+//       );
 //     });
 //   });
 
@@ -146,7 +150,6 @@
 //         },
 //       ]);
 //       const methodId = data.substring(0, 10);
-//       const error = new JsonrpcError('transaction is not allowed', -32602);
 
 //       jest
 //         .spyOn(allowCheckService, 'isIncludedAddress')
@@ -160,21 +163,15 @@
 //         });
 //       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
 //       );
 
-//       try {
-//         await transactionService.getMatchedTxAllowRule(
-//           from,
-//           to,
-//           methodId,
-//           value,
-//         );
-//       } catch (e) {
-//         expect(e).toEqual(error);
-//       }
+//       await expect(
+//         transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+//       ).rejects.toThrow('transaction is not allowed');
 //     });
 
 //     it('to is not allowed', async () => {
@@ -188,7 +185,6 @@
 //         },
 //       ]);
 //       const methodId = data.substring(0, 10);
-//       const error = new JsonrpcError('transaction is not allowed', -32602);
 
 //       jest
 //         .spyOn(allowCheckService, 'isIncludedAddress')
@@ -202,21 +198,15 @@
 //         });
 //       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
 //       );
 
-//       try {
-//         await transactionService.getMatchedTxAllowRule(
-//           from,
-//           to,
-//           methodId,
-//           value,
-//         );
-//       } catch (e) {
-//         expect(e).toEqual(error);
-//       }
+//       await expect(
+//         transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+//       ).rejects.toThrow('transaction is not allowed');
 //     });
 
 //     it('value is not allowed', async () => {
@@ -230,26 +220,19 @@
 //         },
 //       ]);
 //       const methodId = data.substring(0, 10);
-//       const error = new JsonrpcError('transaction is not allowed', -32602);
 
 //       jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
 //       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(false);
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
 //       );
 
-//       try {
-//         await transactionService.getMatchedTxAllowRule(
-//           from,
-//           to,
-//           methodId,
-//           value,
-//         );
-//       } catch (e) {
-//         expect(e).toEqual(error);
-//       }
+//       await expect(
+//         transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+//       ).rejects.toThrow('transaction is not allowed');
 //     });
 
 //     describe('from and to and value is OK', () => {
@@ -270,6 +253,7 @@
 //         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
 //         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
 //         const transactionService = new TransactionService(
+//           typeCheckService,
 //           verseService,
 //           allowCheckService,
 //           rateLimitService,
@@ -316,22 +300,16 @@
 //             throw error;
 //           });
 //         const transactionService = new TransactionService(
+//           typeCheckService,
 //           verseService,
 //           allowCheckService,
 //           rateLimitService,
 //         );
 
-//         try {
-//           await transactionService.getMatchedTxAllowRule(
-//             from,
-//             to,
-//             methodId,
-//             value,
-//           );
-//         } catch (e) {
-//           expect(e).toEqual(error);
-//           expect(checkRateLimit).toHaveBeenCalled();
-//         }
+//         await expect(
+//           transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+//         ).rejects.toThrow(error.message);
+//         expect(checkRateLimit).toHaveBeenCalled();
 //       });
 
 //       it('rateLimit is set, rateLimit check is successfull', async () => {
@@ -357,6 +335,7 @@
 //         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
 //         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
 //         const transactionService = new TransactionService(
+//           typeCheckService,
 //           verseService,
 //           allowCheckService,
 //           rateLimitService,
@@ -392,6 +371,9 @@
 //       };
 
 //       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+//       jest
+//         .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+//         .mockReturnValue(false);
 
 //       transactionAllowListMock.mockReturnValue([
 //         {
@@ -401,6 +383,7 @@
 //       ]);
 
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
@@ -434,7 +417,6 @@
 
 //     it('eth_estimateGas is not successful', async () => {
 //       const errMsg = 'insufficient balance for transfer';
-//       const errCode = -32602;
 //       const verseStatus = 200;
 //       const verseData = {
 //         jsonrpc: '2.0',
@@ -450,6 +432,9 @@
 //       };
 
 //       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+//       jest
+//         .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+//         .mockReturnValue(true);
 
 //       transactionAllowListMock.mockReturnValue([
 //         {
@@ -459,6 +444,7 @@
 //       ]);
 
 //       const transactionService = new TransactionService(
+//         typeCheckService,
 //         verseService,
 //         allowCheckService,
 //         rateLimitService,
@@ -485,12 +471,9 @@
 //         from,
 //       };
 
-//       try {
-//         await transactionService.checkAllowedGas(tx, jsonrpc, id);
-//       } catch (e) {
-//         const error = new JsonrpcError(errMsg, errCode);
-//         expect(e).toEqual(error);
-//       }
+//       await expect(
+//         transactionService.checkAllowedGas(tx, jsonrpc, id),
+//       ).rejects.toThrow(errMsg);
 //     });
 //   });
 // });
