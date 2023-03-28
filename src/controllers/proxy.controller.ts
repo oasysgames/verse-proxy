@@ -5,12 +5,13 @@ import {
   Body,
   ForbiddenException,
   Res,
+  Ip,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IncomingHttpHeaders } from 'http';
 import { Response } from 'express';
 import { ProxyService, TypeCheckService } from 'src/services';
-import { VerseRequestResponse } from 'src/entities';
+import { VerseRequestResponse, RequestContext } from 'src/entities';
 
 @Controller()
 export class ProxyController {
@@ -22,27 +23,37 @@ export class ProxyController {
 
   @Post()
   async post(
+    @Ip() ip: string,
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
   ) {
+    const requestContext = {
+      ip,
+      headers,
+    };
     const isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
-    await this.handler(isUseReadNode, headers, body, res);
+    await this.handler(isUseReadNode, requestContext, body, res);
   }
 
   @Post('master')
   async postMaster(
+    @Ip() ip: string,
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
   ) {
+    const requestContext = {
+      ip,
+      headers,
+    };
     const isUseReadNode = false;
-    await this.handler(isUseReadNode, headers, body, res);
+    await this.handler(isUseReadNode, requestContext, body, res);
   }
 
   async handler(
     isUseReadNode: boolean,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: any,
     res: Response,
   ) {
@@ -54,14 +65,14 @@ export class ProxyController {
     if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
       await this.proxyService.handleBatchRequest(
         isUseReadNode,
-        headers,
+        requestContext,
         body,
         callback,
       );
     } else if (this.typeCheckService.isJsonrpcRequestBody(body)) {
       await this.proxyService.handleSingleRequest(
         isUseReadNode,
-        headers,
+        requestContext,
         body,
         callback,
       );

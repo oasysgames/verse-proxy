@@ -7,6 +7,7 @@ import {
   JsonrpcRequestBody,
   VerseRequestResponse,
   JsonrpcError,
+  RequestContext,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
 import { DatastoreService } from 'src/repositories';
@@ -23,23 +24,27 @@ export class ProxyService {
 
   async handleSingleRequest(
     isUseReadNode: boolean,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
     callback: (result: VerseRequestResponse) => void,
   ) {
-    const result = await this.send(isUseReadNode, headers, body);
+    const result = await this.send(isUseReadNode, requestContext, body);
     callback(result);
   }
 
   async handleBatchRequest(
     isUseReadNode: boolean,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: Array<JsonrpcRequestBody>,
     callback: (result: VerseRequestResponse) => void,
   ) {
     const results = await Promise.all(
       body.map(async (verseRequest): Promise<any> => {
-        const result = await this.send(isUseReadNode, headers, verseRequest);
+        const result = await this.send(
+          isUseReadNode,
+          requestContext,
+          verseRequest,
+        );
         return result.data;
       }),
     );
@@ -51,11 +56,12 @@ export class ProxyService {
 
   async send(
     isUseReadNode: boolean,
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
     try {
       const method = body.method;
+      const { headers } = requestContext;
       this.checkMethod(method);
 
       const isUseBlockNumberCache =
@@ -74,6 +80,7 @@ export class ProxyService {
         isMetamaskAccess
       ) {
         return await this.txService.getBlockNumberCacheRes(
+          requestContext,
           body.jsonrpc,
           body.id,
         );

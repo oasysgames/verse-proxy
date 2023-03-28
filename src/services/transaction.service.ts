@@ -7,6 +7,7 @@ import {
   JsonrpcVersion,
   JsonrpcError,
   VerseRequestResponse,
+  RequestContext,
 } from 'src/entities';
 import {
   TransactionAllow,
@@ -130,10 +131,13 @@ export class TransactionService {
   }
 
   async getBlockNumberCacheRes(
+    requestContext: RequestContext,
     jsonrpc: JsonrpcVersion,
     id: JsonrpcId,
   ): Promise<VerseRequestResponse> {
-    const blockNumberCache = await this.datastoreService.getBlockNumberCache();
+    const blockNumberCache = await this.datastoreService.getBlockNumberCache(
+      requestContext,
+    );
 
     if (blockNumberCache) {
       const data = {
@@ -157,7 +161,10 @@ export class TransactionService {
 
     const res = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
-      await this.datastoreService.setBlockNumberCache(res.data.result);
+      await this.datastoreService.setBlockNumberCache(
+        requestContext,
+        res.data.result,
+      );
       return res;
     }
 

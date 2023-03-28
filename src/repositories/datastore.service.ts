@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
+import { createHash } from 'crypto';
 import { RateLimit } from 'src/config/transactionAllowList';
+import { RequestContext } from 'src/entities';
 
 @Injectable()
 export class DatastoreService {
@@ -70,12 +72,12 @@ export class DatastoreService {
     return txCounter;
   }
 
-  async getBlockNumberCache() {
+  async getBlockNumberCache(requestContext: RequestContext) {
     let blockNumberCache = '';
 
     switch (this.datastore) {
       case 'redis':
-        const key = this.getBlockNumberCacheKey();
+        const key = this.getBlockNumberCacheKey(requestContext);
         blockNumberCache = (await this.redis.get(key)) ?? '';
         break;
     }
@@ -83,10 +85,13 @@ export class DatastoreService {
     return blockNumberCache;
   }
 
-  async setBlockNumberCache(blockNumber: string) {
+  async setBlockNumberCache(
+    requestContext: RequestContext,
+    blockNumber: string,
+  ) {
     switch (this.datastore) {
       case 'redis':
-        const key = this.getBlockNumberCacheKey();
+        const key = this.getBlockNumberCacheKey(requestContext);
         await this.redis.set(key, blockNumber);
         await this.redis.expire(key, 15);
         break;
@@ -111,13 +116,28 @@ export class DatastoreService {
     return key;
   }
 
-  private getBlockNumberCacheKey() {
-    return 'blockNumber_cache';
+  private getBlockNumberCacheKey(requestContext: RequestContext) {
+    const ipAddress = requestContext.ip;
+    const userAgent = this.isStringArray(requestContext.headers['sec-ch-ua'])
+      ? requestContext.headers['sec-ch-ua'].join()
+      : requestContext.headers['user-agent'];
+
+    const clientInfo = userAgent ? ipAddress + userAgent : ipAddress + '*';
+    const hash = createHash('sha256').update(clientInfo).digest('hex');
+    return `block_number_cache_${hash}`;
   }
 
   private getTimeSecondsAgo(timestamp: number, interval: number) {
     const intervalAgo = timestamp - interval * 1000;
 
     return intervalAgo;
+  }
+
+  // todo: set typecheck.service
+  private isStringArray(value: any): value is string[] {
+    if (!Array.isArray(value)) {
+      return false;
+    }
+    return value.every((item) => typeof item === 'string');
   }
 }
