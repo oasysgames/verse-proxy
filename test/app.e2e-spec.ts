@@ -155,6 +155,8 @@ describe('single request', () => {
     txService = moduleFixture.get<TransactionService>(TransactionService);
     datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
 
+    jest.spyOn(console, 'error');
+
     app = moduleFixture.createNestApplication();
     await app.init();
   };
@@ -2601,6 +2603,8 @@ describe('batch request', () => {
     httpService = moduleFixture.get<HttpService>(HttpService);
     configService = moduleFixture.get<ConfigService>(ConfigService);
     txService = moduleFixture.get<TransactionService>(TransactionService);
+
+    jest.spyOn(console, 'error');
 
     app = moduleFixture.createNestApplication();
     await app.init();

@@ -58,6 +58,9 @@ describe('ProxyController', () => {
     configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     proxyService = moduleRef.get<ProxyService>(ProxyService);
+
+    jest.spyOn(proxyService, 'handleBatchRequest');
+    jest.spyOn(proxyService, 'handleSingleRequest');
   });
 
   describe('post', () => {

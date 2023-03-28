@@ -122,6 +122,8 @@ describe('ProxyService', () => {
     verseService = moduleRef.get<VerseService>(VerseService);
     txService = moduleRef.get<TransactionService>(TransactionService);
     datastoreService = moduleRef.get<DatastoreService>(DatastoreService);
+
+    jest.spyOn(console, 'error');
   });
 
   describe('handleSingleRequest', () => {
