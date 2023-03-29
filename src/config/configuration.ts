@@ -4,7 +4,9 @@ export default () => ({
     process.env.VERSE_URL ||
     'http://localhost:8545',
   verseReadNodeUrl: process.env.VERSE_READ_NODE_URL,
-  isUseBlockNumberCache: false,
+  blockNumberCacheExpire: process.env.BLOCK_NUMBER_CACHE_EXPIRE
+    ? parseInt(process.env.BLOCK_NUMBER_CACHE_EXPIRE, 10)
+    : undefined,
   datastore: process.env.DATASTORE ?? '',
   allowedMethods: [
     /^net_version$/,

@@ -63,8 +63,9 @@ export class ProxyService {
       const { headers } = requestContext;
       this.checkMethod(method);
 
-      const isUseBlockNumberCache =
-        this.configService.get<boolean>('isUseBlockNumberCache') ?? false;
+      const isUseBlockNumberCache = !!this.configService.get<number>(
+        'blockNumberCacheExpire',
+      );
       const isMetamaskAccess =
         headers.origin ===
         'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn';
@@ -119,8 +120,9 @@ export class ProxyService {
     requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
-    const isUseBlockNumberCache =
-      this.configService.get<boolean>('isUseBlockNumberCache') ?? false;
+    const isUseBlockNumberCache = !!this.configService.get<number>(
+      'blockNumberCacheExpire',
+    );
     const rawTx = body.params ? body.params[0] : undefined;
     if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 

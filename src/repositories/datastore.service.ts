@@ -9,12 +9,24 @@ import { RequestContext } from 'src/entities';
 export class DatastoreService {
   private datastore: string;
   private redis: Redis;
+  private blockNumberCacheExpire: number;
 
   constructor(private configService: ConfigService) {
     this.datastore = this.configService.get<string>('datastore') ?? '';
     if (this.datastore === 'redis' && process.env.REDIS_URI) {
       this.redis = new Redis(process.env.REDIS_URI);
     }
+
+    const blockNumberCacheExpireLimit = 120; // 2min
+    const blockNumberCacheExpire =
+      this.configService.get<number>('blockNumberCacheExpire') || 0;
+
+    if (blockNumberCacheExpire > blockNumberCacheExpireLimit) {
+      throw new Error(
+        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE is over ${blockNumberCacheExpireLimit}`,
+      );
+    }
+    this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
   async setTransactionHistory(
@@ -93,7 +105,7 @@ export class DatastoreService {
       case 'redis':
         const key = this.getBlockNumberCacheKey(requestContext);
         await this.redis.set(key, blockNumber);
-        await this.redis.expire(key, 15);
+        await this.redis.expire(key, this.blockNumberCacheExpire);
         break;
     }
   }
