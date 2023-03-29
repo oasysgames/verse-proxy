@@ -13,13 +13,25 @@ import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class ProxyService {
+  private isUseBlockNumberCache: boolean;
+  private isUseDatastore: boolean;
+  private allowedMethods: RegExp[];
+
   constructor(
     private configService: ConfigService,
     private readonly typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
     private readonly datastoreService: DatastoreService,
-  ) {}
+  ) {
+    this.isUseBlockNumberCache = !!this.configService.get<number>(
+      'blockNumberCacheExpire',
+    );
+    this.isUseDatastore = !!this.configService.get<string>('datastore');
+    this.allowedMethods = this.configService.get<RegExp[]>(
+      'allowedMethods',
+    ) ?? [/^.*$/];
+  }
 
   async handleSingleRequest(
     isUseReadNode: boolean,
@@ -63,9 +75,6 @@ export class ProxyService {
       const { headers } = requestContext;
       this.checkMethod(method);
 
-      const isUseBlockNumberCache = !!this.configService.get<number>(
-        'blockNumberCacheExpire',
-      );
       const isMetamaskAccess =
         headers.origin ===
         'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn';
@@ -76,7 +85,7 @@ export class ProxyService {
         return await this.verseService.postVerseMasterNode(headers, body);
       } else if (
         method === 'eth_blockNumber' &&
-        isUseBlockNumberCache &&
+        this.isUseBlockNumberCache &&
         isMetamaskAccess
       ) {
         return await this.txService.getBlockNumberCacheRes(
@@ -120,9 +129,6 @@ export class ProxyService {
     requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
-    const isUseBlockNumberCache = !!this.configService.get<number>(
-      'blockNumberCacheExpire',
-    );
     const rawTx = body.params ? body.params[0] : undefined;
     if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
@@ -159,8 +165,7 @@ export class ProxyService {
       return result;
     const txHash = result.data.result;
 
-    const isUseDatastore = !!this.configService.get<string>('datastore');
-    if (isUseDatastore && matchedTxAllowRule.rateLimit) {
+    if (this.isUseDatastore && matchedTxAllowRule.rateLimit) {
       await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
@@ -169,7 +174,7 @@ export class ProxyService {
         matchedTxAllowRule.rateLimit,
       );
     }
-    if (isUseDatastore && isUseBlockNumberCache) {
+    if (this.isUseDatastore && this.isUseBlockNumberCache) {
       await this.txService.resetBlockNumberCache(
         requestContext,
         body.jsonrpc,
@@ -180,10 +185,7 @@ export class ProxyService {
   }
 
   checkMethod(method: string) {
-    const allowedMethods = this.configService.get<RegExp[]>(
-      'allowedMethods',
-    ) ?? [/^.*$/];
-    const checkMethod = allowedMethods.some((allowedMethod) => {
+    const checkMethod = this.allowedMethods.some((allowedMethod) => {
       return allowedMethod.test(method);
     });
     if (!checkMethod)
