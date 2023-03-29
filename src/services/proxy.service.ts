@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { IncomingHttpHeaders } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
@@ -71,7 +70,7 @@ export class ProxyService {
         'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn';
 
       if (method === 'eth_sendRawTransaction') {
-        return await this.sendTransaction(headers, body);
+        return await this.sendTransaction(requestContext, body);
       } else if (method === 'eth_estimateGas') {
         return await this.verseService.postVerseMasterNode(headers, body);
       } else if (
@@ -117,9 +116,11 @@ export class ProxyService {
   }
 
   async sendTransaction(
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
+    const isUseBlockNumberCache =
+      this.configService.get<boolean>('isUseBlockNumberCache') ?? false;
     const rawTx = body.params ? body.params[0] : undefined;
     if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
@@ -131,7 +132,10 @@ export class ProxyService {
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.postVerseMasterNode(headers, body);
+      const result = await this.verseService.postVerseMasterNode(
+        requestContext.headers,
+        body,
+      );
       return result;
     }
 
@@ -144,14 +148,17 @@ export class ProxyService {
       tx.value,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.postVerseMasterNode(headers, body);
+    const result = await this.verseService.postVerseMasterNode(
+      requestContext.headers,
+      body,
+    );
 
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
       return result;
     const txHash = result.data.result;
 
-    const isSetRateLimit = !!this.configService.get<string>('datastore');
-    if (isSetRateLimit && matchedTxAllowRule.rateLimit)
+    const isUseDatastore = !!this.configService.get<string>('datastore');
+    if (isUseDatastore && matchedTxAllowRule.rateLimit) {
       await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
@@ -159,6 +166,14 @@ export class ProxyService {
         txHash,
         matchedTxAllowRule.rateLimit,
       );
+    }
+    if (isUseDatastore && isUseBlockNumberCache) {
+      await this.txService.resetBlockNumberCache(
+        requestContext,
+        body.jsonrpc,
+        body.id,
+      );
+    }
     return result;
   }
 

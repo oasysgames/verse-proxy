@@ -150,7 +150,11 @@ export class TransactionService {
         data,
       };
     }
+    const res = await this.resetBlockNumberCache(requestContext, jsonrpc, id);
+    return res;
+  }
 
+  async getLatestBlockNumber(jsonrpc: JsonrpcVersion, id: JsonrpcId) {
     const headers = {};
     const body: JsonrpcRequestBody = {
       jsonrpc: jsonrpc,
@@ -160,17 +164,27 @@ export class TransactionService {
     };
 
     const res = await this.verseService.postVerseMasterNode(headers, body);
+
+    if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
+      const { code, message } = res.data.error;
+      throw new JsonrpcError(message, code);
+    }
+    return res;
+  }
+
+  async resetBlockNumberCache(
+    requestContext: RequestContext,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
+  ) {
+    const res = await this.getLatestBlockNumber(jsonrpc, id);
+
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
       await this.datastoreService.setBlockNumberCache(
         requestContext,
         res.data.result,
       );
       return res;
-    }
-
-    if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
-      const { code, message } = res.data.error;
-      throw new JsonrpcError(message, code);
     }
     throw new JsonrpcError('can not get blockNumber', -32603);
   }
