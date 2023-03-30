@@ -5,10 +5,10 @@ import {
   Body,
   ForbiddenException,
   Res,
-  Ip,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IncomingHttpHeaders } from 'http';
+import { RealIP } from 'nestjs-real-ip';
 import { Response } from 'express';
 import { ProxyService, TypeCheckService } from 'src/services';
 import { VerseRequestResponse, RequestContext } from 'src/entities';
@@ -23,7 +23,7 @@ export class ProxyController {
 
   @Post()
   async post(
-    @Ip() ip: string,
+    @RealIP() ip: string, // https://github.com/p0vidl0/nestjs-real-ip#under-the-hood
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
@@ -38,7 +38,7 @@ export class ProxyController {
 
   @Post('master')
   async postMaster(
-    @Ip() ip: string,
+    @RealIP() ip: string, // https://github.com/p0vidl0/nestjs-real-ip#under-the-hood
     @Headers() headers: IncomingHttpHeaders,
     @Body() body: any,
     @Res() res: Response,
