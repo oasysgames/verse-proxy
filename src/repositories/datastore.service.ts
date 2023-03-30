@@ -4,7 +4,6 @@ import { Redis } from 'ioredis';
 import { createHash } from 'crypto';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { RequestContext } from 'src/entities';
-import { TypeCheckService } from '../services/typeCheck.service';
 
 @Injectable()
 export class DatastoreService {
@@ -12,10 +11,7 @@ export class DatastoreService {
   private redis: Redis;
   private blockNumberCacheExpire: number;
 
-  constructor(
-    private configService: ConfigService,
-    private typeCheckService: TypeCheckService,
-  ) {
+  constructor(private configService: ConfigService) {
     this.datastore = this.configService.get<string>('datastore') ?? '';
     if (this.datastore === 'redis' && process.env.REDIS_URI) {
       this.redis = new Redis(process.env.REDIS_URI);
@@ -133,11 +129,10 @@ export class DatastoreService {
 
   private getBlockNumberCacheKey(requestContext: RequestContext) {
     const ipAddress = requestContext.ip;
-    const userAgent = this.typeCheckService.isStringArray(
-      requestContext.headers['sec-ch-ua'],
-    )
-      ? requestContext.headers['sec-ch-ua'].join()
-      : requestContext.headers['user-agent'];
+    const userAgent =
+      typeof requestContext.headers['sec-ch-ua'] === 'string'
+        ? requestContext.headers['sec-ch-ua']
+        : requestContext.headers['user-agent'];
 
     const clientInfo = userAgent ? ipAddress + userAgent : ipAddress + '*';
     const hash = createHash('sha256').update(clientInfo).digest('hex');

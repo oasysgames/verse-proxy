@@ -8,13 +8,6 @@ import {
 
 @Injectable()
 export class TypeCheckService {
-  isStringArray(value: any): value is string[] {
-    if (!Array.isArray(value)) {
-      return false;
-    }
-    return value.every((item) => typeof item === 'string');
-  }
-
   isJsonrpcRequestBody(body: any): body is JsonrpcRequestBody {
     if (
       typeof body.jsonrpc === 'string' &&
