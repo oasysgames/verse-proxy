@@ -128,13 +128,23 @@ export class DatastoreService {
   }
 
   private getBlockNumberCacheKey(requestContext: RequestContext) {
-    const ipAddress = requestContext.ip;
+    const headers = requestContext.headers;
+    let clientIpInfo: string;
+    if (typeof headers['x-real-ip'] === 'string') {
+      clientIpInfo = headers['x-real-ip'];
+    } else if (typeof headers['x-forwarded-for'] === 'string') {
+      clientIpInfo = headers['x-forwarded-for'];
+    } else {
+      clientIpInfo = requestContext.ip;
+    }
     const userAgent =
-      typeof requestContext.headers['sec-ch-ua'] === 'string'
-        ? requestContext.headers['sec-ch-ua']
-        : requestContext.headers['user-agent'];
+      typeof headers['sec-ch-ua'] === 'string'
+        ? headers['sec-ch-ua']
+        : headers['user-agent'];
 
-    const clientInfo = userAgent ? ipAddress + userAgent : ipAddress + '*';
+    const clientInfo = userAgent
+      ? clientIpInfo + userAgent
+      : clientIpInfo + '*';
     const hash = createHash('sha256').update(clientInfo).digest('hex');
     return `block_number_cache_${hash}`;
   }
