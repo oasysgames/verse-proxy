@@ -108,8 +108,7 @@ export class DatastoreService {
     switch (this.datastore) {
       case 'redis':
         const key = this.getBlockNumberCacheKey(requestContext);
-        await this.redis.set(key, blockNumber);
-        await this.redis.expire(key, this.blockNumberCacheExpire);
+        await this.redis.setex(key, this.blockNumberCacheExpire, blockNumber);
         break;
     }
   }
