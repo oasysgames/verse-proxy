@@ -60,12 +60,16 @@ const getConfigServiceMock = (mockRes: ConfigServiceMockRes) => {
       switch (key) {
         case 'verseMasterNodeUrl':
           return mockRes.verseMasterNodeUrl;
-        case 'inheritHostHeader':
-          return mockRes.inheritHostHeader;
-        case 'allowedMethods':
-          return mockRes.allowedMethods;
+        case 'verseReadNodeUrl':
+          return undefined;
+        case 'blockNumberCacheExpire':
+          return undefined;
         case 'datastore':
           return mockRes.datastore;
+        case 'allowedMethods':
+          return mockRes.allowedMethods;
+        case 'inheritHostHeader':
+          return mockRes.inheritHostHeader;
       }
     }),
   };
@@ -139,18 +143,6 @@ describe('single request', () => {
         DatastoreService,
         TypeCheckService,
       ],
-    }).useMocker((token) => {
-      switch (token) {
-        case TransactionService:
-          return {
-            parseRawTx: jest.fn(),
-          };
-        case DatastoreService:
-          return {
-            setTransactionHistory: jest.fn(),
-            getTransactionHistoryCount: jest.fn(),
-          };
-      }
     });
 
     if (configServiceMock) {
@@ -168,7 +160,7 @@ describe('single request', () => {
     txService = moduleFixture.get<TransactionService>(TransactionService);
     datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
 
-    jest.spyOn(console, 'error');
+    jest.spyOn(console, 'error').mockImplementation();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -1319,6 +1311,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1438,6 +1433,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1557,6 +1555,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1668,6 +1669,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1779,6 +1783,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -2373,6 +2380,9 @@ describe('single request', () => {
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -2619,6 +2629,7 @@ describe('single request', () => {
 
 describe('batch request', () => {
   let txService: TransactionService;
+  let datastoreService: DatastoreService;
   let moduleFixture: TestingModule;
   let app: INestApplication;
 
@@ -2682,18 +2693,6 @@ describe('batch request', () => {
         DatastoreService,
         TypeCheckService,
       ],
-    }).useMocker((token) => {
-      switch (token) {
-        case TransactionService:
-          return {
-            parseRawTx: jest.fn(),
-          };
-        case DatastoreService:
-          return {
-            setTransactionHistory: jest.fn(),
-            getTransactionHistoryCount: jest.fn(),
-          };
-      }
     });
 
     if (configServiceMock) {
@@ -2709,8 +2708,9 @@ describe('batch request', () => {
     moduleFixture = await testingModuleBuilder.compile();
 
     txService = moduleFixture.get<TransactionService>(TransactionService);
+    datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
 
-    jest.spyOn(console, 'error');
+    jest.spyOn(console, 'error').mockImplementation();
 
     app = moduleFixture.createNestApplication();
     await app.init();

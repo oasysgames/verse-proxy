@@ -58,34 +58,7 @@ describe('TransactionService', () => {
         RateLimitService,
         DatastoreService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case TypeCheckService:
-            return {
-              isJsonrpcErrorResponse: jest.fn(),
-            };
-          case VerseService:
-            return {
-              post: jest.fn(),
-            };
-          case AllowCheckService:
-            return {
-              isAllowedDeploy: jest.fn(),
-              isIncludedAddress: jest.fn(),
-              isAllowedValue: jest.fn(),
-            };
-          case RateLimitService:
-            return {
-              checkRateLimit: jest.fn(),
-            };
-          case DatastoreService:
-            return {
-              getBlockNumberCache: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     verseService = moduleRef.get<VerseService>(VerseService);

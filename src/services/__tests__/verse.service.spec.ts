@@ -20,20 +20,7 @@ describe('VerseService', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [HttpModule],
       providers: [ConfigService],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case HttpService:
-            return {
-              post: jest.fn(),
-            };
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     httpService = moduleRef.get<HttpService>(HttpService);
     configService = moduleRef.get<ConfigService>(ConfigService);

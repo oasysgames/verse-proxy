@@ -89,33 +89,7 @@ describe('ProxyService', () => {
         RateLimitService,
         DatastoreService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case VerseService:
-            return {
-              postVerseReadNode: jest.fn(),
-              postVerseMasterNode: jest.fn(),
-            };
-          case TransactionService:
-            return {
-              parseRawTx: jest.fn(),
-              checkAllowedTx: jest.fn(),
-              checkAllowedGas: jest.fn(),
-            };
-          case RateLimitService:
-            return {
-              store: jest.fn(),
-            };
-          case DatastoreService:
-            return {};
-        }
-      })
-      .compile();
+    }).compile();
 
     configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);

@@ -34,26 +34,7 @@ describe('ProxyController', () => {
         DatastoreService,
         ConfigService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case TypeCheckService:
-            return {
-              isJsonrpcArray: jest.fn(),
-              isJsonrpc: jest.fn(),
-            };
-          case ProxyService:
-            return {
-              handleBatchRequest: jest.fn(),
-              handleSingleRequest: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
