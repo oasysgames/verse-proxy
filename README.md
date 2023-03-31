@@ -301,3 +301,8 @@ VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_URL]
 To check the behavior of requests to the Master-Verse-Node, an endpoint named `/master` is provided.
 
 All transactions sent to `/master` are sent to the Master-Verse-Node.
+
+## Reduce Metamask Access
+By returning the cache of blockNumber to the metamask, the number of accesses to the metamask can be reduced.
+For more detail, check the following doc.
+[Reduce Metamask Access](https://github.com/oasysgames/verse-proxy/blob/master/docs/MetamaskAccess.md)

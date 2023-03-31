@@ -23,7 +23,7 @@ export class DatastoreService {
 
     if (blockNumberCacheExpire > blockNumberCacheExpireLimit) {
       throw new Error(
-        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE is over ${blockNumberCacheExpireLimit}`,
+        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE_SEC is over ${blockNumberCacheExpireLimit}`,
       );
     }
     this.blockNumberCacheExpire = blockNumberCacheExpire;
