@@ -492,4 +492,229 @@ describe('TransactionService', () => {
       ).rejects.toThrow(errMsg);
     });
   });
+
+  describe('getBlockNumberCacheRes', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('blockNumberCache already exists', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      jest
+        .spyOn(datastoreService, 'getBlockNumberCache')
+        .mockResolvedValue(blockNumber);
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const resetBlockNumberCache = jest.spyOn(
+        transactionService,
+        'resetBlockNumberCache',
+      );
+
+      const result = await transactionService.getBlockNumberCacheRes(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(resetBlockNumberCache).not.toHaveBeenCalled();
+    });
+
+    it('blockNumberCache does not exist', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      jest.spyOn(datastoreService, 'getBlockNumberCache').mockResolvedValue('');
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const resetBlockNumberCache = jest
+        .spyOn(transactionService, 'resetBlockNumberCache')
+        .mockResolvedValue(res);
+
+      const result = await transactionService.getBlockNumberCacheRes(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(resetBlockNumberCache).toHaveBeenCalled();
+    });
+  });
+
+  describe('resetBlockNumberCache', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('blockNumberRes is correct', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      const setBlockNumberCache = jest.spyOn(
+        datastoreService,
+        'setBlockNumberCache',
+      );
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const getLatestBlockNumber = jest
+        .spyOn(transactionService, 'getLatestBlockNumber')
+        .mockResolvedValue(res);
+
+      const result = await transactionService.resetBlockNumberCache(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(getLatestBlockNumber).toHaveBeenCalled();
+      expect(setBlockNumberCache).toHaveBeenCalled();
+    });
+
+    it('blockNumberRes is not correct', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '';
+
+      const setBlockNumberCache = jest.spyOn(
+        datastoreService,
+        'setBlockNumberCache',
+      );
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+      const errMsg = 'can not get blockNumber';
+
+      const getLatestBlockNumber = jest
+        .spyOn(transactionService, 'getLatestBlockNumber')
+        .mockResolvedValue(res);
+
+      await expect(
+        transactionService.resetBlockNumberCache(requestContext, jsonrpc, id),
+      ).rejects.toThrow(errMsg);
+      expect(getLatestBlockNumber).toHaveBeenCalled();
+      expect(setBlockNumberCache).not.toHaveBeenCalled();
+    });
+  });
 });
