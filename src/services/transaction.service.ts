@@ -7,6 +7,8 @@ import {
   JsonrpcVersion,
   JsonrpcError,
   WebhookTransferData,
+  VerseRequestResponse,
+  RequestContext,
 } from 'src/entities';
 import {
   TransactionAllow,
@@ -16,15 +18,19 @@ import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
 import { WebhookService } from './webhook.service';
+import { TypeCheckService } from './typeCheck.service';
+import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class TransactionService {
   private txAllowList: Array<TransactionAllow>;
   constructor(
+    private typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
     private readonly webhookService: WebhookService,
+    private readonly datastoreService: DatastoreService,
   ) {
     this.txAllowList = getTxAllowList();
     this.txAllowList.forEach((txAllow) => {
@@ -132,10 +138,70 @@ export class TransactionService {
       params: params,
     };
 
-    const { data } = await this.verseService.post(headers, body);
-    if (data.error) {
-      throw new JsonrpcError(data.error.message, -32602);
+    const { data } = await this.verseService.postVerseMasterNode(headers, body);
+    if (this.typeCheckService.isJsonrpcErrorResponse(data)) {
+      const { code, message } = data.error;
+      throw new JsonrpcError(message, code);
     }
+  }
+
+  async getBlockNumberCacheRes(
+    requestContext: RequestContext,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
+  ): Promise<VerseRequestResponse> {
+    const blockNumberCache = await this.datastoreService.getBlockNumberCache(
+      requestContext,
+    );
+
+    if (blockNumberCache) {
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumberCache,
+      };
+      return {
+        status: 200,
+        data,
+      };
+    }
+    const res = await this.resetBlockNumberCache(requestContext, jsonrpc, id);
+    return res;
+  }
+
+  async getLatestBlockNumber(jsonrpc: JsonrpcVersion, id: JsonrpcId) {
+    const headers = {};
+    const body: JsonrpcRequestBody = {
+      jsonrpc: jsonrpc,
+      id: id,
+      method: 'eth_blockNumber',
+      params: [],
+    };
+
+    const res = await this.verseService.postVerseMasterNode(headers, body);
+
+    if (this.typeCheckService.isJsonrpcErrorResponse(res.data)) {
+      const { code, message } = res.data.error;
+      throw new JsonrpcError(message, code);
+    }
+    return res;
+  }
+
+  async resetBlockNumberCache(
+    requestContext: RequestContext,
+    jsonrpc: JsonrpcVersion,
+    id: JsonrpcId,
+  ) {
+    const res = await this.getLatestBlockNumber(jsonrpc, id);
+
+    if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
+      await this.datastoreService.setBlockNumberCache(
+        requestContext,
+        res.data.result,
+      );
+      return res;
+    }
+    throw new JsonrpcError('can not get blockNumber', -32603);
   }
 
   parseRawTx(rawTx: string): ethers.Transaction {

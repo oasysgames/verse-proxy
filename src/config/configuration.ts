@@ -1,5 +1,12 @@
 export default () => ({
-  verseUrl: process.env.VERSE_URL ?? 'http://localhost:8545',
+  verseMasterNodeUrl:
+    process.env.VERSE_MASTER_NODE_URL ||
+    process.env.VERSE_URL ||
+    'http://localhost:8545',
+  verseReadNodeUrl: process.env.VERSE_READ_NODE_URL,
+  blockNumberCacheExpire: process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC
+    ? parseInt(process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC, 10)
+    : undefined,
   datastore: process.env.DATASTORE ?? '',
   allowedMethods: [
     /^net_version$/,

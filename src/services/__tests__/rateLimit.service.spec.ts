@@ -7,9 +7,9 @@ import {
   AllowCheckService,
   RateLimitService,
   WebhookService,
+  TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
-import { JsonrpcError } from 'src/entities';
 
 describe('RateLimitService', () => {
   let allowCheckService: AllowCheckService;
@@ -26,21 +26,9 @@ describe('RateLimitService', () => {
         WebhookService,
         TransactionService,
         DatastoreService,
+        TypeCheckService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case AllowCheckService:
-            return {
-              isUnlimitedTxRate: jest.fn(),
-            };
-          case DatastoreService:
-            return {
-              getTransactionHistoryCount: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     datastoreService = moduleRef.get<DatastoreService>(DatastoreService);
