@@ -16,6 +16,12 @@ export interface JsonrpcTxSuccessResponse {
   result: string;
 }
 
+export interface JsonrpcBlockNumberSuccessResponse {
+  jsonrpc: JsonrpcVersion;
+  id: JsonrpcId;
+  result: string;
+}
+
 interface JsonrpcError {
   code: number;
   message: string;

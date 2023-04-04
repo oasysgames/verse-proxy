@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   JsonrpcRequestBody,
   JsonrpcTxSuccessResponse,
+  JsonrpcBlockNumberSuccessResponse,
   JsonrpcErrorResponse,
 } from 'src/entities';
 
@@ -32,6 +33,20 @@ export class TypeCheckService {
       (typeof res.id === 'string' || typeof res.id === 'number') &&
       typeof res.result === 'string' &&
       res.result.length === 66 &&
+      res.result.startsWith('0x')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  isJsonrpcBlockNumberSuccessResponse(
+    res: any,
+  ): res is JsonrpcBlockNumberSuccessResponse {
+    if (
+      typeof res.jsonrpc === 'string' &&
+      (typeof res.id === 'string' || typeof res.id === 'number') &&
+      typeof res.result === 'string' &&
       res.result.startsWith('0x')
     ) {
       return true;

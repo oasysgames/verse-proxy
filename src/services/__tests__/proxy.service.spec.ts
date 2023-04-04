@@ -89,39 +89,15 @@ describe('ProxyService', () => {
         RateLimitService,
         DatastoreService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case VerseService:
-            return {
-              postVerseReadNode: jest.fn(),
-              postVerseMasterNode: jest.fn(),
-            };
-          case TransactionService:
-            return {
-              parseRawTx: jest.fn(),
-              checkAllowedTx: jest.fn(),
-              checkAllowedGas: jest.fn(),
-            };
-          case RateLimitService:
-            return {
-              store: jest.fn(),
-            };
-          case DatastoreService:
-            return {};
-        }
-      })
-      .compile();
+    }).compile();
 
     configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     verseService = moduleRef.get<VerseService>(VerseService);
     txService = moduleRef.get<TransactionService>(TransactionService);
     datastoreService = moduleRef.get<DatastoreService>(DatastoreService);
+
+    jest.spyOn(console, 'error');
   });
 
   describe('handleSingleRequest', () => {
@@ -132,7 +108,12 @@ describe('ProxyService', () => {
     it('successful', async () => {
       const method = 'eth_call';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -166,11 +147,11 @@ describe('ProxyService', () => {
 
       await proxyService.handleSingleRequest(
         isUseReadNode,
-        headers,
+        requestContext,
         body,
         callback,
       );
-      expect(send).toHaveBeenCalledWith(isUseReadNode, headers, body);
+      expect(send).toHaveBeenCalledWith(isUseReadNode, requestContext, body);
       expect(callback).toHaveBeenCalledWith(postResponse);
     });
   });
@@ -182,7 +163,12 @@ describe('ProxyService', () => {
 
     it('successful', async () => {
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = [
         {
           jsonrpc: '2.0',
@@ -240,7 +226,7 @@ describe('ProxyService', () => {
 
       await proxyService.handleBatchRequest(
         isUseReadNode,
-        headers,
+        requestContext,
         body,
         callback,
       );
@@ -259,7 +245,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_getTransactionReceipt';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -307,7 +298,11 @@ describe('ProxyService', () => {
         });
       const sendTransactionMock = jest.spyOn(proxyService, 'sendTransaction');
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(checkMethodMock).toHaveBeenCalled();
       expect(sendTransactionMock).not.toHaveBeenCalled();
@@ -320,7 +315,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -367,7 +367,11 @@ describe('ProxyService', () => {
         .spyOn(proxyService, 'sendTransaction')
         .mockResolvedValue(postResponse);
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(checkMethodMock).toHaveBeenCalled();
       expect(postVerseReadNode).not.toHaveBeenCalled();
@@ -382,7 +386,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -428,7 +437,11 @@ describe('ProxyService', () => {
           throw error;
         });
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(checkMethodMock).toHaveBeenCalled();
       expect(postVerseReadNode).not.toHaveBeenCalled();
@@ -443,7 +456,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_estimateGas';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -490,11 +508,257 @@ describe('ProxyService', () => {
         .spyOn(verseService, 'postVerseMasterNode')
         .mockResolvedValue(postResponse);
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(checkMethodMock).toHaveBeenCalled();
       expect(postVerseReadNode).not.toHaveBeenCalled();
       expect(postVerseMasterNode).toHaveBeenCalledWith(headers, body);
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_blockNumber and metamaskAccess from Chrome', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const blockNumberCacheExpire = 15;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
+      const headers = {
+        host: 'localhost',
+        origin: 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn',
+      };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'blockNumberCacheExpire') {
+          return blockNumberCacheExpire;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).toHaveBeenCalledWith(
+        requestContext,
+        body.jsonrpc,
+        body.id,
+      );
+      expect(postVerseReadNode).not.toHaveBeenCalled();
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_blockNumber and metamaskAccess from Microsoft-Edge', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const blockNumberCacheExpire = 15;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
+      const headers = {
+        host: 'localhost',
+        origin: 'chrome-extension://ejbalbakoplchlghecdalmeeeajnimhm',
+      };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'blockNumberCacheExpire') {
+          return blockNumberCacheExpire;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).toHaveBeenCalledWith(
+        requestContext,
+        body.jsonrpc,
+        body.id,
+      );
+      expect(postVerseReadNode).not.toHaveBeenCalled();
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_blockNumber and is not metamaskAccess', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const blockNumberCacheExpire = 15;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
+      const headers = {
+        host: 'localhost',
+        origin: 'localhost:3000',
+      };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'blockNumberCacheExpire') {
+          return blockNumberCacheExpire;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).not.toHaveBeenCalled();
+      expect(postVerseReadNode).toHaveBeenCalledWith(headers, body);
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
       expect(sendTransactionMock).not.toHaveBeenCalled();
     });
 
@@ -503,7 +767,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_call';
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -547,7 +816,11 @@ describe('ProxyService', () => {
       const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
       const sendTransactionMock = jest.spyOn(proxyService, 'sendTransaction');
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(postVerseReadNode).toHaveBeenCalledWith(headers, body);
       expect(postVerseMasterNode).not.toHaveBeenCalled();
@@ -560,7 +833,12 @@ describe('ProxyService', () => {
       const datastore = 'redis';
       const method = 'eth_call';
       const isUseReadNode = false;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -604,7 +882,11 @@ describe('ProxyService', () => {
       const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
       const sendTransactionMock = jest.spyOn(proxyService, 'sendTransaction');
 
-      const result = await proxyService.send(isUseReadNode, headers, body);
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
       expect(result).toEqual(postResponse);
       expect(postVerseReadNode).not.toHaveBeenCalled();
       expect(postVerseMasterNode).toHaveBeenCalledWith(headers, body);
@@ -622,7 +904,12 @@ describe('ProxyService', () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -674,6 +961,10 @@ describe('ProxyService', () => {
         datastoreService,
         'setTransactionHistory',
       );
+      const resetBlockNumberCache = jest.spyOn(
+        txService,
+        'resetBlockNumberCache',
+      );
 
       const proxyService = new ProxyService(
         configService,
@@ -683,22 +974,28 @@ describe('ProxyService', () => {
         datastoreService,
       );
 
-      await expect(proxyService.sendTransaction(headers, body)).rejects.toThrow(
-        errMsg,
-      );
+      await expect(
+        proxyService.sendTransaction(requestContext, body),
+      ).rejects.toThrow(errMsg);
       expect(parseRawTx).not.toHaveBeenCalled();
       expect(checkContractDeploy).not.toHaveBeenCalled();
       expect(checkAllowedGas).not.toHaveBeenCalled();
       expect(versePost).not.toHaveBeenCalled();
       expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
       expect(setTransactionHistory).not.toHaveBeenCalled();
+      expect(resetBlockNumberCache).not.toHaveBeenCalled();
     });
 
     it('transaction from is not set', async () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
       const method = 'eth_sendRawTransaction';
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         id: 1,
@@ -771,6 +1068,10 @@ describe('ProxyService', () => {
         datastoreService,
         'setTransactionHistory',
       );
+      const resetBlockNumberCache = jest.spyOn(
+        txService,
+        'resetBlockNumberCache',
+      );
 
       const proxyService = new ProxyService(
         configService,
@@ -780,15 +1081,16 @@ describe('ProxyService', () => {
         datastoreService,
       );
 
-      await expect(proxyService.sendTransaction(headers, body)).rejects.toThrow(
-        errMsg,
-      );
+      await expect(
+        proxyService.sendTransaction(requestContext, body),
+      ).rejects.toThrow(errMsg);
       expect(parseRawTx).toHaveBeenCalled();
       expect(checkContractDeploy).not.toHaveBeenCalled();
       expect(checkAllowedGas).not.toHaveBeenCalled();
       expect(versePost).not.toHaveBeenCalled();
       expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
       expect(setTransactionHistory).not.toHaveBeenCalled();
+      expect(resetBlockNumberCache).not.toHaveBeenCalled();
     });
 
     describe('contract deploy transaction', () => {
@@ -796,7 +1098,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -858,6 +1165,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -868,7 +1179,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).toHaveBeenCalled();
@@ -876,13 +1187,19 @@ describe('ProxyService', () => {
         expect(versePost).not.toHaveBeenCalled();
         expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('checkAllowedGas is failed', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -947,6 +1264,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -957,7 +1278,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).toHaveBeenCalled();
@@ -965,13 +1286,19 @@ describe('ProxyService', () => {
         expect(versePost).not.toHaveBeenCalled();
         expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('tx is successful', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1028,6 +1355,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1037,7 +1368,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).toHaveBeenCalled();
@@ -1045,13 +1376,19 @@ describe('ProxyService', () => {
         expect(versePost).toHaveBeenCalled();
         expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('verse post is failed', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1100,6 +1437,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1110,7 +1451,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).toHaveBeenCalled();
@@ -1118,6 +1459,7 @@ describe('ProxyService', () => {
         expect(versePost).toHaveBeenCalled();
         expect(getMatchedTxAllowRule).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
     });
 
@@ -1126,7 +1468,12 @@ describe('ProxyService', () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1176,6 +1523,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1186,7 +1537,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1194,13 +1545,19 @@ describe('ProxyService', () => {
         expect(checkAllowedGas).not.toHaveBeenCalled();
         expect(versePost).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('checkAllowedGas is failed', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1265,6 +1622,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1275,7 +1636,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1283,13 +1644,19 @@ describe('ProxyService', () => {
         expect(checkAllowedGas).toHaveBeenCalled();
         expect(versePost).not.toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('verse post is failed', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1338,6 +1705,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1348,7 +1719,7 @@ describe('ProxyService', () => {
         );
 
         await expect(
-          proxyService.sendTransaction(headers, body),
+          proxyService.sendTransaction(requestContext, body),
         ).rejects.toThrow(error.message);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1356,13 +1727,19 @@ describe('ProxyService', () => {
         expect(checkAllowedGas).toHaveBeenCalled();
         expect(versePost).toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
       it('verse response is invalid', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1418,6 +1795,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1427,7 +1808,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1435,13 +1816,106 @@ describe('ProxyService', () => {
         expect(checkAllowedGas).toHaveBeenCalled();
         expect(versePost).toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
+      });
+
+      it('tx is successful and blockNumberCacheExpire is set', async () => {
+        const allowedMethods: RegExp[] = [/^.*$/];
+        const datastore = 'redis';
+        const blockNumberCacheExpire = 15;
+        const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: method,
+          params: [
+            '0x02f86f05038459682f008459682f12825208948626f6940e2eb28930efb4cef49b2d1f2c9c119985e8d4a5100080c080a079448db43a092a4bf489fe93fa8a7c09ac25f3d8e5a799d401c8d105cccdd029a0743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239',
+          ],
+        };
+        const matchedTxAllowRule = {
+          fromList: ['*'],
+          toList: ['*'],
+        };
+        const verseStatus = 200;
+        const verseData = {
+          jsonrpc: '2.0',
+          id: 1,
+          result:
+            '0x0f4b031898f55b85adf3056e08ba5d375a012219f57dcbd782d730b22784cd3b',
+        };
+        const postResponse = {
+          status: verseStatus,
+          data: verseData,
+        };
+
+        jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+          if (arg === 'allowedMethods') {
+            return allowedMethods;
+          } else if (arg === 'datastore') {
+            return datastore;
+          } else if (arg === 'blockNumberCacheExpire') {
+            return blockNumberCacheExpire;
+          }
+          return;
+        });
+        const parseRawTx = jest
+          .spyOn(txService, 'parseRawTx')
+          .mockReturnValue(tx);
+        const checkContractDeploy = jest.spyOn(
+          txService,
+          'checkContractDeploy',
+        );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
+        const versePost = jest
+          .spyOn(verseService, 'postVerseMasterNode')
+          .mockResolvedValue(postResponse);
+        const checkAllowedGas = jest.spyOn(txService, 'checkAllowedGas');
+        const getMatchedTxAllowRule = jest
+          .spyOn(txService, 'getMatchedTxAllowRule')
+          .mockResolvedValue(matchedTxAllowRule);
+        const setTransactionHistory = jest.spyOn(
+          datastoreService,
+          'setTransactionHistory',
+        );
+
+        const proxyService = new ProxyService(
+          configService,
+          typeCheckService,
+          verseService,
+          txService,
+          datastoreService,
+        );
+
+        const result = await proxyService.sendTransaction(requestContext, body);
+        expect(result).toEqual(postResponse);
+        expect(parseRawTx).toHaveBeenCalled();
+        expect(checkContractDeploy).not.toHaveBeenCalled();
+        expect(checkAllowedGas).toHaveBeenCalled();
+        expect(versePost).toHaveBeenCalled();
+        expect(getMatchedTxAllowRule).toHaveBeenCalled();
+        expect(resetBlockNumberCache).toHaveBeenCalled();
+        expect(setTransactionHistory).not.toHaveBeenCalled();
       });
 
       it('tx is successful and rateLimit is set', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const datastore = 'redis';
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1498,6 +1972,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1507,7 +1985,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1515,12 +1993,18 @@ describe('ProxyService', () => {
         expect(versePost).toHaveBeenCalled();
         expect(getMatchedTxAllowRule).toHaveBeenCalled();
         expect(setTransactionHistory).toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
 
-      it('tx is successful and rateLimit is not set', async () => {
+      it('tx is successful and rateLimit and blockNumberCacheExpire are not set', async () => {
         const allowedMethods: RegExp[] = [/^.*$/];
         const method = 'eth_sendRawTransaction';
+        const ip = '127.0.0.1';
         const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
         const body = {
           jsonrpc: '2.0',
           id: 1,
@@ -1571,6 +2055,10 @@ describe('ProxyService', () => {
           datastoreService,
           'setTransactionHistory',
         );
+        const resetBlockNumberCache = jest.spyOn(
+          txService,
+          'resetBlockNumberCache',
+        );
 
         const proxyService = new ProxyService(
           configService,
@@ -1580,7 +2068,7 @@ describe('ProxyService', () => {
           datastoreService,
         );
 
-        const result = await proxyService.sendTransaction(headers, body);
+        const result = await proxyService.sendTransaction(requestContext, body);
         expect(result).toEqual(postResponse);
         expect(parseRawTx).toHaveBeenCalled();
         expect(checkContractDeploy).not.toHaveBeenCalled();
@@ -1588,6 +2076,7 @@ describe('ProxyService', () => {
         expect(versePost).toHaveBeenCalled();
         expect(getMatchedTxAllowRule).toHaveBeenCalled();
         expect(setTransactionHistory).not.toHaveBeenCalled();
+        expect(resetBlockNumberCache).not.toHaveBeenCalled();
       });
     });
   });

@@ -26,20 +26,7 @@ describe('RateLimitService', () => {
         DatastoreService,
         TypeCheckService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case AllowCheckService:
-            return {
-              isUnlimitedTxRate: jest.fn(),
-            };
-          case DatastoreService:
-            return {
-              getTransactionHistoryCount: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     datastoreService = moduleRef.get<DatastoreService>(DatastoreService);

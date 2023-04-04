@@ -264,6 +264,63 @@ describe('isJsonrpcTxSuccessResponse', () => {
   });
 });
 
+describe('isJsonrpcBlockNumberSuccessResponse', () => {
+  it('res is isJsonrpcBlockNumberSuccessResponse', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      true,
+    );
+  });
+
+  it('res.jsonrpc is not string', () => {
+    const res = {
+      jsonrpc: 2.0,
+      id: 1,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.id is not string or number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: true,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.result is not string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 1,
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.result is not hex string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 'aaa',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+});
+
 describe('isJsonrpcErrorResponse', () => {
   it('res is isJsonrpcTxResponse', () => {
     const res = {

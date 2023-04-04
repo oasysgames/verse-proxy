@@ -34,30 +34,14 @@ describe('ProxyController', () => {
         DatastoreService,
         ConfigService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case TypeCheckService:
-            return {
-              isJsonrpcArray: jest.fn(),
-              isJsonrpc: jest.fn(),
-            };
-          case ProxyService:
-            return {
-              handleBatchRequest: jest.fn(),
-              handleSingleRequest: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
     configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     proxyService = moduleRef.get<ProxyService>(ProxyService);
+
+    jest.spyOn(proxyService, 'handleBatchRequest');
+    jest.spyOn(proxyService, 'handleSingleRequest');
   });
 
   describe('post', () => {
@@ -67,7 +51,12 @@ describe('ProxyController', () => {
 
     it('verseReadNodeUrl is set', () => {
       const verseReadNodeUrl = 'http://localhost:8545';
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -95,13 +84,18 @@ describe('ProxyController', () => {
       );
       const handler = jest.spyOn(controller, 'handler');
 
-      expect(async () => controller.post(headers, body, res)).not.toThrow();
-      expect(handler).toHaveBeenCalledWith(true, headers, body, res);
+      expect(async () => controller.post(ip, headers, body, res)).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(true, requestContext, body, res);
     });
 
     it('verseReadNodeUrl is not set', () => {
       const verseReadNodeUrl = undefined;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -129,8 +123,8 @@ describe('ProxyController', () => {
       );
       const handler = jest.spyOn(controller, 'handler');
 
-      expect(async () => controller.post(headers, body, res)).not.toThrow();
-      expect(handler).toHaveBeenCalledWith(false, headers, body, res);
+      expect(async () => controller.post(ip, headers, body, res)).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
     });
   });
 
@@ -141,7 +135,12 @@ describe('ProxyController', () => {
 
     it('verseReadNodeUrl is set', () => {
       const verseReadNodeUrl = 'http://localhost:8545';
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -170,14 +169,19 @@ describe('ProxyController', () => {
       const handler = jest.spyOn(controller, 'handler');
 
       expect(async () =>
-        controller.postMaster(headers, body, res),
+        controller.postMaster(ip, headers, body, res),
       ).not.toThrow();
-      expect(handler).toHaveBeenCalledWith(false, headers, body, res);
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
     });
 
     it('verseReadNodeUrl is not set', () => {
       const verseReadNodeUrl = undefined;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -206,9 +210,9 @@ describe('ProxyController', () => {
       const handler = jest.spyOn(controller, 'handler');
 
       expect(async () =>
-        controller.postMaster(headers, body, res),
+        controller.postMaster(ip, headers, body, res),
       ).not.toThrow();
-      expect(handler).toHaveBeenCalledWith(false, headers, body, res);
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
     });
   });
 
@@ -219,7 +223,12 @@ describe('ProxyController', () => {
 
     it('body is JsonrpcArray', () => {
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = [
         {
           jsonrpc: '2.0',
@@ -257,7 +266,7 @@ describe('ProxyController', () => {
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
       expect(async () =>
-        controller.handler(isUseReadNode, headers, body, res),
+        controller.handler(isUseReadNode, requestContext, body, res),
       ).not.toThrow();
       expect(handleBatchRequestMock).toHaveBeenCalled();
       expect(handleSingleRequestMock).not.toHaveBeenCalled();
@@ -265,7 +274,12 @@ describe('ProxyController', () => {
 
     it('body is Jsonrpc', () => {
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -296,7 +310,7 @@ describe('ProxyController', () => {
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
       expect(async () =>
-        controller.handler(isUseReadNode, headers, body, res),
+        controller.handler(isUseReadNode, requestContext, body, res),
       ).not.toThrow();
       expect(handleBatchRequestMock).not.toHaveBeenCalled();
       expect(handleSingleRequestMock).toHaveBeenCalled();
@@ -304,7 +318,12 @@ describe('ProxyController', () => {
 
     it('body is not Jsonrpc or JsonrpcArray', async () => {
       const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {};
       const res = {
         send: () => {
@@ -332,7 +351,7 @@ describe('ProxyController', () => {
       const controller = moduleRef.get<ProxyController>(ProxyController);
 
       await expect(
-        controller.handler(isUseReadNode, headers, body, res),
+        controller.handler(isUseReadNode, requestContext, body, res),
       ).rejects.toThrow(errMsg);
       expect(handleBatchRequestMock).not.toHaveBeenCalled();
       expect(handleSingleRequestMock).not.toHaveBeenCalled();
