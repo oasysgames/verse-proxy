@@ -244,7 +244,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lte  |  txValue <= condition is allowed  |
 
 #### Transaction access rate limit(Option)
-If you set transaction access rate limit, follow [Transaction access rate limit](https://github.com/oasysgames/verse-proxy/blob/master/docs/RateLimit.md)
+If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
 
 ### Set contract deployer
 You can control deployer of a verse at `src/config/transactionAllowList.ts`.
@@ -305,4 +305,4 @@ All transactions sent to `/master` are sent to the Master-Verse-Node.
 ## Reduce Metamask Access
 By returning the cache of blockNumber to the metamask, the number of accesses to the metamask can be reduced.
 For more detail, check the following doc.
-[Reduce Metamask Access](https://github.com/oasysgames/verse-proxy/blob/master/docs/MetamaskAccess.md)
+[Reduce Metamask Access](/docs/MetamaskAccess.md)

@@ -77,7 +77,9 @@ export class ProxyService {
 
       const isMetamaskAccess =
         headers.origin ===
-        'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn';
+          'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn' || // https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en
+        headers.origin ===
+          'chrome-extension://ejbalbakoplchlghecdalmeeeajnimhm'; // https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm
 
       if (method === 'eth_sendRawTransaction') {
         return await this.sendTransaction(requestContext, body);

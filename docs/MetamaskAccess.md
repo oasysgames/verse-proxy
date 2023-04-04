@@ -1,6 +1,8 @@
 # Reduce Metamask Access
 By returning the cache of block number to the metamask, the number of accesses to the metamask can be reduced.
 
+This approach is only applicable to browsers built on Chromium (chrome, brave, and Microsoft Edge based on Chromium).
+
 ## Context
 When the metamask is open in the browser, the metamask checks the block number with `eth_blockNumber` once every 5~6 seconds.
 
@@ -35,7 +37,8 @@ While a block numberCache is being returned, it is impossible to confirm that an
 
 In other words, if the expiration of block numberCache is too long, you can only confirm that your account's token balance has changed once the cache_expire expires.
 
-For this reason, the proxy sets the maximum to expire time of block numberCache to 2 minutes.
+In addition, when a view function of a contract connected to Metamask (such as ERC20) is executed, the result is cached in Metamask.
+If periodic block number checks do not progress the block number, the result of the cache is returned. Therefore, you cannot check the result of the latest view function.
 
 ## Setup
 It can be enabled by setting block numberCache's expiration from the environment variable.

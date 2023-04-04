@@ -520,7 +520,7 @@ describe('ProxyService', () => {
       expect(sendTransactionMock).not.toHaveBeenCalled();
     });
 
-    it('tx method is eth_blockNumber and metamaskAccess', async () => {
+    it('tx method is eth_blockNumber and metamaskAccess from Chrome', async () => {
       const allowedMethods: RegExp[] = [/^.*$/];
       const datastore = 'redis';
       const blockNumberCacheExpire = 15;
@@ -530,6 +530,88 @@ describe('ProxyService', () => {
       const headers = {
         host: 'localhost',
         origin: 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn',
+      };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: method,
+        params: [],
+      };
+
+      const verseStatus = 200;
+      const verseData = {
+        jsonrpc: '2.0',
+        id: 1,
+        result: '0x1b39',
+      };
+      const postResponse = {
+        status: verseStatus,
+        data: verseData,
+      };
+
+      jest.spyOn(configService, 'get').mockImplementation((arg: string) => {
+        if (arg === 'allowedMethods') {
+          return allowedMethods;
+        } else if (arg === 'datastore') {
+          return datastore;
+        } else if (arg === 'blockNumberCacheExpire') {
+          return blockNumberCacheExpire;
+        }
+        return;
+      });
+
+      const proxyService = new ProxyService(
+        configService,
+        typeCheckService,
+        verseService,
+        txService,
+        datastoreService,
+      );
+      const checkMethodMock = jest.spyOn(proxyService, 'checkMethod');
+      const sendTransactionMock = jest
+        .spyOn(proxyService, 'sendTransaction')
+        .mockResolvedValue(postResponse);
+      const postVerseReadNode = jest
+        .spyOn(verseService, 'postVerseReadNode')
+        .mockResolvedValue(postResponse);
+      const postVerseMasterNode = jest
+        .spyOn(verseService, 'postVerseMasterNode')
+        .mockResolvedValue(postResponse);
+      const getBlockNumberCacheRes = jest
+        .spyOn(txService, 'getBlockNumberCacheRes')
+        .mockResolvedValue(postResponse);
+
+      const result = await proxyService.send(
+        isUseReadNode,
+        requestContext,
+        body,
+      );
+      expect(result).toEqual(postResponse);
+      expect(checkMethodMock).toHaveBeenCalled();
+      expect(getBlockNumberCacheRes).toHaveBeenCalledWith(
+        requestContext,
+        body.jsonrpc,
+        body.id,
+      );
+      expect(postVerseReadNode).not.toHaveBeenCalled();
+      expect(postVerseMasterNode).not.toHaveBeenCalled();
+      expect(sendTransactionMock).not.toHaveBeenCalled();
+    });
+
+    it('tx method is eth_blockNumber and metamaskAccess from Microsoft-Edge', async () => {
+      const allowedMethods: RegExp[] = [/^.*$/];
+      const datastore = 'redis';
+      const blockNumberCacheExpire = 15;
+      const method = 'eth_blockNumber';
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
+      const headers = {
+        host: 'localhost',
+        origin: 'chrome-extension://ejbalbakoplchlghecdalmeeeajnimhm',
       };
       const requestContext = {
         ip,
