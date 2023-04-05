@@ -204,15 +204,15 @@ describe('isJsonrpcArray', () => {
   });
 });
 
-describe('isJsonrpcTxResponse', () => {
-  it('res is isJsonrpcTxResponse', () => {
+describe('isJsonrpcTxSuccessResponse', () => {
+  it('res is isJsonrpcTxSuccessResponse', () => {
     const res = {
       jsonrpc: '2.0',
       id: 1,
       result:
         '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(true);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(true);
   });
 
   it('res.jsonrpc is not string', () => {
@@ -222,7 +222,7 @@ describe('isJsonrpcTxResponse', () => {
       result:
         '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(false);
   });
 
   it('res.id is not string or number', () => {
@@ -232,7 +232,7 @@ describe('isJsonrpcTxResponse', () => {
       result:
         '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(false);
   });
 
   it('res.result is not string', () => {
@@ -241,7 +241,7 @@ describe('isJsonrpcTxResponse', () => {
       id: 1,
       result: 1,
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(false);
   });
 
   it('res.result is string and is not 66 characters', () => {
@@ -250,7 +250,7 @@ describe('isJsonrpcTxResponse', () => {
       id: 1,
       result: '0x4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8',
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(false);
   });
 
   it('res.result is not tx hash string', () => {
@@ -260,6 +260,125 @@ describe('isJsonrpcTxResponse', () => {
       result:
         'aa4e17f462637f7658646cb30f297ae5284a08f1d5aacec738454ea8b03602c53c',
     };
-    expect(typeCheckService.isJsonrpcTxResponse(res)).toBe(false);
+    expect(typeCheckService.isJsonrpcTxSuccessResponse(res)).toBe(false);
+  });
+});
+
+describe('isJsonrpcBlockNumberSuccessResponse', () => {
+  it('res is isJsonrpcBlockNumberSuccessResponse', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      true,
+    );
+  });
+
+  it('res.jsonrpc is not string', () => {
+    const res = {
+      jsonrpc: 2.0,
+      id: 1,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.id is not string or number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: true,
+      result: '0x15bf',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.result is not string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 1,
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+
+  it('res.result is not hex string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      result: 'aaa',
+    };
+    expect(typeCheckService.isJsonrpcBlockNumberSuccessResponse(res)).toBe(
+      false,
+    );
+  });
+});
+
+describe('isJsonrpcErrorResponse', () => {
+  it('res is isJsonrpcTxResponse', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      error: {
+        code: -32000,
+        message: 'execution reverted:',
+      },
+    };
+    expect(typeCheckService.isJsonrpcErrorResponse(res)).toBe(true);
+  });
+
+  it('res.jsonrpc is not string', () => {
+    const res = {
+      jsonrpc: 2.0,
+      id: 1,
+      error: {
+        code: -32000,
+        message: 'execution reverted:',
+      },
+    };
+    expect(typeCheckService.isJsonrpcErrorResponse(res)).toBe(false);
+  });
+
+  it('res.id is not string or number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: true,
+      error: {
+        code: -32000,
+        message: 'execution reverted:',
+      },
+    };
+    expect(typeCheckService.isJsonrpcErrorResponse(res)).toBe(false);
+  });
+
+  it('res.error.code is not number', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      error: {
+        code: 'aaa',
+        message: 'execution reverted:',
+      },
+    };
+    expect(typeCheckService.isJsonrpcErrorResponse(res)).toBe(false);
+  });
+
+  it('res.error.message is not string', () => {
+    const res = {
+      jsonrpc: '2.0',
+      id: 1,
+      error: {
+        code: -32000,
+        message: true,
+      },
+    };
+    expect(typeCheckService.isJsonrpcErrorResponse(res)).toBe(false);
   });
 });

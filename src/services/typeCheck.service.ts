@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { JsonrpcRequestBody, JsonrpcTxResponse } from 'src/entities';
+import {
+  JsonrpcRequestBody,
+  JsonrpcTxSuccessResponse,
+  JsonrpcBlockNumberSuccessResponse,
+  JsonrpcErrorResponse,
+} from 'src/entities';
 
 @Injectable()
 export class TypeCheckService {
@@ -22,13 +27,39 @@ export class TypeCheckService {
     return body.every(this.isJsonrpcRequestBody);
   }
 
-  isJsonrpcTxResponse(res: any): res is JsonrpcTxResponse {
+  isJsonrpcTxSuccessResponse(res: any): res is JsonrpcTxSuccessResponse {
     if (
       typeof res.jsonrpc === 'string' &&
       (typeof res.id === 'string' || typeof res.id === 'number') &&
       typeof res.result === 'string' &&
       res.result.length === 66 &&
       res.result.startsWith('0x')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  isJsonrpcBlockNumberSuccessResponse(
+    res: any,
+  ): res is JsonrpcBlockNumberSuccessResponse {
+    if (
+      typeof res.jsonrpc === 'string' &&
+      (typeof res.id === 'string' || typeof res.id === 'number') &&
+      typeof res.result === 'string' &&
+      res.result.startsWith('0x')
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  isJsonrpcErrorResponse(res: any): res is JsonrpcErrorResponse {
+    if (
+      typeof res.jsonrpc === 'string' &&
+      (typeof res.id === 'string' || typeof res.id === 'number') &&
+      typeof res.error?.code === 'number' &&
+      typeof res.error?.message === 'string'
     ) {
       return true;
     }

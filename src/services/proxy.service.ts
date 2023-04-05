@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { IncomingHttpHeaders } from 'http';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
@@ -7,37 +6,56 @@ import {
   JsonrpcRequestBody,
   VerseRequestResponse,
   JsonrpcError,
+  RequestContext,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
 import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class ProxyService {
+  private isUseBlockNumberCache: boolean;
+  private isUseDatastore: boolean;
+  private allowedMethods: RegExp[];
+
   constructor(
     private configService: ConfigService,
     private readonly typeCheckService: TypeCheckService,
     private verseService: VerseService,
     private readonly txService: TransactionService,
     private readonly datastoreService: DatastoreService,
-  ) {}
+  ) {
+    this.isUseBlockNumberCache = !!this.configService.get<number>(
+      'blockNumberCacheExpire',
+    );
+    this.isUseDatastore = !!this.configService.get<string>('datastore');
+    this.allowedMethods = this.configService.get<RegExp[]>(
+      'allowedMethods',
+    ) ?? [/^.*$/];
+  }
 
   async handleSingleRequest(
-    headers: IncomingHttpHeaders,
+    isUseReadNode: boolean,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
     callback: (result: VerseRequestResponse) => void,
   ) {
-    const result = await this.send(headers, body);
+    const result = await this.send(isUseReadNode, requestContext, body);
     callback(result);
   }
 
   async handleBatchRequest(
-    headers: IncomingHttpHeaders,
+    isUseReadNode: boolean,
+    requestContext: RequestContext,
     body: Array<JsonrpcRequestBody>,
     callback: (result: VerseRequestResponse) => void,
   ) {
     const results = await Promise.all(
       body.map(async (verseRequest): Promise<any> => {
-        const result = await this.send(headers, verseRequest);
+        const result = await this.send(
+          isUseReadNode,
+          requestContext,
+          verseRequest,
+        );
         return result.data;
       }),
     );
@@ -47,16 +65,43 @@ export class ProxyService {
     });
   }
 
-  async send(headers: IncomingHttpHeaders, body: JsonrpcRequestBody) {
+  async send(
+    isUseReadNode: boolean,
+    requestContext: RequestContext,
+    body: JsonrpcRequestBody,
+  ) {
     try {
       const method = body.method;
+      const { headers } = requestContext;
       this.checkMethod(method);
 
-      if (method !== 'eth_sendRawTransaction') {
-        return await this.verseService.post(headers, body);
+      const isMetamaskAccess =
+        headers.origin ===
+          'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn' || // https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn?hl=en
+        headers.origin ===
+          'chrome-extension://ejbalbakoplchlghecdalmeeeajnimhm'; // https://microsoftedge.microsoft.com/addons/detail/metamask/ejbalbakoplchlghecdalmeeeajnimhm
+
+      if (method === 'eth_sendRawTransaction') {
+        return await this.sendTransaction(requestContext, body);
+      } else if (method === 'eth_estimateGas') {
+        return await this.verseService.postVerseMasterNode(headers, body);
+      } else if (
+        method === 'eth_blockNumber' &&
+        this.isUseBlockNumberCache &&
+        isMetamaskAccess
+      ) {
+        return await this.txService.getBlockNumberCacheRes(
+          requestContext,
+          body.jsonrpc,
+          body.id,
+        );
       }
 
-      return await this.sendTransaction(headers, body);
+      if (isUseReadNode) {
+        return await this.verseService.postVerseReadNode(headers, body);
+      } else {
+        return await this.verseService.postVerseMasterNode(headers, body);
+      }
     } catch (err) {
       const status = 200;
       if (err instanceof JsonrpcError) {
@@ -68,11 +113,13 @@ export class ProxyService {
             message: err.message,
           },
         };
+        console.error(err.message);
         return {
           status,
           data,
         };
       }
+      console.error(err);
       return {
         status,
         data: err,
@@ -81,7 +128,7 @@ export class ProxyService {
   }
 
   async sendTransaction(
-    headers: IncomingHttpHeaders,
+    requestContext: RequestContext,
     body: JsonrpcRequestBody,
   ) {
     const rawTx = body.params ? body.params[0] : undefined;
@@ -95,7 +142,10 @@ export class ProxyService {
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.post(headers, body);
+      const result = await this.verseService.postVerseMasterNode(
+        requestContext.headers,
+        body,
+      );
       return result;
     }
 
@@ -108,14 +158,16 @@ export class ProxyService {
       tx.value,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.post(headers, body);
+    const result = await this.verseService.postVerseMasterNode(
+      requestContext.headers,
+      body,
+    );
 
-    if (!this.typeCheckService.isJsonrpcTxResponse(result.data))
-      throw new JsonrpcError('Can not get verse response', -32603);
+    if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
+      return result;
     const txHash = result.data.result;
 
-    const isSetRateLimit = !!this.configService.get<string>('datastore');
-    if (isSetRateLimit && matchedTxAllowRule.rateLimits)
+    if (this.isUseDatastore && matchedTxAllowRule.rateLimits) {
       await this.datastoreService.setTransactionHistory(
         tx.from,
         tx.to,
@@ -123,14 +175,19 @@ export class ProxyService {
         txHash,
         matchedTxAllowRule.rateLimits,
       );
+    }
+    if (this.isUseDatastore && this.isUseBlockNumberCache) {
+      await this.txService.resetBlockNumberCache(
+        requestContext,
+        body.jsonrpc,
+        body.id,
+      );
+    }
     return result;
   }
 
   checkMethod(method: string) {
-    const allowedMethods = this.configService.get<RegExp[]>(
-      'allowedMethods',
-    ) ?? [/^.*$/];
-    const checkMethod = allowedMethods.some((allowedMethod) => {
+    const checkMethod = this.allowedMethods.some((allowedMethod) => {
       return allowedMethod.test(method);
     });
     if (!checkMethod)

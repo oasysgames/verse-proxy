@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { ForbiddenException } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { Response } from 'express';
 import {
@@ -16,6 +15,7 @@ import { DatastoreService } from 'src/repositories';
 
 describe('ProxyController', () => {
   let typeCheckService: TypeCheckService;
+  let configService: ConfigService;
   let proxyService: ProxyService;
   let moduleRef: TestingModule;
 
@@ -32,26 +32,16 @@ describe('ProxyController', () => {
         ProxyService,
         RateLimitService,
         DatastoreService,
+        ConfigService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case TypeCheckService:
-            return {
-              isJsonrpcArray: jest.fn(),
-              isJsonrpc: jest.fn(),
-            };
-          case ProxyService:
-            return {
-              handleBatchRequest: jest.fn(),
-              handleSingleRequest: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
+    configService = moduleRef.get<ConfigService>(ConfigService);
     typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     proxyService = moduleRef.get<ProxyService>(ProxyService);
+
+    jest.spyOn(proxyService, 'handleBatchRequest');
+    jest.spyOn(proxyService, 'handleSingleRequest');
   });
 
   describe('post', () => {
@@ -59,8 +49,186 @@ describe('ProxyController', () => {
       jest.resetAllMocks();
     });
 
-    it('body is JsonrpcArray', () => {
+    it('verseReadNodeUrl is set', () => {
+      const verseReadNodeUrl = 'http://localhost:8545';
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        method: 'net_version',
+        params: [],
+        id: 1,
+      };
+      const res = {
+        send: () => {
+          return;
+        },
+        status: (code: number) => res,
+      } as Response;
+
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseReadNodeUrl':
+            return verseReadNodeUrl;
+        }
+      });
+
+      const controller = new ProxyController(
+        configService,
+        typeCheckService,
+        proxyService,
+      );
+      const handler = jest.spyOn(controller, 'handler');
+
+      expect(async () => controller.post(ip, headers, body, res)).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(true, requestContext, body, res);
+    });
+
+    it('verseReadNodeUrl is not set', () => {
+      const verseReadNodeUrl = undefined;
+      const ip = '127.0.0.1';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        method: 'net_version',
+        params: [],
+        id: 1,
+      };
+      const res = {
+        send: () => {
+          return;
+        },
+        status: (code: number) => res,
+      } as Response;
+
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseReadNodeUrl':
+            return verseReadNodeUrl;
+        }
+      });
+
+      const controller = new ProxyController(
+        configService,
+        typeCheckService,
+        proxyService,
+      );
+      const handler = jest.spyOn(controller, 'handler');
+
+      expect(async () => controller.post(ip, headers, body, res)).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
+    });
+  });
+
+  describe('postMaster', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('verseReadNodeUrl is set', () => {
+      const verseReadNodeUrl = 'http://localhost:8545';
+      const ip = '127.0.0.1';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        method: 'net_version',
+        params: [],
+        id: 1,
+      };
+      const res = {
+        send: () => {
+          return;
+        },
+        status: (code: number) => res,
+      } as Response;
+
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseReadNodeUrl':
+            return verseReadNodeUrl;
+        }
+      });
+
+      const controller = new ProxyController(
+        configService,
+        typeCheckService,
+        proxyService,
+      );
+      const handler = jest.spyOn(controller, 'handler');
+
+      expect(async () =>
+        controller.postMaster(ip, headers, body, res),
+      ).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
+    });
+
+    it('verseReadNodeUrl is not set', () => {
+      const verseReadNodeUrl = undefined;
+      const ip = '127.0.0.1';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        method: 'net_version',
+        params: [],
+        id: 1,
+      };
+      const res = {
+        send: () => {
+          return;
+        },
+        status: (code: number) => res,
+      } as Response;
+
+      jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+        switch (key) {
+          case 'verseReadNodeUrl':
+            return verseReadNodeUrl;
+        }
+      });
+
+      const controller = new ProxyController(
+        configService,
+        typeCheckService,
+        proxyService,
+      );
+      const handler = jest.spyOn(controller, 'handler');
+
+      expect(async () =>
+        controller.postMaster(ip, headers, body, res),
+      ).not.toThrow();
+      expect(handler).toHaveBeenCalledWith(false, requestContext, body, res);
+    });
+  });
+
+  describe('handler', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('body is JsonrpcArray', () => {
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = [
         {
           jsonrpc: '2.0',
@@ -97,13 +265,21 @@ describe('ProxyController', () => {
       );
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
-      expect(async () => controller.post(headers, body, res)).not.toThrow();
+      expect(async () =>
+        controller.handler(isUseReadNode, requestContext, body, res),
+      ).not.toThrow();
       expect(handleBatchRequestMock).toHaveBeenCalled();
       expect(handleSingleRequestMock).not.toHaveBeenCalled();
     });
 
     it('body is Jsonrpc', () => {
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {
         jsonrpc: '2.0',
         method: 'net_version',
@@ -133,13 +309,21 @@ describe('ProxyController', () => {
       );
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
-      expect(async () => controller.post(headers, body, res)).not.toThrow();
+      expect(async () =>
+        controller.handler(isUseReadNode, requestContext, body, res),
+      ).not.toThrow();
       expect(handleBatchRequestMock).not.toHaveBeenCalled();
       expect(handleSingleRequestMock).toHaveBeenCalled();
     });
 
     it('body is not Jsonrpc or JsonrpcArray', async () => {
+      const isUseReadNode = true;
+      const ip = '127.0.0.1';
       const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
       const body = {};
       const res = {
         send: () => {
@@ -165,7 +349,10 @@ describe('ProxyController', () => {
       );
 
       const controller = moduleRef.get<ProxyController>(ProxyController);
-      await expect(controller.post(headers, body, res)).rejects.toThrow(errMsg);
+
+      await expect(
+        controller.handler(isUseReadNode, requestContext, body, res),
+      ).rejects.toThrow(errMsg);
       expect(handleBatchRequestMock).not.toHaveBeenCalled();
       expect(handleSingleRequestMock).not.toHaveBeenCalled();
     });

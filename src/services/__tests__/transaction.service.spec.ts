@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { BigNumber } from 'ethers';
 import * as transactionAllowList from 'src/config/transactionAllowList';
@@ -14,9 +15,11 @@ import { JsonrpcError } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
 
 describe('TransactionService', () => {
+  let typeCheckService: TypeCheckService;
   let verseService: VerseService;
   let allowCheckService: AllowCheckService;
   let rateLimitService: RateLimitService;
+  let datastoreService: DatastoreService;
   const transactionAllowListMock = jest.spyOn(
     transactionAllowList,
     'getTxAllowList',
@@ -47,6 +50,7 @@ describe('TransactionService', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [HttpModule],
       providers: [
+        TypeCheckService,
         ConfigService,
         VerseService,
         AllowCheckService,
@@ -54,30 +58,13 @@ describe('TransactionService', () => {
         RateLimitService,
         DatastoreService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case VerseService:
-            return {
-              post: jest.fn(),
-            };
-          case AllowCheckService:
-            return {
-              isAllowedDeploy: jest.fn(),
-              isIncludedAddress: jest.fn(),
-              isAllowedValue: jest.fn(),
-            };
-          case RateLimitService:
-            return {
-              checkRateLimit: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    }).compile();
 
+    typeCheckService = moduleRef.get<TypeCheckService>(TypeCheckService);
     verseService = moduleRef.get<VerseService>(VerseService);
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
+    datastoreService = moduleRef.get<DatastoreService>(DatastoreService);
   });
 
   describe('checkContractDeploy', () => {
@@ -95,9 +82,11 @@ describe('TransactionService', () => {
 
       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       expect(() => transactionService.checkContractDeploy(from)).not.toThrow();
@@ -113,9 +102,11 @@ describe('TransactionService', () => {
 
       jest.spyOn(allowCheckService, 'isAllowedDeploy').mockReturnValue(false);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       expect(() => transactionService.checkContractDeploy(from)).toThrow(
@@ -153,9 +144,11 @@ describe('TransactionService', () => {
         });
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       await expect(
@@ -187,9 +180,11 @@ describe('TransactionService', () => {
         });
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       await expect(
@@ -212,9 +207,11 @@ describe('TransactionService', () => {
       jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(false);
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       await expect(
@@ -240,9 +237,11 @@ describe('TransactionService', () => {
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
+          datastoreService,
         );
 
         const result = await transactionService.getMatchedTxAllowRule(
@@ -286,9 +285,11 @@ describe('TransactionService', () => {
             throw error;
           });
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
+          datastoreService,
         );
 
         await expect(
@@ -320,9 +321,11 @@ describe('TransactionService', () => {
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
+          typeCheckService,
           verseService,
           allowCheckService,
           rateLimitService,
+          datastoreService,
         );
 
         const result = await transactionService.getMatchedTxAllowRule(
@@ -355,6 +358,9 @@ describe('TransactionService', () => {
       };
 
       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+        .mockReturnValue(false);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -364,9 +370,11 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       const jsonrpc = '2.0';
@@ -397,7 +405,6 @@ describe('TransactionService', () => {
 
     it('eth_estimateGas is not successful', async () => {
       const errMsg = 'insufficient balance for transfer';
-      const errCode = -32602;
       const verseStatus = 200;
       const verseData = {
         jsonrpc: '2.0',
@@ -413,6 +420,9 @@ describe('TransactionService', () => {
       };
 
       jest.spyOn(verseService, 'post').mockResolvedValue(verseResponse);
+      jest
+        .spyOn(typeCheckService, 'isJsonrpcErrorResponse')
+        .mockReturnValue(true);
 
       transactionAllowListMock.mockReturnValue([
         {
@@ -422,9 +432,11 @@ describe('TransactionService', () => {
       ]);
 
       const transactionService = new TransactionService(
+        typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        datastoreService,
       );
 
       const jsonrpc = '2.0';
@@ -451,6 +463,231 @@ describe('TransactionService', () => {
       await expect(
         transactionService.checkAllowedGas(tx, jsonrpc, id),
       ).rejects.toThrow(errMsg);
+    });
+  });
+
+  describe('getBlockNumberCacheRes', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('blockNumberCache already exists', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      jest
+        .spyOn(datastoreService, 'getBlockNumberCache')
+        .mockResolvedValue(blockNumber);
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const resetBlockNumberCache = jest.spyOn(
+        transactionService,
+        'resetBlockNumberCache',
+      );
+
+      const result = await transactionService.getBlockNumberCacheRes(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(resetBlockNumberCache).not.toHaveBeenCalled();
+    });
+
+    it('blockNumberCache does not exist', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      jest.spyOn(datastoreService, 'getBlockNumberCache').mockResolvedValue('');
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const resetBlockNumberCache = jest
+        .spyOn(transactionService, 'resetBlockNumberCache')
+        .mockResolvedValue(res);
+
+      const result = await transactionService.getBlockNumberCacheRes(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(resetBlockNumberCache).toHaveBeenCalled();
+    });
+  });
+
+  describe('resetBlockNumberCache', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    it('blockNumberRes is correct', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '0x1c24';
+
+      const setBlockNumberCache = jest.spyOn(
+        datastoreService,
+        'setBlockNumberCache',
+      );
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+
+      const getLatestBlockNumber = jest
+        .spyOn(transactionService, 'getLatestBlockNumber')
+        .mockResolvedValue(res);
+
+      const result = await transactionService.resetBlockNumberCache(
+        requestContext,
+        jsonrpc,
+        id,
+      );
+      expect(result).toStrictEqual(res);
+      expect(getLatestBlockNumber).toHaveBeenCalled();
+      expect(setBlockNumberCache).toHaveBeenCalled();
+    });
+
+    it('blockNumberRes is not correct', async () => {
+      const jsonrpc = '2.0';
+      const id = 1;
+      const ip = '127.0.0.1';
+      const headers = {};
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const blockNumber = '';
+
+      const setBlockNumberCache = jest.spyOn(
+        datastoreService,
+        'setBlockNumberCache',
+      );
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: ['*'],
+          toList: ['*'],
+        },
+      ]);
+
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        datastoreService,
+      );
+
+      const data = {
+        id,
+        jsonrpc,
+        result: blockNumber,
+      };
+      const res = {
+        status: 200,
+        data,
+      };
+      const errMsg = 'can not get blockNumber';
+
+      const getLatestBlockNumber = jest
+        .spyOn(transactionService, 'getLatestBlockNumber')
+        .mockResolvedValue(res);
+
+      await expect(
+        transactionService.resetBlockNumberCache(requestContext, jsonrpc, id),
+      ).rejects.toThrow(errMsg);
+      expect(getLatestBlockNumber).toHaveBeenCalled();
+      expect(setBlockNumberCache).not.toHaveBeenCalled();
     });
   });
 });

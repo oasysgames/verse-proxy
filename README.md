@@ -54,9 +54,10 @@ $ npm run test:cov
 ```
 
 ### Deploy
-#### 1. Set PORT
+#### 1. Set Environment Variables
 ```bash
 export PORT=[YOUR_PROXY_PORT]
+export VERSE_URL=[YOUR_VERSE_URL]
 ```
 
 #### 2. Set allow list config
@@ -243,7 +244,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lte  |  txValue <= condition is allowed  |
 
 #### Transaction access rate limit(Option)
-If you set transaction access rate limit, follow [Transaction access rate limit](https://github.com/oasysgames/verse-proxy/blob/master/docs/RateLimit.md)
+If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
 
 ### Set contract deployer
 You can control deployer of a verse at `src/config/transactionAllowList.ts`.
@@ -284,3 +285,24 @@ The default worker count is 1.
 ```bash
 CLUSTER_PROCESS=4
 ```
+
+## Master-Verse-Node and Read-Verse-node
+You can create a verse and its replica to reduce the access load on the verse.
+A verse can be set on the master-node and a replica on the read-node in a proxy.
+It will send read-transactions to the read-node and write-transactions to the master-node.
+
+You can set Master-Verse-Node and Read-Verse-node by the environment variable.
+```bash
+VERSE_MASTER_NODE_URL=[YOUR_VERSE_URL]
+VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_URL]
+```
+
+### Check Master-Verse-Node
+To check the behavior of requests to the Master-Verse-Node, an endpoint named `/master` is provided.
+
+All transactions sent to `/master` are sent to the Master-Verse-Node.
+
+## Reduce Metamask Access
+By returning the cache of blockNumber to the metamask, the number of accesses to the metamask can be reduced.
+For more detail, check the following doc.
+[Reduce Metamask Access](/docs/MetamaskAccess.md)

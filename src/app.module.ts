@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
@@ -19,6 +19,7 @@ import configuration from './config/configuration';
       load: [configuration],
     }),
     HttpModule,
+    CacheModule.register(),
   ],
   controllers: [ProxyController],
   providers: [

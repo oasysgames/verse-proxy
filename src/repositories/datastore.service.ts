@@ -1,18 +1,32 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
+import { createHash } from 'crypto';
 import { RateLimit } from 'src/config/transactionAllowList';
+import { RequestContext } from 'src/entities';
 
 @Injectable()
 export class DatastoreService {
   private datastore: string;
   private redis: Redis;
+  private blockNumberCacheExpire: number;
 
   constructor(private configService: ConfigService) {
     this.datastore = this.configService.get<string>('datastore') ?? '';
     if (this.datastore === 'redis' && process.env.REDIS_URI) {
       this.redis = new Redis(process.env.REDIS_URI);
     }
+
+    const blockNumberCacheExpireLimit = 120; // 2min
+    const blockNumberCacheExpire =
+      this.configService.get<number>('blockNumberCacheExpire') || 0;
+
+    if (blockNumberCacheExpire > blockNumberCacheExpireLimit) {
+      throw new Error(
+        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE_SEC is over ${blockNumberCacheExpireLimit}`,
+      );
+    }
+    this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
   async setTransactionHistory(
@@ -28,7 +42,12 @@ export class DatastoreService {
       rateLimits.map(async (rateLimit): Promise<void> => {
         switch (this.datastore) {
           case 'redis':
-            const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+            const redisKey = this.getTransactionHistoryKey(
+              from,
+              to,
+              methodId,
+              rateLimit,
+            );
             const now = Date.now();
             const removeDataTimestamp =
               this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
@@ -55,7 +74,12 @@ export class DatastoreService {
 
     switch (this.datastore) {
       case 'redis':
-        const redisKey = this.getRedisKey(from, to, methodId, rateLimit);
+        const redisKey = this.getTransactionHistoryKey(
+          from,
+          to,
+          methodId,
+          rateLimit,
+        );
         const now = Date.now();
         const intervalAgo = this.getTimeSecondsAgo(now, rateLimit.interval);
         txCounter = await this.redis.zcount(redisKey, intervalAgo, now);
@@ -64,7 +88,32 @@ export class DatastoreService {
     return txCounter;
   }
 
-  private getRedisKey(
+  async getBlockNumberCache(requestContext: RequestContext) {
+    let blockNumberCache = '';
+
+    switch (this.datastore) {
+      case 'redis':
+        const key = this.getBlockNumberCacheKey(requestContext);
+        blockNumberCache = (await this.redis.get(key)) ?? '';
+        break;
+    }
+
+    return blockNumberCache;
+  }
+
+  async setBlockNumberCache(
+    requestContext: RequestContext,
+    blockNumber: string,
+  ) {
+    switch (this.datastore) {
+      case 'redis':
+        const key = this.getBlockNumberCacheKey(requestContext);
+        await this.redis.setex(key, this.blockNumberCacheExpire, blockNumber);
+        break;
+    }
+  }
+
+  private getTransactionHistoryKey(
     from: string,
     to: string,
     methodId: string,
@@ -80,6 +129,20 @@ export class DatastoreService {
     const key = keyArray.join(':');
 
     return key;
+  }
+
+  private getBlockNumberCacheKey(requestContext: RequestContext) {
+    const clientIp = requestContext.ip;
+    const headers = requestContext.headers;
+
+    const userAgent =
+      typeof headers['sec-ch-ua'] === 'string'
+        ? headers['sec-ch-ua']
+        : headers['user-agent'];
+
+    const clientInfo = userAgent ? clientIp + userAgent : clientIp + '*';
+    const hash = createHash('sha256').update(clientInfo).digest('hex');
+    return `block_number_cache_${hash}`;
   }
 
   private getTimeSecondsAgo(timestamp: number, interval: number) {

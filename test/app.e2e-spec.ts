@@ -12,21 +12,29 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
 import * as transactionAllowList from 'src/config/transactionAllowList';
 import { TransactionAllow } from 'src/config/transactionAllowList';
 import { INestApplication } from '@nestjs/common';
 
-const mockHttpServicePost = (
-  httpService: HttpService,
-  noTxRes: AxiosResponse,
-  estimateGasRes: AxiosResponse,
-  txRes: AxiosResponse,
-) => {
-  jest
-    .spyOn(httpService, 'post')
-    .mockImplementation(
+interface HttpServiceMockRes {
+  noTxRes: AxiosResponse;
+  estimateGasRes: AxiosResponse;
+  txRes: AxiosResponse;
+}
+
+interface ConfigServiceMockRes {
+  verseMasterNodeUrl: string;
+  inheritHostHeader: boolean;
+  allowedMethods: RegExp[];
+  datastore: string;
+}
+
+const getHttpServiceMock = (mockRes: HttpServiceMockRes) => {
+  const httpServiceMock = {
+    post: jest.fn(
       (
         url: string,
         data?: any,
@@ -34,40 +42,41 @@ const mockHttpServicePost = (
       ) => {
         switch (data.method) {
           case 'eth_sendRawTransaction':
-            return of(txRes);
+            return of(mockRes.txRes);
           case 'eth_estimateGas':
-            return of(estimateGasRes);
+            return of(mockRes.estimateGasRes);
           default:
-            return of(noTxRes);
+            return of(mockRes.noTxRes);
         }
       },
-    );
+    ),
+  };
+  return httpServiceMock;
 };
 
-const mockConfigServiceGet = (
-  configService: ConfigService,
-  verseUrl: string,
-  inheritHostHeader: boolean,
-  allowedMethods: RegExp[],
-  datastore: string,
-) => {
-  jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-    switch (key) {
-      case 'verseUrl':
-        return verseUrl;
-      case 'inheritHostHeader':
-        return inheritHostHeader;
-      case 'allowedMethods':
-        return allowedMethods;
-      case 'datastore':
-        return datastore;
-    }
-  });
+const getConfigServiceMock = (mockRes: ConfigServiceMockRes) => {
+  const configServiceMock = {
+    get: jest.fn((key: string) => {
+      switch (key) {
+        case 'verseMasterNodeUrl':
+          return mockRes.verseMasterNodeUrl;
+        case 'verseReadNodeUrl':
+          return undefined;
+        case 'blockNumberCacheExpire':
+          return undefined;
+        case 'datastore':
+          return mockRes.datastore;
+        case 'allowedMethods':
+          return mockRes.allowedMethods;
+        case 'inheritHostHeader':
+          return mockRes.inheritHostHeader;
+      }
+    }),
+  };
+  return configServiceMock;
 };
 
 describe('single request', () => {
-  let httpService: HttpService;
-  let configService: ConfigService;
   let txService: TransactionService;
   let datastoreService: DatastoreService;
   let moduleFixture: TestingModule;
@@ -83,7 +92,7 @@ describe('single request', () => {
     'getUnlimitedTxRateAddresses',
   );
 
-  const verseUrl = 'http://localhost:8545';
+  const verseMasterNodeUrl = 'http://localhost:8545';
   const type = 2;
   const chainId = 5;
   const nonce = 3;
@@ -109,12 +118,21 @@ describe('single request', () => {
     txAllowList: Array<TransactionAllow>,
     deployAllowList: Array<string>,
     unlimitedTxRateAddresses: Array<string>,
+    httpServiceMockRes: HttpServiceMockRes | undefined,
+    configServiceMockRes: ConfigServiceMockRes | undefined,
   ) => {
     getTxAllowList.mockReturnValue(txAllowList);
     getDeployAllowList.mockReturnValue(deployAllowList);
     getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
-    moduleFixture = await Test.createTestingModule({
+    let configServiceMock;
+    let httpServiceMock;
+    if (configServiceMockRes)
+      configServiceMock = getConfigServiceMock(configServiceMockRes);
+    if (httpServiceMockRes)
+      httpServiceMock = getHttpServiceMock(httpServiceMockRes);
+
+    const testingModuleBuilder = Test.createTestingModule({
       imports: [AppModule, HttpModule],
       providers: [
         ConfigService,
@@ -123,35 +141,26 @@ describe('single request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case HttpService:
-            return {
-              post: jest.fn(),
-            };
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case TransactionService:
-            return {
-              parseRawTx: jest.fn(),
-            };
-          case DatastoreService:
-            return {
-              setTransactionHistory: jest.fn(),
-              getTransactionHistoryCount: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    });
 
-    httpService = moduleFixture.get<HttpService>(HttpService);
-    configService = moduleFixture.get<ConfigService>(ConfigService);
+    if (configServiceMock) {
+      testingModuleBuilder
+        .overrideProvider(ConfigService)
+        .useValue(configServiceMock);
+    }
+    if (httpServiceMock) {
+      testingModuleBuilder
+        .overrideProvider(HttpService)
+        .useValue(httpServiceMock);
+    }
+    moduleFixture = await testingModuleBuilder.compile();
+
     txService = moduleFixture.get<TransactionService>(TransactionService);
     datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
+
+    jest.spyOn(console, 'error').mockImplementation();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -210,19 +219,6 @@ describe('single request', () => {
       const deployAllowList = [''];
       const unlimitedTxRateAddresses = [''];
 
-      await createTestingModule(
-        txAllowList,
-        deployAllowList,
-        unlimitedTxRateAddresses,
-      );
-
-      mockConfigServiceGet(
-        configService,
-        verseUrl,
-        inheritHostHeader,
-        allowedMethods,
-        datastore,
-      );
       const noTxRes: AxiosResponse = {
         status: 200,
         data: responseData,
@@ -249,7 +245,25 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+
+      const httpServiceMockRes = {
+        noTxRes,
+        estimateGasRes,
+        txRes,
+      };
+      const configServiceMockRes = {
+        verseMasterNodeUrl,
+        inheritHostHeader,
+        allowedMethods,
+        datastore,
+      };
+      await createTestingModule(
+        txAllowList,
+        deployAllowList,
+        unlimitedTxRateAddresses,
+        httpServiceMockRes,
+        configServiceMockRes,
+      );
 
       return await request(app.getHttpServer())
         .post('/')
@@ -290,18 +304,18 @@ describe('single request', () => {
       const deployAllowList = [''];
       const unlimitedTxRateAddresses = [''];
 
+      const configServiceMockRes = {
+        verseMasterNodeUrl,
+        inheritHostHeader,
+        allowedMethods,
+        datastore,
+      };
       await createTestingModule(
         txAllowList,
         deployAllowList,
         unlimitedTxRateAddresses,
-      );
-
-      mockConfigServiceGet(
-        configService,
-        verseUrl,
-        inheritHostHeader,
-        allowedMethods,
-        datastore,
+        undefined,
+        configServiceMockRes,
       );
 
       return await request(app.getHttpServer())
@@ -365,20 +379,6 @@ describe('single request', () => {
       const deployAllowList = [''];
       const unlimitedTxRateAddresses = [''];
 
-      await createTestingModule(
-        txAllowList,
-        deployAllowList,
-        unlimitedTxRateAddresses,
-      );
-
-      mockConfigServiceGet(
-        configService,
-        verseUrl,
-        inheritHostHeader,
-        allowedMethods,
-        datastore,
-      );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
       const noTxRes: AxiosResponse = {
         status: 200,
         data: {
@@ -409,7 +409,26 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+
+      const httpServiceMockRes = {
+        noTxRes,
+        estimateGasRes,
+        txRes,
+      };
+      const configServiceMockRes = {
+        verseMasterNodeUrl,
+        inheritHostHeader,
+        allowedMethods,
+        datastore,
+      };
+      await createTestingModule(
+        txAllowList,
+        deployAllowList,
+        unlimitedTxRateAddresses,
+        httpServiceMockRes,
+        configServiceMockRes,
+      );
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
       return await request(app.getHttpServer())
         .post('/')
@@ -468,20 +487,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -516,7 +521,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -574,20 +597,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -622,7 +631,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -677,20 +704,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -720,7 +733,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -781,20 +812,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -829,7 +846,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -888,20 +923,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -936,7 +957,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -995,20 +1034,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1043,7 +1068,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1099,20 +1142,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1142,7 +1171,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1208,20 +1255,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1256,10 +1289,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1323,20 +1377,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1371,10 +1411,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1438,20 +1499,6 @@ describe('single request', () => {
             message: errMsg,
           },
         };
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1486,10 +1533,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1550,20 +1618,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1593,10 +1647,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1657,20 +1732,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [`${from}`];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1700,10 +1761,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1770,20 +1852,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1818,7 +1886,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1886,20 +1972,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -1934,7 +2006,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2002,20 +2092,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -2050,7 +2126,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2118,20 +2212,6 @@ describe('single request', () => {
             message: errMsg,
           },
         };
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -2166,7 +2246,25 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
@@ -2231,20 +2329,6 @@ describe('single request', () => {
         ];
         const deployAllowList = [''];
         const unlimitedTxRateAddresses = [''];
-        await createTestingModule(
-          txAllowList,
-          deployAllowList,
-          unlimitedTxRateAddresses,
-        );
-
-        mockConfigServiceGet(
-          configService,
-          verseUrl,
-          inheritHostHeader,
-          allowedMethods,
-          datastore,
-        );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         const noTxRes: AxiosResponse = {
           status: 200,
           data: {
@@ -2274,10 +2358,31 @@ describe('single request', () => {
           headers: {},
           config: {},
         };
-        mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+        const httpServiceMockRes = {
+          noTxRes,
+          estimateGasRes,
+          txRes,
+        };
+        const configServiceMockRes = {
+          verseMasterNodeUrl,
+          inheritHostHeader,
+          allowedMethods,
+          datastore,
+        };
+        await createTestingModule(
+          txAllowList,
+          deployAllowList,
+          unlimitedTxRateAddresses,
+          httpServiceMockRes,
+          configServiceMockRes,
+        );
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
+        jest
+          .spyOn(datastoreService, 'setTransactionHistory')
+          .mockResolvedValue();
 
         return await request(app.getHttpServer())
           .post('/')
@@ -2344,20 +2449,6 @@ describe('single request', () => {
           message: errMsg,
         },
       };
-      await createTestingModule(
-        txAllowList,
-        deployAllowList,
-        unlimitedTxRateAddresses,
-      );
-
-      mockConfigServiceGet(
-        configService,
-        verseUrl,
-        inheritHostHeader,
-        allowedMethods,
-        datastore,
-      );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
       const noTxRes: AxiosResponse = {
         status: 200,
         data: {
@@ -2392,7 +2483,25 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const httpServiceMockRes = {
+        noTxRes,
+        estimateGasRes,
+        txRes,
+      };
+      const configServiceMockRes = {
+        verseMasterNodeUrl,
+        inheritHostHeader,
+        allowedMethods,
+        datastore,
+      };
+      await createTestingModule(
+        txAllowList,
+        deployAllowList,
+        unlimitedTxRateAddresses,
+        httpServiceMockRes,
+        configServiceMockRes,
+      );
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(0);
@@ -2457,20 +2566,6 @@ describe('single request', () => {
       ];
       const deployAllowList = [from];
       const unlimitedTxRateAddresses = [''];
-      await createTestingModule(
-        txAllowList,
-        deployAllowList,
-        unlimitedTxRateAddresses,
-      );
-
-      mockConfigServiceGet(
-        configService,
-        verseUrl,
-        inheritHostHeader,
-        allowedMethods,
-        datastore,
-      );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
       const noTxRes: AxiosResponse = {
         status: 200,
         data: {
@@ -2500,7 +2595,25 @@ describe('single request', () => {
         headers: {},
         config: {},
       };
-      mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+      const httpServiceMockRes = {
+        noTxRes,
+        estimateGasRes,
+        txRes,
+      };
+      const configServiceMockRes = {
+        verseMasterNodeUrl,
+        inheritHostHeader,
+        allowedMethods,
+        datastore,
+      };
+      await createTestingModule(
+        txAllowList,
+        deployAllowList,
+        unlimitedTxRateAddresses,
+        httpServiceMockRes,
+        configServiceMockRes,
+      );
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(10);
@@ -2515,9 +2628,8 @@ describe('single request', () => {
 });
 
 describe('batch request', () => {
-  let httpService: HttpService;
-  let configService: ConfigService;
   let txService: TransactionService;
+  let datastoreService: DatastoreService;
   let moduleFixture: TestingModule;
   let app: INestApplication;
 
@@ -2531,7 +2643,7 @@ describe('batch request', () => {
     'getUnlimitedTxRateAddresses',
   );
 
-  const verseUrl = 'http://localhost:8545';
+  const verseMasterNodeUrl = 'http://localhost:8545';
   const type = 2;
   const chainId = 5;
   const nonce = 3;
@@ -2556,12 +2668,21 @@ describe('batch request', () => {
     txAllowList: Array<TransactionAllow>,
     deployAllowList: Array<string>,
     unlimitedTxRateAddresses: Array<string>,
+    httpServiceMockRes: HttpServiceMockRes | undefined,
+    configServiceMockRes: ConfigServiceMockRes | undefined,
   ) => {
     getTxAllowList.mockReturnValue(txAllowList);
     getDeployAllowList.mockReturnValue(deployAllowList);
     getUnlimitedTxRateAddresses.mockReturnValue(unlimitedTxRateAddresses);
 
-    moduleFixture = await Test.createTestingModule({
+    let configServiceMock;
+    let httpServiceMock;
+    if (configServiceMockRes)
+      configServiceMock = getConfigServiceMock(configServiceMockRes);
+    if (httpServiceMockRes)
+      httpServiceMock = getHttpServiceMock(httpServiceMockRes);
+
+    const testingModuleBuilder = Test.createTestingModule({
       imports: [AppModule, HttpModule],
       providers: [
         ConfigService,
@@ -2570,34 +2691,26 @@ describe('batch request', () => {
         AllowCheckService,
         RateLimitService,
         DatastoreService,
+        TypeCheckService,
       ],
-    })
-      .useMocker((token) => {
-        switch (token) {
-          case HttpService:
-            return {
-              post: jest.fn(),
-            };
-          case ConfigService:
-            return {
-              get: jest.fn(),
-            };
-          case TransactionService:
-            return {
-              parseRawTx: jest.fn(),
-            };
-          case DatastoreService:
-            return {
-              setTransactionHistory: jest.fn(),
-              getTransactionHistoryCount: jest.fn(),
-            };
-        }
-      })
-      .compile();
+    });
 
-    httpService = moduleFixture.get<HttpService>(HttpService);
-    configService = moduleFixture.get<ConfigService>(ConfigService);
+    if (configServiceMock) {
+      testingModuleBuilder
+        .overrideProvider(ConfigService)
+        .useValue(configServiceMock);
+    }
+    if (httpServiceMock) {
+      testingModuleBuilder
+        .overrideProvider(HttpService)
+        .useValue(httpServiceMock);
+    }
+    moduleFixture = await testingModuleBuilder.compile();
+
     txService = moduleFixture.get<TransactionService>(TransactionService);
+    datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
+
+    jest.spyOn(console, 'error').mockImplementation();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -2654,19 +2767,7 @@ describe('batch request', () => {
     ];
     const deployAllowList = [''];
     const unlimitedTxRateAddresses = [''];
-    await createTestingModule(
-      txAllowList,
-      deployAllowList,
-      unlimitedTxRateAddresses,
-    );
 
-    mockConfigServiceGet(
-      configService,
-      verseUrl,
-      inheritHostHeader,
-      allowedMethods,
-      datastore,
-    );
     const noTxRes: AxiosResponse = {
       status: 200,
       data: responseData,
@@ -2697,7 +2798,24 @@ describe('batch request', () => {
       headers: {},
       config: {},
     };
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    const httpServiceMockRes = {
+      noTxRes,
+      estimateGasRes,
+      txRes,
+    };
+    const configServiceMockRes = {
+      verseMasterNodeUrl,
+      inheritHostHeader,
+      allowedMethods,
+      datastore,
+    };
+    await createTestingModule(
+      txAllowList,
+      deployAllowList,
+      unlimitedTxRateAddresses,
+      httpServiceMockRes,
+      configServiceMockRes,
+    );
 
     return await request(app.getHttpServer())
       .post('/')
@@ -2757,18 +2875,19 @@ describe('batch request', () => {
     ];
     const deployAllowList = [''];
     const unlimitedTxRateAddresses = [''];
+    const httpServiceMockRes = undefined;
+    const configServiceMockRes = {
+      verseMasterNodeUrl,
+      inheritHostHeader,
+      allowedMethods,
+      datastore,
+    };
     await createTestingModule(
       txAllowList,
       deployAllowList,
       unlimitedTxRateAddresses,
-    );
-
-    mockConfigServiceGet(
-      configService,
-      verseUrl,
-      inheritHostHeader,
-      allowedMethods,
-      datastore,
+      httpServiceMockRes,
+      configServiceMockRes,
     );
 
     return await request(app.getHttpServer())
@@ -2845,18 +2964,19 @@ describe('batch request', () => {
     ];
     const deployAllowList = [''];
     const unlimitedTxRateAddresses = [''];
+    const httpServiceMockRes = undefined;
+    const configServiceMockRes = {
+      verseMasterNodeUrl,
+      inheritHostHeader,
+      allowedMethods,
+      datastore,
+    };
     await createTestingModule(
       txAllowList,
       deployAllowList,
       unlimitedTxRateAddresses,
-    );
-
-    mockConfigServiceGet(
-      configService,
-      verseUrl,
-      inheritHostHeader,
-      allowedMethods,
-      datastore,
+      httpServiceMockRes,
+      configServiceMockRes,
     );
     jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
@@ -2918,13 +3038,6 @@ describe('batch request', () => {
         message: errMsg,
       },
     };
-    const res: AxiosResponse = {
-      status: 200,
-      data: responseData,
-      statusText: '',
-      headers: {},
-      config: {},
-    };
     const results = [
       {
         jsonrpc: '2.0',
@@ -2943,14 +3056,7 @@ describe('batch request', () => {
         },
       },
     ];
-    mockConfigServiceGet(
-      configService,
-      verseUrl,
-      inheritHostHeader,
-      allowedMethods,
-      datastore,
-    );
-    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+
     const noTxRes: AxiosResponse = {
       status: 200,
       data: {
@@ -2989,13 +3095,25 @@ describe('batch request', () => {
     ];
     const deployAllowList = [''];
     const unlimitedTxRateAddresses = [''];
+    const httpServiceMockRes = {
+      noTxRes,
+      estimateGasRes,
+      txRes,
+    };
+    const configServiceMockRes = {
+      verseMasterNodeUrl,
+      inheritHostHeader,
+      allowedMethods,
+      datastore,
+    };
     await createTestingModule(
       txAllowList,
       deployAllowList,
       unlimitedTxRateAddresses,
+      httpServiceMockRes,
+      configServiceMockRes,
     );
-
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
     return await request(app.getHttpServer())
       .post('/')
@@ -3070,20 +3188,6 @@ describe('batch request', () => {
     ];
     const deployAllowList = [''];
     const unlimitedTxRateAddresses = [''];
-    await createTestingModule(
-      txAllowList,
-      deployAllowList,
-      unlimitedTxRateAddresses,
-    );
-
-    mockConfigServiceGet(
-      configService,
-      verseUrl,
-      inheritHostHeader,
-      allowedMethods,
-      datastore,
-    );
-    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
     const noTxRes: AxiosResponse = {
       status: 200,
       data: {
@@ -3113,7 +3217,25 @@ describe('batch request', () => {
       headers: {},
       config: {},
     };
-    mockHttpServicePost(httpService, noTxRes, estimateGasRes, txRes);
+    const httpServiceMockRes = {
+      noTxRes,
+      estimateGasRes,
+      txRes,
+    };
+    const configServiceMockRes = {
+      verseMasterNodeUrl,
+      inheritHostHeader,
+      allowedMethods,
+      datastore,
+    };
+    await createTestingModule(
+      txAllowList,
+      deployAllowList,
+      unlimitedTxRateAddresses,
+      httpServiceMockRes,
+      configServiceMockRes,
+    );
+    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
 
     return await request(app.getHttpServer())
       .post('/')
