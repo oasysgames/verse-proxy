@@ -27,7 +27,8 @@ export class ProxyService {
     this.isUseBlockNumberCache = !!this.configService.get<number>(
       'blockNumberCacheExpire',
     );
-    this.isUseDatastore = !!this.configService.get<string>('datastore');
+    this.isUseDatastore =
+      this.configService.get<boolean>('isUseDatastore') ?? false;
     this.allowedMethods = this.configService.get<RegExp[]>(
       'allowedMethods',
     ) ?? [/^.*$/];

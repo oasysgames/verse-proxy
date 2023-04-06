@@ -1,4 +1,4 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { CacheModule, Module, DynamicModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
@@ -12,6 +12,7 @@ import {
 } from './services';
 import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
+import { RedisModule } from './modules';
 
 @Module({
   imports: [
@@ -32,4 +33,51 @@ import configuration from './config/configuration';
     RateLimitService,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  static forRoot(): DynamicModule {
+    if (process.env.REDIS_URI) {
+      return {
+        module: AppModule,
+        imports: [
+          ConfigModule.forRoot({
+            load: [configuration],
+          }),
+          HttpModule,
+          CacheModule.register(),
+          RedisModule.forRoot(process.env.REDIS_URI),
+        ],
+        controllers: [ProxyController],
+        providers: [
+          VerseService,
+          TransactionService,
+          ProxyService,
+          AllowCheckService,
+          TypeCheckService,
+          DatastoreService,
+          RateLimitService,
+        ],
+      };
+    } else {
+      return {
+        module: AppModule,
+        imports: [
+          ConfigModule.forRoot({
+            load: [configuration],
+          }),
+          HttpModule,
+          CacheModule.register(),
+        ],
+        controllers: [ProxyController],
+        providers: [
+          VerseService,
+          TransactionService,
+          ProxyService,
+          AllowCheckService,
+          TypeCheckService,
+          DatastoreService,
+          RateLimitService,
+        ],
+      };
+    }
+  }
+}

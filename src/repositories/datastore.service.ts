@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { createHash } from 'crypto';
@@ -11,10 +11,13 @@ export class DatastoreService {
   private redis: Redis;
   private blockNumberCacheExpire: number;
 
-  constructor(private configService: ConfigService) {
-    this.datastore = this.configService.get<string>('datastore') ?? '';
-    if (this.datastore === 'redis' && process.env.REDIS_URI) {
-      this.redis = new Redis(process.env.REDIS_URI);
+  constructor(
+    private configService: ConfigService,
+    @Inject('REDIS') @Optional() redis?: Redis,
+  ) {
+    if (redis) {
+      this.datastore = 'redis';
+      this.redis = redis;
     }
 
     const blockNumberCacheExpireLimit = 120; // 2min

@@ -7,7 +7,7 @@ export default () => ({
   blockNumberCacheExpire: process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC
     ? parseInt(process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC, 10)
     : undefined,
-  datastore: process.env.DATASTORE ?? '',
+  isUseDatastore: !!process.env.REDIS_URI,
   allowedMethods: [
     /^net_version$/,
     /^web3_clientVersion$/,
