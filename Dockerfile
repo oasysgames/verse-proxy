@@ -3,7 +3,7 @@ RUN mkdir -p /usr/src/app && chown -R node:node /usr/src/app
 WORKDIR /usr/src/app
 
 COPY --chown=node:node . .
-RUN npm install && npm run build
+RUN npm install
 USER node
 
-CMD ["npm", "run", "start:prod"]
+CMD ["npm", "run", "start"]
