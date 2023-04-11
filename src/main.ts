@@ -6,7 +6,7 @@ import * as _cluster from 'cluster';
 import { cpus } from 'os';
 
 const cluster = _cluster as unknown as _cluster.Cluster;
-const workerCount = process.env.CLUSTER_PROCESS
+let workerCount = process.env.CLUSTER_PROCESS
   ? parseInt(process.env.CLUSTER_PROCESS, 10)
   : 1;
 
@@ -30,10 +30,13 @@ async function bootstrap() {
 
 if (cluster.isPrimary) {
   const workerLimit = cpus().length;
-  if (workerCount > workerLimit)
-    throw new Error(
-      `cluster process limit is ${workerLimit}. CLUSTER_PROCESS is over  ${workerLimit}`,
+
+  if (workerCount > workerLimit) {
+    console.warn(
+      `cluster process limit is ${workerLimit}. cluster process count is set to ${workerLimit}.`,
     );
+    workerCount = workerLimit;
+  }
 
   for (let i = 0; i < workerCount; i++) {
     console.log('cluster fork :', i);
