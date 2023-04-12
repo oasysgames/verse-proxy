@@ -166,14 +166,12 @@ export class ProxyService {
 
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
       return result;
-    const txHash = result.data.result;
 
     if (this.isUseDatastore && matchedTxAllowRule.rateLimits) {
-      await this.datastoreService.setTransactionHistory(
+      await this.datastoreService.reduceTxCount(
         tx.from,
         tx.to,
         methodId,
-        txHash,
         matchedTxAllowRule.rateLimits,
       );
     }

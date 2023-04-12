@@ -1,4 +1,5 @@
-import { CacheModule, Module, DynamicModule } from '@nestjs/common';
+import { Module, DynamicModule } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';

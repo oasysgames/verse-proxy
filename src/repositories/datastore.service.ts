@@ -1,20 +1,33 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Redis } from 'ioredis';
 import { createHash } from 'crypto';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { RequestContext } from 'src/entities';
 
+interface TxCount {
+  value: number;
+  isDatastoreLimit: boolean;
+}
+
 @Injectable()
 export class DatastoreService {
   private datastore: string;
   private redis: Redis;
+  private processCount: number;
   private blockNumberCacheExpire: number;
 
   constructor(
     private configService: ConfigService,
-    @Inject('REDIS') @Optional() redis?: Redis,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject('REDIS') @Optional() redis: Redis,
   ) {
+    this.processCount = process.env.CLUSTER_PROCESS
+      ? parseInt(process.env.CLUSTER_PROCESS, 10)
+      : 1;
+
     if (redis) {
       this.datastore = 'redis';
       this.redis = redis;
@@ -32,63 +45,156 @@ export class DatastoreService {
     this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
-  async setTransactionHistory(
-    from: string,
-    to: string,
-    methodId: string,
-    txHash: string,
-    rateLimits: RateLimit[],
+  async getAllowedTxCountFromRedis(
+    key: string,
+    rateLimit: RateLimit,
+    stock: number,
   ) {
-    const txHashByte = Buffer.from(txHash.slice(2), 'hex');
+    const rateLimitIntervalMs = rateLimit.interval * 1000;
+    const countFieldName = 'count';
+    const createdAtFieldName = 'created_at';
 
-    await Promise.all(
-      rateLimits.map(async (rateLimit): Promise<void> => {
-        switch (this.datastore) {
-          case 'redis':
-            const redisKey = this.getTransactionHistoryKey(
-              from,
-              to,
-              methodId,
-              rateLimit,
-            );
-            const now = Date.now();
-            const removeDataTimestamp =
-              this.getTimeSecondsAgo(now, rateLimit.interval) - 1;
-            const pipeline = this.redis.pipeline();
-            pipeline.zadd(redisKey, now, txHashByte);
-            if (now % 5 === 0)
-              pipeline.zremrangebyscore(redisKey, 0, removeDataTimestamp);
-            await pipeline.exec((err) => {
-              if (err) console.error(err);
-            });
-            break;
+    let retry = true;
+    let txCount: TxCount = {
+      value: 0,
+      isDatastoreLimit: false,
+    };
+    let ttl = 0; // milliseconds
+    while (retry) {
+      await this.redis.watch(key);
+      const redisData = await this.redis.hmget(
+        key,
+        countFieldName,
+        createdAtFieldName,
+      );
+      const countFieldValue = redisData[0];
+      const createdAtFieldValue = redisData[1];
+
+      // datastore value is not set
+      if (!(countFieldValue && createdAtFieldValue)) {
+        const now = Date.now();
+        const multiResult = await this.redis
+          .multi()
+          .hset(key, countFieldName, stock, createdAtFieldName, now)
+          .exec();
+        txCount = {
+          value: stock,
+          isDatastoreLimit: false,
+        };
+        ttl = rateLimitIntervalMs;
+        if (multiResult) retry = false;
+        break;
+      }
+
+      // datastore value is set
+      const redisCount = Number(countFieldValue);
+      const createdAt = Number(createdAtFieldValue);
+      const now = Date.now();
+      const counterAge = now - createdAt;
+
+      // It does not have to reset redis data
+      if (rateLimitIntervalMs > counterAge) {
+        if (redisCount + stock > rateLimit.limit) {
+          txCount = {
+            value: 0,
+            isDatastoreLimit: true,
+          };
+          ttl = createdAt + rateLimitIntervalMs - now;
+          break;
+        } else {
+          const multiResult = await this.redis
+            .multi()
+            .hset(
+              key,
+              countFieldName,
+              redisCount + stock,
+              createdAtFieldName,
+              createdAt,
+            )
+            .exec();
+          txCount = {
+            value: stock,
+            isDatastoreLimit: false,
+          };
+          ttl = createdAt + rateLimitIntervalMs - now;
+          if (multiResult) retry = false;
         }
-      }),
-    );
+      }
+      // It has to reset redis data
+      else {
+        const multiResult = await this.redis
+          .multi()
+          .hset(key, countFieldName, stock, createdAtFieldName, now)
+          .exec();
+        txCount = {
+          value: stock,
+          isDatastoreLimit: false,
+        };
+        ttl = rateLimitIntervalMs;
+        if (multiResult) retry = false;
+      }
+    }
+    await this.cacheManager.set(key, txCount, ttl);
+    return txCount.value;
   }
 
-  async getTransactionHistoryCount(
+  async getAllowedTxCountFromDataStore(key: string, rateLimit: RateLimit) {
+    const stock = this.getTxCountStock(rateLimit.limit);
+    let count = 0;
+    switch (this.datastore) {
+      case 'redis':
+        count = await this.getAllowedTxCountFromRedis(key, rateLimit, stock);
+        break;
+    }
+    return count;
+  }
+
+  async getAllowedTxCount(
     from: string,
     to: string,
     methodId: string,
     rateLimit: RateLimit,
   ) {
-    let txCounter = 0;
+    const key = this.getAllowedTxCountKey(from, to, methodId, rateLimit);
+    const cache = await this.cacheManager.get<TxCount>(key);
 
-    switch (this.datastore) {
-      case 'redis':
-        const redisKey = this.getTransactionHistoryKey(
-          from,
-          to,
-          methodId,
-          rateLimit,
-        );
-        const now = Date.now();
-        const intervalAgo = this.getTimeSecondsAgo(now, rateLimit.interval);
-        txCounter = await this.redis.zcount(redisKey, intervalAgo, now);
-        break;
+    if (cache === undefined) {
+      return await this.getAllowedTxCountFromDataStore(key, rateLimit);
+    } else {
+      if (cache.value > 0 || cache.isDatastoreLimit) return cache.value;
+      return await this.getAllowedTxCountFromDataStore(key, rateLimit);
     }
-    return txCounter;
+  }
+
+  getTxCountStock(limit: number): number {
+    const stockCount1 = Math.floor((limit / 10) * this.processCount);
+    const stockCount2 = Math.floor((limit / 3) * this.processCount);
+
+    if (stockCount1 >= 1) {
+      return stockCount1;
+    } else if (stockCount2 >= 1) {
+      return stockCount2;
+    }
+    return 1;
+  }
+
+  async reduceTxCount(
+    from: string,
+    to: string,
+    methodId: string,
+    rateLimits: RateLimit[],
+  ) {
+    await Promise.all(
+      rateLimits.map(async (rateLimit): Promise<void> => {
+        const key = this.getAllowedTxCountKey(from, to, methodId, rateLimit);
+        const cache = await this.cacheManager.get<TxCount>(key);
+
+        if (!cache) return;
+        cache.value = cache.value - 1;
+        const ttl = await this.cacheManager.store.ttl(key);
+        await this.cacheManager.set(key, cache, ttl);
+      }),
+    );
   }
 
   async getBlockNumberCache(requestContext: RequestContext) {
@@ -116,7 +222,7 @@ export class DatastoreService {
     }
   }
 
-  private getTransactionHistoryKey(
+  private getAllowedTxCountKey(
     from: string,
     to: string,
     methodId: string,
@@ -146,11 +252,5 @@ export class DatastoreService {
     const clientInfo = userAgent ? clientIp + userAgent : clientIp + '*';
     const hash = createHash('sha256').update(clientInfo).digest('hex');
     return `block_number_cache_${hash}`;
-  }
-
-  private getTimeSecondsAgo(timestamp: number, interval: number) {
-    const intervalAgo = timestamp - interval * 1000;
-
-    return intervalAgo;
   }
 }

@@ -24,11 +24,13 @@
   },
   "dependencies": {
     "@nestjs/axios": "^0.1.0",
+    "@nestjs/cache-manager": "^1.0.0",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
     "body-parser": "^1.20.2",
+    "cache-manager": "^5.2.0",
     "ethers": "^5.7.1",
     "ioredis": "^5.3.1",
     "nestjs-real-ip": "^2.2.0",

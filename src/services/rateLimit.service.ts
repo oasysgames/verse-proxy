@@ -21,14 +21,14 @@ export class RateLimitService {
       return;
     }
 
-    const txCounter = await this.datastoreService.getTransactionHistoryCount(
+    const txCounter = await this.datastoreService.getAllowedTxCount(
       from,
       to,
       methodId,
       rateLimit,
     );
 
-    if (txCounter + 1 > rateLimit.limit)
+    if (txCounter <= 0)
       throw new JsonrpcError(
         `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`,
         -32602,
