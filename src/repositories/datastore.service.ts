@@ -24,17 +24,27 @@ export class DatastoreService {
     rateLimit: RateLimit,
   ) {
     let count = 0;
-    switch (this.datastore) {
-      case 'redis':
-        count = await this.redisService.getAllowedTxCount(
-          from,
-          to,
-          methodId,
-          rateLimit,
-        );
-        break;
+
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          count = await this.redisService.getAllowedTxCount(
+            from,
+            to,
+            methodId,
+            rateLimit,
+          );
+          break;
+      }
+      return count;
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return 0;
     }
-    return count;
   }
 
   async reduceTxCount(
@@ -45,15 +55,24 @@ export class DatastoreService {
   ) {
     await Promise.all(
       rateLimits.map(async (rateLimit): Promise<void> => {
-        switch (this.datastore) {
-          case 'redis':
-            await this.redisService.reduceTxCount(
-              from,
-              to,
-              methodId,
-              rateLimit,
-            );
-            break;
+        try {
+          switch (this.datastore) {
+            case 'redis':
+              await this.redisService.reduceTxCount(
+                from,
+                to,
+                methodId,
+                rateLimit,
+              );
+              break;
+          }
+        } catch (err) {
+          if (err instanceof Error) {
+            console.error(err.message);
+          } else {
+            console.error(err);
+          }
+          return;
         }
       }),
     );
@@ -62,25 +81,42 @@ export class DatastoreService {
   async getBlockNumberCache(requestContext: RequestContext) {
     let blockNumberCache = '';
 
-    switch (this.datastore) {
-      case 'redis':
-        blockNumberCache = await this.redisService.getBlockNumber(
-          requestContext,
-        );
-        break;
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          blockNumberCache = await this.redisService.getBlockNumber(
+            requestContext,
+          );
+          break;
+      }
+      return blockNumberCache;
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return '';
     }
-
-    return blockNumberCache;
   }
 
   async setBlockNumberCache(
     requestContext: RequestContext,
     blockNumber: string,
   ) {
-    switch (this.datastore) {
-      case 'redis':
-        await this.redisService.setBlockNumber(requestContext, blockNumber);
-        break;
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          await this.redisService.setBlockNumber(requestContext, blockNumber);
+          break;
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return;
     }
   }
 }
