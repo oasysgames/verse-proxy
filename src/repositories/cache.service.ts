@@ -38,8 +38,8 @@ export class CacheService {
   }
 
   getTxCountStock(limit: number): number {
-    const stockCount1 = Math.floor((limit / 10) * this.processCount);
-    const stockCount2 = Math.floor((limit / 3) * this.processCount);
+    const stockCount1 = Math.floor(limit / (10 * this.processCount));
+    const stockCount2 = Math.floor(limit / (3 * this.processCount));
 
     if (stockCount1 >= 1) {
       return stockCount1;
