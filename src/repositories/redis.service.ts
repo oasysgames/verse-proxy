@@ -157,16 +157,27 @@ export class RedisService {
     await this.cacheService.resetTxCount(key, cache);
   }
 
-  // todo: use in memory cache
   async getBlockNumber(requestContext: RequestContext) {
     const key = this.cacheService.getBlockNumberCacheKey(requestContext);
-    const blockNumberCache = (await this.redis.get(key)) ?? '';
-    return blockNumberCache;
+    const cache = await this.cacheService.getBlockNumber(key);
+    if (cache) return cache;
+    const blockNumber = (await this.redis.get(key)) ?? '';
+    if (blockNumber)
+      await this.cacheService.setBlockNumber(
+        key,
+        blockNumber,
+        this.blockNumberCacheExpire * 1000,
+      );
+    return blockNumber;
   }
 
-  // todo: use in memory cache
   async setBlockNumber(requestContext: RequestContext, blockNumber: string) {
     const key = this.cacheService.getBlockNumberCacheKey(requestContext);
     await this.redis.setex(key, this.blockNumberCacheExpire, blockNumber);
+    await this.cacheService.setBlockNumber(
+      key,
+      blockNumber,
+      this.blockNumberCacheExpire * 1000,
+    );
   }
 }

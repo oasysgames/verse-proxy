@@ -78,7 +78,7 @@ export class DatastoreService {
     );
   }
 
-  async getBlockNumberCache(requestContext: RequestContext) {
+  async getBlockNumber(requestContext: RequestContext) {
     let blockNumberCache = '';
 
     try {
@@ -100,10 +100,7 @@ export class DatastoreService {
     }
   }
 
-  async setBlockNumberCache(
-    requestContext: RequestContext,
-    blockNumber: string,
-  ) {
+  async setBlockNumber(requestContext: RequestContext, blockNumber: string) {
     try {
       switch (this.datastore) {
         case 'redis':

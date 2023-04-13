@@ -29,6 +29,14 @@ export class CacheService {
     await this.cacheManager.set(key, value, ttl);
   }
 
+  async getBlockNumber(key: string) {
+    return await this.cacheManager.get<string>(key);
+  }
+
+  async setBlockNumber(key: string, value: string, ttl: number) {
+    await this.cacheManager.set(key, value, ttl);
+  }
+
   getTxCountStock(limit: number): number {
     const stockCount1 = Math.floor((limit / 10) * this.processCount);
     const stockCount2 = Math.floor((limit / 3) * this.processCount);

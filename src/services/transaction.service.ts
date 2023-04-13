@@ -135,7 +135,7 @@ export class TransactionService {
     jsonrpc: JsonrpcVersion,
     id: JsonrpcId,
   ): Promise<VerseRequestResponse> {
-    const blockNumberCache = await this.datastoreService.getBlockNumberCache(
+    const blockNumberCache = await this.datastoreService.getBlockNumber(
       requestContext,
     );
 
@@ -180,7 +180,7 @@ export class TransactionService {
     const res = await this.getLatestBlockNumber(jsonrpc, id);
 
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
-      await this.datastoreService.setBlockNumberCache(
+      await this.datastoreService.setBlockNumber(
         requestContext,
         res.data.result,
       );
