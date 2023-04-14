@@ -13,7 +13,7 @@ import {
 } from './services';
 import { DatastoreService, RedisService, CacheService } from './repositories';
 import configuration from './config/configuration';
-import { RedisModule } from './modules';
+import { RedisModule, RdbModule } from './modules';
 
 @Module({
   imports: [
@@ -48,6 +48,30 @@ export class AppModule {
           HttpModule,
           CacheModule.register(),
           RedisModule.forRoot(process.env.REDIS_URI),
+        ],
+        controllers: [ProxyController],
+        providers: [
+          VerseService,
+          TransactionService,
+          ProxyService,
+          AllowCheckService,
+          TypeCheckService,
+          DatastoreService,
+          RedisService,
+          CacheService,
+          RateLimitService,
+        ],
+      };
+    } else if (process.env.RDB_URI) {
+      return {
+        module: AppModule,
+        imports: [
+          ConfigModule.forRoot({
+            load: [configuration],
+          }),
+          HttpModule,
+          CacheModule.register(),
+          RdbModule.forRoot(process.env.RDB_URI),
         ],
         controllers: [ProxyController],
         providers: [
