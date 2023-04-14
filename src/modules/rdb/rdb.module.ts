@@ -1,15 +1,11 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { DatabaseType } from 'typeorm';
-import { getDriverFromUrl } from './utils';
 
 @Module({})
 export class RdbModule {
   static forRoot(rdbUri: string): DynamicModule {
-    const dbType = getDriverFromUrl(rdbUri) as DatabaseType;
-
     const config: TypeOrmModuleOptions = {
-      type: dbType,
+      type: 'mysql',
       url: rdbUri,
       synchronize: false,
       logging: false,
