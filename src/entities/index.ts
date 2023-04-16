@@ -4,3 +4,4 @@ export * from './Verse';
 export * from './Error';
 export * from './Request';
 export * from './Cache';
+export * from './rdb';

@@ -2,6 +2,7 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { RequestContext } from 'src/entities';
+import { RdbService } from './rds.service';
 import { RedisService } from './redis.service';
 
 @Injectable()
@@ -10,10 +11,14 @@ export class DatastoreService {
 
   constructor(
     private redisService: RedisService,
+    private rdbService: RdbService,
+    @Inject('RDB_URI') @Optional() rdbUri: string,
     @Inject('REDIS') @Optional() redis: Redis,
   ) {
     if (redis) {
       this.datastore = 'redis';
+    } else if (rdbUri) {
+      this.datastore = 'rdb';
     }
   }
 
@@ -88,6 +93,11 @@ export class DatastoreService {
             requestContext,
           );
           break;
+        case 'rdb':
+          blockNumberCache = await this.rdbService.getBlockNumber(
+            requestContext,
+          );
+          break;
       }
       return blockNumberCache;
     } catch (err) {
@@ -105,6 +115,9 @@ export class DatastoreService {
       switch (this.datastore) {
         case 'redis':
           await this.redisService.setBlockNumber(requestContext, blockNumber);
+          break;
+        case 'rdb':
+          await this.rdbService.setBlockNumber(requestContext, blockNumber);
           break;
       }
     } catch (err) {

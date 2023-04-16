@@ -1,5 +1,6 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { BlockNumberCache } from 'src/entities';
 
 @Module({})
 export class RdbModule {
@@ -13,11 +14,21 @@ export class RdbModule {
       migrations: [__dirname + '/migrations/*.ts'],
     };
 
-    const imports = [TypeOrmModule.forRoot(config)];
+    const imports = [
+      TypeOrmModule.forRoot(config),
+      TypeOrmModule.forFeature([BlockNumberCache]),
+    ];
+    const providers = [
+      {
+        provide: 'RDB_URI',
+        useValue: rdbUri,
+      },
+    ];
     return {
       module: RdbModule,
       imports: imports,
-      exports: [TypeOrmModule],
+      providers: providers,
+      exports: [TypeOrmModule, ...providers],
     };
   }
 }

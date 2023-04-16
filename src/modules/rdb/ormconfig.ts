@@ -9,7 +9,7 @@ const getOrmConfig = () => {
     url: rdbUri,
     synchronize: false,
     logging: false,
-    entities: [__dirname + '/entities/*.ts'],
+    entities: ['**/entities/rdb/*.ts'],
     migrations: [__dirname + '/migrations/*.ts'],
   };
   return config;

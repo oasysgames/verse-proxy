@@ -11,7 +11,12 @@ import {
   TypeCheckService,
   RateLimitService,
 } from './services';
-import { DatastoreService, RedisService, CacheService } from './repositories';
+import {
+  DatastoreService,
+  RedisService,
+  RdbService,
+  CacheService,
+} from './repositories';
 import configuration from './config/configuration';
 import { RedisModule, RdbModule } from './modules';
 
@@ -32,6 +37,7 @@ import { RedisModule, RdbModule } from './modules';
     TypeCheckService,
     DatastoreService,
     RedisService,
+    RdbService,
     CacheService,
     RateLimitService,
   ],
@@ -58,6 +64,7 @@ export class AppModule {
           TypeCheckService,
           DatastoreService,
           RedisService,
+          RdbService,
           CacheService,
           RateLimitService,
         ],
@@ -82,6 +89,7 @@ export class AppModule {
           TypeCheckService,
           DatastoreService,
           RedisService,
+          RdbService,
           CacheService,
           RateLimitService,
         ],
@@ -105,6 +113,7 @@ export class AppModule {
           TypeCheckService,
           DatastoreService,
           RedisService,
+          RdbService,
           CacheService,
           RateLimitService,
         ],
