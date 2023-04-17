@@ -25,7 +25,7 @@ export class ProxyService {
     private readonly datastoreService: DatastoreService,
   ) {
     this.isUseBlockNumberCache = !!this.configService.get<number>(
-      'blockNumberCacheExpire',
+      'blockNumberCacheExpireSec',
     );
     this.isUseDatastore =
       this.configService.get<boolean>('isUseDatastore') ?? false;

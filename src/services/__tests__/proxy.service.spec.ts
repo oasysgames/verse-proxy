@@ -523,7 +523,7 @@
 //     it('tx method is eth_blockNumber and metamaskAccess from Chrome', async () => {
 //       const allowedMethods: RegExp[] = [/^.*$/];
 //       const datastore = 'redis';
-//       const blockNumberCacheExpire = 15;
+//       const blockNumberCacheExpireSec = 15;
 //       const method = 'eth_blockNumber';
 //       const isUseReadNode = true;
 //       const ip = '127.0.0.1';
@@ -558,8 +558,8 @@
 //           return allowedMethods;
 //         } else if (arg === 'datastore') {
 //           return datastore;
-//         } else if (arg === 'blockNumberCacheExpire') {
-//           return blockNumberCacheExpire;
+//         } else if (arg === 'blockNumberCacheExpireSec') {
+//           return blockNumberCacheExpireSec;
 //         }
 //         return;
 //       });
@@ -605,7 +605,7 @@
 //     it('tx method is eth_blockNumber and metamaskAccess from Microsoft-Edge', async () => {
 //       const allowedMethods: RegExp[] = [/^.*$/];
 //       const datastore = 'redis';
-//       const blockNumberCacheExpire = 15;
+//       const blockNumberCacheExpireSec = 15;
 //       const method = 'eth_blockNumber';
 //       const isUseReadNode = true;
 //       const ip = '127.0.0.1';
@@ -640,8 +640,8 @@
 //           return allowedMethods;
 //         } else if (arg === 'datastore') {
 //           return datastore;
-//         } else if (arg === 'blockNumberCacheExpire') {
-//           return blockNumberCacheExpire;
+//         } else if (arg === 'blockNumberCacheExpireSec') {
+//           return blockNumberCacheExpireSec;
 //         }
 //         return;
 //       });
@@ -687,7 +687,7 @@
 //     it('tx method is eth_blockNumber and is not metamaskAccess', async () => {
 //       const allowedMethods: RegExp[] = [/^.*$/];
 //       const datastore = 'redis';
-//       const blockNumberCacheExpire = 15;
+//       const blockNumberCacheExpireSec = 15;
 //       const method = 'eth_blockNumber';
 //       const isUseReadNode = true;
 //       const ip = '127.0.0.1';
@@ -722,8 +722,8 @@
 //           return allowedMethods;
 //         } else if (arg === 'datastore') {
 //           return datastore;
-//         } else if (arg === 'blockNumberCacheExpire') {
-//           return blockNumberCacheExpire;
+//         } else if (arg === 'blockNumberCacheExpireSec') {
+//           return blockNumberCacheExpireSec;
 //         }
 //         return;
 //       });
@@ -1819,10 +1819,10 @@
 //         expect(resetBlockNumberCache).not.toHaveBeenCalled();
 //       });
 
-//       it('tx is successful and blockNumberCacheExpire is set', async () => {
+//       it('tx is successful and blockNumberCacheExpireSec is set', async () => {
 //         const allowedMethods: RegExp[] = [/^.*$/];
 //         const datastore = 'redis';
-//         const blockNumberCacheExpire = 15;
+//         const blockNumberCacheExpireSec = 15;
 //         const method = 'eth_sendRawTransaction';
 //         const ip = '127.0.0.1';
 //         const headers = { host: 'localhost' };
@@ -1859,8 +1859,8 @@
 //             return allowedMethods;
 //           } else if (arg === 'datastore') {
 //             return datastore;
-//           } else if (arg === 'blockNumberCacheExpire') {
-//             return blockNumberCacheExpire;
+//           } else if (arg === 'blockNumberCacheExpireSec') {
+//             return blockNumberCacheExpireSec;
 //           }
 //           return;
 //         });
@@ -1996,7 +1996,7 @@
 //         expect(resetBlockNumberCache).not.toHaveBeenCalled();
 //       });
 
-//       it('tx is successful and rateLimit and blockNumberCacheExpire are not set', async () => {
+//       it('tx is successful and rateLimit and blockNumberCacheExpireSec are not set', async () => {
 //         const allowedMethods: RegExp[] = [/^.*$/];
 //         const method = 'eth_sendRawTransaction';
 //         const ip = '127.0.0.1';

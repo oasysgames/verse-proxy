@@ -4,26 +4,28 @@ import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
 import { RequestContext, TransactionCountCache } from 'src/entities';
+import { blockNumberCacheExpireSecLimit } from 'src/consts';
 
 @Injectable()
 export class RedisService {
-  private blockNumberCacheExpire: number;
+  private blockNumberCacheExpireSec: number;
 
   constructor(
     private configService: ConfigService,
     private cacheService: CacheService,
     @Inject('REDIS') @Optional() private redis: Redis,
   ) {
-    const blockNumberCacheExpireLimit = 120; // 2min
-    const blockNumberCacheExpire =
-      this.configService.get<number>('blockNumberCacheExpire') || 0;
+    const blockNumberCacheExpireSec =
+      this.configService.get<number>('blockNumberCacheExpireSec') || 0;
 
-    if (blockNumberCacheExpire > blockNumberCacheExpireLimit) {
-      throw new Error(
-        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE_SEC is over ${blockNumberCacheExpireLimit}`,
+    if (blockNumberCacheExpireSec > blockNumberCacheExpireSecLimit) {
+      console.warn(
+        `block_number_cache_expire limit is ${blockNumberCacheExpireSecLimit}. block_number_cache_expire is set to ${blockNumberCacheExpireSecLimit}`,
       );
+      this.blockNumberCacheExpireSec = blockNumberCacheExpireSecLimit;
+    } else {
+      this.blockNumberCacheExpireSec = blockNumberCacheExpireSec;
     }
-    this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
   async getAllowedTxCountFromRedis(key: string, rateLimit: RateLimit) {
@@ -166,18 +168,18 @@ export class RedisService {
       await this.cacheService.setBlockNumber(
         key,
         blockNumber,
-        this.blockNumberCacheExpire * 1000,
+        this.blockNumberCacheExpireSec * 1000,
       );
     return blockNumber;
   }
 
   async setBlockNumber(requestContext: RequestContext, blockNumber: string) {
     const key = this.cacheService.getBlockNumberCacheKey(requestContext);
-    await this.redis.setex(key, this.blockNumberCacheExpire, blockNumber);
+    await this.redis.setex(key, this.blockNumberCacheExpireSec, blockNumber);
     await this.cacheService.setBlockNumber(
       key,
       blockNumber,
-      this.blockNumberCacheExpire * 1000,
+      this.blockNumberCacheExpireSec * 1000,
     );
   }
 }

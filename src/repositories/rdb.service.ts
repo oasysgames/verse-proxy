@@ -10,10 +10,11 @@ import {
   TransactionCount,
   TransactionCountCache,
 } from 'src/entities';
+import { blockNumberCacheExpireSecLimit } from 'src/consts';
 
 @Injectable()
 export class RdbService {
-  private blockNumberCacheExpire: number;
+  private blockNumberCacheExpireSec: number;
 
   constructor(
     private configService: ConfigService,
@@ -23,16 +24,17 @@ export class RdbService {
     @InjectRepository(BlockNumberCache)
     private bnCacheRepository: Repository<BlockNumberCache>,
   ) {
-    const blockNumberCacheExpireLimit = 120; // 2min
-    const blockNumberCacheExpire =
-      this.configService.get<number>('blockNumberCacheExpire') || 0;
+    const blockNumberCacheExpireSec =
+      this.configService.get<number>('blockNumberCacheExpireSec') || 0;
 
-    if (blockNumberCacheExpire > blockNumberCacheExpireLimit) {
-      throw new Error(
-        `block_number_cache_expire limit is ${blockNumberCacheExpireLimit}. BLOCK_NUMBER_CACHE_EXPIRE_SEC is over ${blockNumberCacheExpireLimit}`,
+    if (blockNumberCacheExpireSec > blockNumberCacheExpireSecLimit) {
+      console.warn(
+        `block_number_cache_expire limit is ${blockNumberCacheExpireSecLimit}. block_number_cache_expire is set to ${blockNumberCacheExpireSecLimit}`,
       );
+      this.blockNumberCacheExpireSec = blockNumberCacheExpireSecLimit;
+    } else {
+      this.blockNumberCacheExpireSec = blockNumberCacheExpireSec;
     }
-    this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
   async getAllowedTxCountFromRdb(key: string, rateLimit: RateLimit) {
@@ -180,7 +182,7 @@ export class RdbService {
 
     if (
       !blockNumber ||
-      Date.now() + this.blockNumberCacheExpire * 1000 >=
+      Date.now() + this.blockNumberCacheExpireSec * 1000 >=
         blockNumber.updated_at.getTime()
     ) {
       return '';
@@ -189,7 +191,7 @@ export class RdbService {
     await this.cacheService.setBlockNumber(
       key,
       blockNumber.value,
-      this.blockNumberCacheExpire * 1000,
+      this.blockNumberCacheExpireSec * 1000,
     );
     return blockNumber.value;
   }
@@ -212,7 +214,7 @@ export class RdbService {
     await this.cacheService.setBlockNumber(
       key,
       blockNumber,
-      this.blockNumberCacheExpire * 1000,
+      this.blockNumberCacheExpireSec * 1000,
     );
   }
 }

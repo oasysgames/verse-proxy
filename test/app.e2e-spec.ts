@@ -62,7 +62,7 @@
 //           return mockRes.verseMasterNodeUrl;
 //         case 'verseReadNodeUrl':
 //           return undefined;
-//         case 'blockNumberCacheExpire':
+//         case 'blockNumberCacheExpireSec':
 //           return undefined;
 //         case 'datastore':
 //           return mockRes.datastore;
