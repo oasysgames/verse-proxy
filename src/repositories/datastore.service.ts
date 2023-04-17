@@ -2,7 +2,7 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { RequestContext } from 'src/entities';
-import { RdbService } from './rds.service';
+import { RdbService } from './rdb.service';
 import { RedisService } from './redis.service';
 
 @Injectable()
@@ -40,6 +40,14 @@ export class DatastoreService {
             rateLimit,
           );
           break;
+        case 'rdb':
+          count = await this.rdbService.getAllowedTxCount(
+            from,
+            to,
+            methodId,
+            rateLimit,
+          );
+          break;
       }
       return count;
     } catch (err) {
@@ -64,6 +72,14 @@ export class DatastoreService {
           switch (this.datastore) {
             case 'redis':
               await this.redisService.reduceTxCount(
+                from,
+                to,
+                methodId,
+                rateLimit,
+              );
+              break;
+            case 'rdb':
+              await this.rdbService.reduceTxCount(
                 from,
                 to,
                 methodId,

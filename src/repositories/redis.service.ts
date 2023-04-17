@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
-import { RequestContext, TxCountCache } from 'src/entities';
+import { RequestContext, TransactionCountCache } from 'src/entities';
 
 @Injectable()
 export class RedisService {
@@ -32,7 +32,7 @@ export class RedisService {
     const createdAtFieldName = 'created_at';
 
     let retry = true;
-    let txCount: TxCountCache = {
+    let txCountCache: TransactionCountCache = {
       value: 0,
       isDatastoreLimit: false,
     };
@@ -55,7 +55,7 @@ export class RedisService {
           .multi()
           .hset(key, countFieldName, newStock, createdAtFieldName, now)
           .exec();
-        txCount = {
+        txCountCache = {
           value: newStock,
           isDatastoreLimit: false,
         };
@@ -73,7 +73,7 @@ export class RedisService {
       // It does not have to reset redis data
       if (rateLimitIntervalMs > counterAge) {
         if (redisCount + newStock > rateLimit.limit) {
-          txCount = {
+          txCountCache = {
             value: 0,
             isDatastoreLimit: true,
           };
@@ -90,7 +90,7 @@ export class RedisService {
               createdAt,
             )
             .exec();
-          txCount = {
+          txCountCache = {
             value: newStock,
             isDatastoreLimit: false,
           };
@@ -104,7 +104,7 @@ export class RedisService {
           .multi()
           .hset(key, countFieldName, newStock, createdAtFieldName, now)
           .exec();
-        txCount = {
+        txCountCache = {
           value: newStock,
           isDatastoreLimit: false,
         };
@@ -112,8 +112,8 @@ export class RedisService {
         if (multiResult) retry = false;
       }
     }
-    await this.cacheService.setTxCount(key, txCount, ttl);
-    return txCount.value;
+    await this.cacheService.setTxCount(key, txCountCache, ttl);
+    return txCountCache.value;
   }
 
   async getAllowedTxCount(

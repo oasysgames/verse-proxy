@@ -1,4 +1,4 @@
-export interface TxCountCache {
+export interface TransactionCountCache {
   value: number;
   isDatastoreLimit: boolean;
 }

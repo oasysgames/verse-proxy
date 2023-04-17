@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { createHash } from 'crypto';
-import { RequestContext, TxCountCache } from 'src/entities';
+import { RequestContext, TransactionCountCache } from 'src/entities';
 import { RateLimit } from 'src/config/transactionAllowList';
 
 @Injectable()
@@ -16,15 +16,15 @@ export class CacheService {
   }
 
   async getTxCount(key: string) {
-    const cache = await this.cacheManager.get<TxCountCache>(key);
+    const cache = await this.cacheManager.get<TransactionCountCache>(key);
     return cache;
   }
 
-  async setTxCount(key: string, value: TxCountCache, ttl: number) {
+  async setTxCount(key: string, value: TransactionCountCache, ttl: number) {
     await this.cacheManager.set(key, value, ttl);
   }
 
-  async resetTxCount(key: string, value: TxCountCache) {
+  async resetTxCount(key: string, value: TransactionCountCache) {
     const ttl = await this.cacheManager.store.ttl(key);
     await this.cacheManager.set(key, value, ttl);
   }

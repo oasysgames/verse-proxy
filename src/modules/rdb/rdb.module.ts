@@ -1,6 +1,6 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { BlockNumberCache } from 'src/entities';
+import { BlockNumberCache, TransactionCount } from 'src/entities';
 
 @Module({})
 export class RdbModule {
@@ -16,7 +16,7 @@ export class RdbModule {
 
     const imports = [
       TypeOrmModule.forRoot(config),
-      TypeOrmModule.forFeature([BlockNumberCache]),
+      TypeOrmModule.forFeature([BlockNumberCache, TransactionCount]),
     ];
     const providers = [
       {
