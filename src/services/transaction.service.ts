@@ -17,7 +17,7 @@ import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
 import { TypeCheckService } from './typeCheck.service';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 
 @Injectable()
 export class TransactionService {

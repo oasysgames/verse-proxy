@@ -1,16 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
+import { RequestContext } from 'src/datastore/entities';
 import {
-  RequestContext,
-  BlockNumberCache,
   TransactionCount,
+  BlockNumberCache,
   TransactionCountCache,
-} from 'src/entities';
-import { blockNumberCacheExpireSecLimit } from 'src/consts';
+} from 'src/datastore/entities';
+import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
 
 @Injectable()
 export class RdbService {
@@ -20,8 +20,10 @@ export class RdbService {
     private configService: ConfigService,
     private cacheService: CacheService,
     @InjectRepository(TransactionCount)
+    @Optional()
     private txCountRepository: Repository<TransactionCount>,
     @InjectRepository(BlockNumberCache)
+    @Optional()
     private bnCacheRepository: Repository<BlockNumberCache>,
   ) {
     const blockNumberCacheExpireSec =
@@ -198,7 +200,9 @@ export class RdbService {
 
   async setBlockNumber(requestContext: RequestContext, blockNumber: string) {
     const key = this.cacheService.getBlockNumberCacheKey(requestContext);
-    const entity = await this.bnCacheRepository.findOneBy({ name: key });
+    const entity = await this.bnCacheRepository.findOneBy({
+      name: key,
+    });
     if (entity) {
       entity.value = blockNumber;
       entity.updated_at = new Date();

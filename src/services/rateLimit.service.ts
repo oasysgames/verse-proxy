@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { JsonrpcError } from 'src/entities';
 import { AllowCheckService } from './allowCheck.service';

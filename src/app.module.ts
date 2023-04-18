@@ -1,5 +1,4 @@
-import { Module, DynamicModule } from '@nestjs/common';
-import { CacheModule } from '@nestjs/cache-manager';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
@@ -11,14 +10,8 @@ import {
   TypeCheckService,
   RateLimitService,
 } from './services';
-import {
-  DatastoreService,
-  RedisService,
-  RdbService,
-  CacheService,
-} from './repositories';
+import { DatastoreModule } from './datastore/datastore.module';
 import configuration from './config/configuration';
-import { RedisModule, RdbModule } from './modules';
 
 @Module({
   imports: [
@@ -26,7 +19,7 @@ import { RedisModule, RdbModule } from './modules';
       load: [configuration],
     }),
     HttpModule,
-    CacheModule.register(),
+    DatastoreModule.register(),
   ],
   controllers: [ProxyController],
   providers: [
@@ -35,89 +28,7 @@ import { RedisModule, RdbModule } from './modules';
     ProxyService,
     AllowCheckService,
     TypeCheckService,
-    DatastoreService,
-    RedisService,
-    RdbService,
-    CacheService,
     RateLimitService,
   ],
 })
-export class AppModule {
-  static forRoot(): DynamicModule {
-    if (process.env.REDIS_URI) {
-      return {
-        module: AppModule,
-        imports: [
-          ConfigModule.forRoot({
-            load: [configuration],
-          }),
-          HttpModule,
-          CacheModule.register(),
-          RedisModule.forRoot(process.env.REDIS_URI),
-        ],
-        controllers: [ProxyController],
-        providers: [
-          VerseService,
-          TransactionService,
-          ProxyService,
-          AllowCheckService,
-          TypeCheckService,
-          DatastoreService,
-          RedisService,
-          RdbService,
-          CacheService,
-          RateLimitService,
-        ],
-      };
-    } else if (process.env.RDB_URI) {
-      return {
-        module: AppModule,
-        imports: [
-          ConfigModule.forRoot({
-            load: [configuration],
-          }),
-          HttpModule,
-          CacheModule.register(),
-          RdbModule.forRoot(process.env.RDB_URI),
-        ],
-        controllers: [ProxyController],
-        providers: [
-          VerseService,
-          TransactionService,
-          ProxyService,
-          AllowCheckService,
-          TypeCheckService,
-          DatastoreService,
-          RedisService,
-          RdbService,
-          CacheService,
-          RateLimitService,
-        ],
-      };
-    } else {
-      return {
-        module: AppModule,
-        imports: [
-          ConfigModule.forRoot({
-            load: [configuration],
-          }),
-          HttpModule,
-          CacheModule.register(),
-        ],
-        controllers: [ProxyController],
-        providers: [
-          VerseService,
-          TransactionService,
-          ProxyService,
-          AllowCheckService,
-          TypeCheckService,
-          DatastoreService,
-          RedisService,
-          RdbService,
-          CacheService,
-          RateLimitService,
-        ],
-      };
-    }
-  }
-}
+export class AppModule {}

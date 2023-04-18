@@ -3,8 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
-import { RequestContext, TransactionCountCache } from 'src/entities';
-import { blockNumberCacheExpireSecLimit } from 'src/consts';
+import { RequestContext } from 'src/datastore/entities';
+import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
+import { TransactionCountCache } from 'src/datastore/entities';
 
 @Injectable()
 export class RedisService {

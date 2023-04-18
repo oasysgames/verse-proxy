@@ -9,7 +9,7 @@ import {
   RequestContext,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 
 @Injectable()
 export class ProxyService {

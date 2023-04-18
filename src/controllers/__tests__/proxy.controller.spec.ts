@@ -11,7 +11,7 @@ import {
   RateLimitService,
 } from 'src/services';
 import { ProxyController } from 'src/controllers';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 
 describe('ProxyController', () => {
   let typeCheckService: TypeCheckService;

@@ -1,7 +1,6 @@
-import { Injectable, Inject, Optional } from '@nestjs/common';
-import { Redis } from 'ioredis';
+import { Injectable } from '@nestjs/common';
 import { RateLimit } from 'src/config/transactionAllowList';
-import { RequestContext } from 'src/entities';
+import { RequestContext } from 'src/datastore/entities';
 import { RdbService } from './rdb.service';
 import { RedisService } from './redis.service';
 
@@ -12,10 +11,11 @@ export class DatastoreService {
   constructor(
     private redisService: RedisService,
     private rdbService: RdbService,
-    @Inject('RDB_URI') @Optional() rdbUri: string,
-    @Inject('REDIS') @Optional() redis: Redis,
   ) {
-    if (redis) {
+    const redisUri = process.env.REDIS_URI;
+    const rdbUri = process.env.RDB_URI;
+
+    if (redisUri) {
       this.datastore = 'redis';
     } else if (rdbUri) {
       this.datastore = 'rdb';
