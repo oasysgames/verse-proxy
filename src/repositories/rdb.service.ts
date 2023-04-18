@@ -42,12 +42,12 @@ export class RdbService {
 
     const MAX_RETRIES = 5;
     let retry = true;
+    let retryCount = 0;
     let txCountCache: TransactionCountCache = {
       value: 0,
       isDatastoreLimit: false,
     };
     let ttl = 0; // milliseconds
-    let retryCount = 0;
 
     while (retry) {
       try {

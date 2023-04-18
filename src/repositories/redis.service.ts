@@ -33,85 +33,95 @@ export class RedisService {
     const countFieldName = 'count';
     const createdAtFieldName = 'created_at';
 
+    const MAX_RETRIES = 5;
     let retry = true;
+    let retryCount = 0;
     let txCountCache: TransactionCountCache = {
       value: 0,
       isDatastoreLimit: false,
     };
     let ttl = 0; // milliseconds
+
     while (retry) {
-      await this.redis.watch(key);
-      const redisData = await this.redis.hmget(
-        key,
-        countFieldName,
-        createdAtFieldName,
-      );
-      const countFieldValue = redisData[0];
-      const createdAtFieldValue = redisData[1];
-      const newStock = this.cacheService.getTxCountStock(rateLimit.limit);
+      try {
+        await this.redis.watch(key);
+        const redisData = await this.redis.hmget(
+          key,
+          countFieldName,
+          createdAtFieldName,
+        );
+        const countFieldValue = redisData[0];
+        const createdAtFieldValue = redisData[1];
+        const newStock = this.cacheService.getTxCountStock(rateLimit.limit);
 
-      // datastore value is not set
-      if (!(countFieldValue && createdAtFieldValue)) {
-        const now = Date.now();
-        const multiResult = await this.redis
-          .multi()
-          .hset(key, countFieldName, newStock, createdAtFieldName, now)
-          .exec();
-        txCountCache = {
-          value: newStock,
-          isDatastoreLimit: false,
-        };
-        ttl = rateLimitIntervalMs;
-        if (multiResult) retry = false;
-        break;
-      }
-
-      // datastore value is set
-      const redisCount = Number(countFieldValue);
-      const createdAt = Number(createdAtFieldValue);
-      const now = Date.now();
-      const counterAge = now - createdAt;
-
-      // It does not have to reset redis data
-      if (rateLimitIntervalMs > counterAge) {
-        if (redisCount + newStock > rateLimit.limit) {
-          txCountCache = {
-            value: 0,
-            isDatastoreLimit: true,
-          };
-          ttl = createdAt + rateLimitIntervalMs - now;
-          break;
-        } else {
+        // datastore value is not set
+        if (!(countFieldValue && createdAtFieldValue)) {
+          const now = Date.now();
           const multiResult = await this.redis
             .multi()
-            .hset(
-              key,
-              countFieldName,
-              redisCount + newStock,
-              createdAtFieldName,
-              createdAt,
-            )
+            .hset(key, countFieldName, newStock, createdAtFieldName, now)
             .exec();
           txCountCache = {
             value: newStock,
             isDatastoreLimit: false,
           };
-          ttl = createdAt + rateLimitIntervalMs - now;
+          ttl = rateLimitIntervalMs;
+          if (multiResult) retry = false;
+          break;
+        }
+
+        // datastore value is set
+        const redisCount = Number(countFieldValue);
+        const createdAt = Number(createdAtFieldValue);
+        const now = Date.now();
+        const counterAge = now - createdAt;
+
+        // It does not have to reset redis data
+        if (rateLimitIntervalMs > counterAge) {
+          if (redisCount + newStock > rateLimit.limit) {
+            txCountCache = {
+              value: 0,
+              isDatastoreLimit: true,
+            };
+            ttl = createdAt + rateLimitIntervalMs - now;
+            break;
+          } else {
+            const multiResult = await this.redis
+              .multi()
+              .hset(
+                key,
+                countFieldName,
+                redisCount + newStock,
+                createdAtFieldName,
+                createdAt,
+              )
+              .exec();
+            txCountCache = {
+              value: newStock,
+              isDatastoreLimit: false,
+            };
+            ttl = createdAt + rateLimitIntervalMs - now;
+            if (multiResult) retry = false;
+          }
+        }
+        // It has to reset redis data
+        else {
+          const multiResult = await this.redis
+            .multi()
+            .hset(key, countFieldName, newStock, createdAtFieldName, now)
+            .exec();
+          txCountCache = {
+            value: newStock,
+            isDatastoreLimit: false,
+          };
+          ttl = rateLimitIntervalMs;
           if (multiResult) retry = false;
         }
-      }
-      // It has to reset redis data
-      else {
-        const multiResult = await this.redis
-          .multi()
-          .hset(key, countFieldName, newStock, createdAtFieldName, now)
-          .exec();
-        txCountCache = {
-          value: newStock,
-          isDatastoreLimit: false,
-        };
-        ttl = rateLimitIntervalMs;
-        if (multiResult) retry = false;
+      } catch (err) {
+        if (retryCount >= MAX_RETRIES) {
+          throw err;
+        }
+        retryCount++;
       }
     }
     await this.cacheService.setTxCount(key, txCountCache, ttl);
