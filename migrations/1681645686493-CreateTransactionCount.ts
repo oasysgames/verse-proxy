@@ -16,10 +16,12 @@ export class CreateTransactionCount1681645686493 implements MigrationInterface {
           {
             name: 'name',
             type: 'varchar',
+            isNullable: false,
           },
           {
             name: 'count',
             type: 'int',
+            isNullable: false,
           },
           {
             name: 'created_at',
@@ -27,8 +29,14 @@ export class CreateTransactionCount1681645686493 implements MigrationInterface {
             default: 'CURRENT_TIMESTAMP',
           },
         ],
+        indices: [
+          {
+            name: 'idx_transaction_count_name',
+            columnNames: ['name'],
+          },
+        ],
       }),
-      false,
+      true,
     );
   }
 
