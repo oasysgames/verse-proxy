@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableIndex,
+  TableUnique,
+} from 'typeorm';
 
 export class CreateTransactionCount1681645686493 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -30,10 +36,16 @@ export class CreateTransactionCount1681645686493 implements MigrationInterface {
           },
         ],
         indices: [
-          {
-            name: 'idx_transaction_count_name',
+          new TableIndex({
+            name: 'IDX_TransactionCount_Name',
             columnNames: ['name'],
-          },
+          }),
+        ],
+        uniques: [
+          new TableUnique({
+            name: 'UQ_TransactionCount_Name',
+            columnNames: ['name'],
+          }),
         ],
       }),
       true,

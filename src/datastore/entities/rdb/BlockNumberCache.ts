@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, Index, Unique } from 'typeorm';
 
 @Entity()
+@Unique('UQ_name', ['name'])
 export class BlockNumberCache {
   @PrimaryGeneratedColumn()
   id: number;
