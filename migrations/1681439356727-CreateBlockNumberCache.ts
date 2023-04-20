@@ -1,4 +1,10 @@
-import { MigrationInterface, QueryRunner, Table, TableColumn } from 'typeorm';
+import {
+  MigrationInterface,
+  QueryRunner,
+  Table,
+  TableColumn,
+  TableIndex,
+} from 'typeorm';
 
 export class CreateBlockNumberCache1681439356727 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -16,14 +22,22 @@ export class CreateBlockNumberCache1681439356727 implements MigrationInterface {
           new TableColumn({
             name: 'name',
             type: 'varchar',
+            isNullable: false,
           }),
           new TableColumn({
             name: 'value',
             type: 'varchar',
+            isNullable: false,
           }),
           new TableColumn({
             name: 'updated_at',
             type: 'timestamp',
+          }),
+        ],
+        indices: [
+          new TableIndex({
+            name: 'IDX_BlockNumberCache_Name',
+            columnNames: ['name'],
           }),
         ],
       }),

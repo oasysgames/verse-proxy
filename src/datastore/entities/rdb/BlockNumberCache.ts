@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
 
 @Entity()
 export class BlockNumberCache {
@@ -6,6 +6,7 @@ export class BlockNumberCache {
   id: number;
 
   @Column()
+  @Index()
   name: string;
 
   @Column()
