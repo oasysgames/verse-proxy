@@ -6,6 +6,7 @@ import {
   JsonrpcId,
   JsonrpcVersion,
   JsonrpcError,
+  WebhookTransferData,
   VerseRequestResponse,
   RequestContext,
 } from 'src/entities';
@@ -16,6 +17,7 @@ import {
 import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
+import { WebhookService } from './webhook.service';
 import { TypeCheckService } from './typeCheck.service';
 import { DatastoreService } from 'src/repositories';
 
@@ -27,6 +29,7 @@ export class TransactionService {
     private verseService: VerseService,
     private allowCheckService: AllowCheckService,
     private readonly rateLimitService: RateLimitService,
+    private readonly webhookService: WebhookService,
     private readonly datastoreService: DatastoreService,
   ) {
     this.txAllowList = getTxAllowList();
@@ -49,6 +52,7 @@ export class TransactionService {
     to: string,
     methodId: string,
     value: BigNumber,
+    webhookArg: WebhookTransferData,
   ): Promise<TransactionAllow> {
     let matchedTxAllowRule;
 
@@ -62,13 +66,18 @@ export class TransactionService {
         to,
       );
 
+      const methodCheck = this.allowCheckService.isAllowedContractMethod(
+        condition.contractMethodList,
+        methodId,
+      );
+
       const valueCondition = condition.value;
       const valueCheck = this.allowCheckService.isAllowedValue(
         valueCondition,
         value,
       );
 
-      if (fromCheck && toCheck && valueCheck) {
+      if (fromCheck && toCheck && methodCheck && valueCheck) {
         if (condition.rateLimit)
           await this.rateLimitService.checkRateLimit(
             from,
@@ -76,6 +85,12 @@ export class TransactionService {
             methodId,
             condition.rateLimit,
           );
+        if (condition.webhooks) {
+          await this.webhookService.checkWebhook(
+            webhookArg,
+            condition.webhooks,
+          );
+        }
         matchedTxAllowRule = condition;
         break;
       }

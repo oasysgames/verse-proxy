@@ -8,6 +8,7 @@ import {
   VerseService,
   AllowCheckService,
   TypeCheckService,
+  WebhookService,
   RateLimitService,
 } from './services';
 import { DatastoreService } from './repositories';
@@ -28,6 +29,7 @@ import configuration from './config/configuration';
     ProxyService,
     AllowCheckService,
     TypeCheckService,
+    WebhookService,
     DatastoreService,
     RateLimitService,
   ],

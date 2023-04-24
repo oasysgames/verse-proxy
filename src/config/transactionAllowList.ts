@@ -7,6 +7,16 @@ export interface ComparisonOperation {
   lte?: string; // txValue <= condition is allowed
 }
 
+export interface Webhook {
+  url: string;
+  headers: {
+    [name: string]: string;
+    host: string;
+  };
+  timeout: number;
+  retry: number;
+  parse: boolean;
+}
 export interface RateLimit {
   name: string;
   perFrom?: boolean;
@@ -20,6 +30,8 @@ export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
+  contractMethodList?: string[];
+  webhooks?: Array<Webhook>;
   rateLimit?: RateLimit;
 }
 

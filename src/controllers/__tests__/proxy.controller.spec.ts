@@ -8,6 +8,7 @@ import {
   ProxyService,
   AllowCheckService,
   TypeCheckService,
+  WebhookService,
   RateLimitService,
 } from 'src/services';
 import { ProxyController } from 'src/controllers';
@@ -28,6 +29,7 @@ describe('ProxyController', () => {
         VerseService,
         TransactionService,
         AllowCheckService,
+        WebhookService,
         TypeCheckService,
         ProxyService,
         RateLimitService,

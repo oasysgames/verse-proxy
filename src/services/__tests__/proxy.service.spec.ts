@@ -10,6 +10,7 @@ import {
   AllowCheckService,
   RateLimitService,
   TypeCheckService,
+  WebhookService,
 } from 'src/services';
 import { JsonrpcError } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
@@ -87,6 +88,7 @@ describe('ProxyService', () => {
         AllowCheckService,
         TypeCheckService,
         RateLimitService,
+        WebhookService,
         DatastoreService,
       ],
     }).compile();

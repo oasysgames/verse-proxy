@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ComparisonOperation } from 'src/config/transactionAllowList';
-import { BigNumber } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import {
   getDeployAllowList,
   getUnlimitedTxRateAddresses,
@@ -66,6 +66,21 @@ export class AllowCheckService {
   isUnlimitedTxRate(from: string): boolean {
     const isAllow = this.isIncludedAddress(this.unlimitedTxRateAddresses, from);
     return isAllow;
+  }
+
+  isAllowedContractMethod(
+    contractMethodList: string[] | undefined,
+    methodId: string,
+  ): boolean {
+    if (contractMethodList === undefined) return true;
+    if (contractMethodList.length === 0) return true;
+
+    const isAllowMethod = contractMethodList.some((allowedMethod) => {
+      const allowedMethodId = utils.id(allowedMethod).substring(0, 10);
+      return allowedMethodId.toLowerCase() === methodId.toLowerCase();
+    });
+
+    return isAllowMethod;
   }
 
   isAllowedValue(

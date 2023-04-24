@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  WebhookService,
   TypeCheckService,
 } from 'src/services';
 import { BigNumber } from 'ethers';
@@ -19,6 +20,7 @@ describe('TransactionService', () => {
   let verseService: VerseService;
   let allowCheckService: AllowCheckService;
   let rateLimitService: RateLimitService;
+  let webhookService: WebhookService;
   let datastoreService: DatastoreService;
   const transactionAllowListMock = jest.spyOn(
     transactionAllowList,
@@ -46,6 +48,25 @@ describe('TransactionService', () => {
     '0x743a0f064dc9cff4748b6d5e39dda262a89f0595570b41b0b576584d12348239';
   const from = '0xaf395754eB6F542742784cE7702940C60465A46a';
 
+  const tx = {
+    type,
+    chainId,
+    nonce,
+    maxPriorityFeePerGas,
+    maxFeePerGas,
+    gasPrice,
+    gasLimit,
+    to,
+    value,
+    data,
+    accessList,
+    hash,
+    v,
+    r,
+    s,
+    from,
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [HttpModule],
@@ -56,6 +77,7 @@ describe('TransactionService', () => {
         AllowCheckService,
         TransactionService,
         RateLimitService,
+        WebhookService,
         DatastoreService,
       ],
     }).compile();
@@ -64,6 +86,7 @@ describe('TransactionService', () => {
     verseService = moduleRef.get<VerseService>(VerseService);
     allowCheckService = moduleRef.get<AllowCheckService>(AllowCheckService);
     rateLimitService = moduleRef.get<RateLimitService>(RateLimitService);
+    webhookService = moduleRef.get<WebhookService>(WebhookService);
     datastoreService = moduleRef.get<DatastoreService>(DatastoreService);
   });
 
@@ -86,6 +109,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
@@ -106,6 +130,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
@@ -121,6 +146,26 @@ describe('TransactionService', () => {
     });
 
     it('from is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = [`!${from}`];
       const toList = ['*'];
 
@@ -142,21 +187,51 @@ describe('TransactionService', () => {
           }
           return true;
         });
+      jest
+        .spyOn(allowCheckService, 'isAllowedContractMethod')
+        .mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
         typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
       await expect(
-        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+        transactionService.getMatchedTxAllowRule(
+          from,
+          to,
+          methodId,
+          value,
+          webhookArg,
+        ),
       ).rejects.toThrow('transaction is not allowed');
     });
 
     it('to is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = ['*'];
       const toList = [`!${to}`];
 
@@ -178,21 +253,51 @@ describe('TransactionService', () => {
           }
           return true;
         });
+      jest
+        .spyOn(allowCheckService, 'isAllowedContractMethod')
+        .mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
       const transactionService = new TransactionService(
         typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
       await expect(
-        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+        transactionService.getMatchedTxAllowRule(
+          from,
+          to,
+          methodId,
+          value,
+          webhookArg,
+        ),
       ).rejects.toThrow('transaction is not allowed');
     });
 
-    it('value is not allowed', async () => {
+    it('methodId is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
       const fromList = ['*'];
       const toList = ['*'];
 
@@ -205,22 +310,109 @@ describe('TransactionService', () => {
       const methodId = data.substring(0, 10);
 
       jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
+      jest
+        .spyOn(allowCheckService, 'isAllowedContractMethod')
+        .mockReturnValue(false);
+      jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
+      const transactionService = new TransactionService(
+        typeCheckService,
+        verseService,
+        allowCheckService,
+        rateLimitService,
+        webhookService,
+        datastoreService,
+      );
+
+      await expect(
+        transactionService.getMatchedTxAllowRule(
+          from,
+          to,
+          methodId,
+          value,
+          webhookArg,
+        ),
+      ).rejects.toThrow('transaction is not allowed');
+    });
+
+    it('value is not allowed', async () => {
+      const ip = '1.2.3.4';
+      const headers = { host: 'localhost' };
+      const requestContext = {
+        ip,
+        headers,
+      };
+      const body = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getTransactionReceipt',
+        params: [
+          '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+        ],
+      };
+      const webhookArg = {
+        requestContext,
+        body,
+        tx,
+      };
+
+      const fromList = ['*'];
+      const toList = ['*'];
+
+      transactionAllowListMock.mockReturnValue([
+        {
+          fromList: fromList,
+          toList: toList,
+        },
+      ]);
+      const methodId = data.substring(0, 10);
+
+      jest.spyOn(allowCheckService, 'isIncludedAddress').mockReturnValue(true);
+      jest
+        .spyOn(allowCheckService, 'isAllowedContractMethod')
+        .mockReturnValue(true);
       jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(false);
       const transactionService = new TransactionService(
         typeCheckService,
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
       await expect(
-        transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+        transactionService.getMatchedTxAllowRule(
+          from,
+          to,
+          methodId,
+          value,
+          webhookArg,
+        ),
       ).rejects.toThrow('transaction is not allowed');
     });
 
-    describe('from and to and value is OK', () => {
-      it('rateLimit is not set', async () => {
+    describe('from and to and methodId and value is OK', () => {
+      it('rateLimit and webhooks is not set', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const txAllowRule = {
@@ -234,6 +426,9 @@ describe('TransactionService', () => {
         jest
           .spyOn(allowCheckService, 'isIncludedAddress')
           .mockReturnValue(true);
+        jest
+          .spyOn(allowCheckService, 'isAllowedContractMethod')
+          .mockReturnValue(true);
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
@@ -241,6 +436,7 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
           datastoreService,
         );
 
@@ -249,12 +445,33 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
         expect(result).toBe(txAllowRule);
         expect(checkRateLimit).not.toHaveBeenCalled();
       });
 
-      it('rateLimit is set, rateLimit check is failed', async () => {
+      it('rateLimit is set, and failed', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const rateLimit = {
@@ -278,6 +495,9 @@ describe('TransactionService', () => {
         jest
           .spyOn(allowCheckService, 'isIncludedAddress')
           .mockReturnValue(true);
+        jest
+          .spyOn(allowCheckService, 'isAllowedContractMethod')
+          .mockReturnValue(true);
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest
           .spyOn(rateLimitService, 'checkRateLimit')
@@ -289,16 +509,43 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
           datastoreService,
         );
 
         await expect(
-          transactionService.getMatchedTxAllowRule(from, to, methodId, value),
+          transactionService.getMatchedTxAllowRule(
+            from,
+            to,
+            methodId,
+            value,
+            webhookArg,
+          ),
         ).rejects.toThrow(error.message);
         expect(checkRateLimit).toHaveBeenCalled();
       });
 
-      it('rateLimit is set, rateLimit check is successfull', async () => {
+      it('rateLimit is set, and successfull', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
         const fromList = ['*'];
         const toList = ['*'];
         const rateLimit = {
@@ -318,6 +565,9 @@ describe('TransactionService', () => {
         jest
           .spyOn(allowCheckService, 'isIncludedAddress')
           .mockReturnValue(true);
+        jest
+          .spyOn(allowCheckService, 'isAllowedContractMethod')
+          .mockReturnValue(true);
         jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
         const checkRateLimit = jest.spyOn(rateLimitService, 'checkRateLimit');
         const transactionService = new TransactionService(
@@ -325,6 +575,7 @@ describe('TransactionService', () => {
           verseService,
           allowCheckService,
           rateLimitService,
+          webhookService,
           datastoreService,
         );
 
@@ -333,9 +584,154 @@ describe('TransactionService', () => {
           to,
           methodId,
           value,
+          webhookArg,
         );
         expect(result).toBe(txAllowRule);
         expect(checkRateLimit).toHaveBeenCalled();
+      });
+
+      it('webhooks is set, and failed', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
+        const fromList = ['*'];
+        const toList = ['*'];
+        const webhook = {
+          url: 'http://lolcalhost:8000',
+          headers: {
+            host: 'lolcalhost',
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowRule = {
+          fromList,
+          toList,
+          webhooks: [webhook],
+        };
+
+        transactionAllowListMock.mockReturnValue([txAllowRule]);
+        const methodId = data.substring(0, 10);
+        const error = new JsonrpcError('transaction is not allowed', -32602);
+
+        jest
+          .spyOn(allowCheckService, 'isIncludedAddress')
+          .mockReturnValue(true);
+        jest
+          .spyOn(allowCheckService, 'isAllowedContractMethod')
+          .mockReturnValue(true);
+        jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
+        const checkWebhook = jest
+          .spyOn(webhookService, 'checkWebhook')
+          .mockImplementation(() => {
+            throw error;
+          });
+        const transactionService = new TransactionService(
+          typeCheckService,
+          verseService,
+          allowCheckService,
+          rateLimitService,
+          webhookService,
+          datastoreService,
+        );
+
+        await expect(
+          transactionService.getMatchedTxAllowRule(
+            from,
+            to,
+            methodId,
+            value,
+            webhookArg,
+          ),
+        ).rejects.toThrow(error.message);
+        expect(checkWebhook).toHaveBeenCalled();
+      });
+
+      it('webhooks is set, and successfull', async () => {
+        const ip = '1.2.3.4';
+        const headers = { host: 'localhost' };
+        const requestContext = {
+          ip,
+          headers,
+        };
+        const body = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getTransactionReceipt',
+          params: [
+            '0xc3a3a2feced276891d9658a62205ff049bab1e6e4e4d6ff500487e023fcb3d82',
+          ],
+        };
+        const webhookArg = {
+          requestContext,
+          body,
+          tx,
+        };
+
+        const fromList = ['*'];
+        const toList = ['*'];
+        const webhook = {
+          url: 'http://lolcalhost:8000',
+          headers: {
+            host: 'lolcalhost',
+          },
+          timeout: 3000,
+          retry: 3,
+          parse: false,
+        };
+        const txAllowRule = {
+          fromList,
+          toList,
+          webhooks: [webhook],
+        };
+
+        transactionAllowListMock.mockReturnValue([txAllowRule]);
+        const methodId = data.substring(0, 10);
+
+        jest
+          .spyOn(allowCheckService, 'isIncludedAddress')
+          .mockReturnValue(true);
+        jest
+          .spyOn(allowCheckService, 'isAllowedContractMethod')
+          .mockReturnValue(true);
+        jest.spyOn(allowCheckService, 'isAllowedValue').mockReturnValue(true);
+        const checkWebhook = jest.spyOn(webhookService, 'checkWebhook');
+        const transactionService = new TransactionService(
+          typeCheckService,
+          verseService,
+          allowCheckService,
+          rateLimitService,
+          webhookService,
+          datastoreService,
+        );
+
+        const result = await transactionService.getMatchedTxAllowRule(
+          from,
+          to,
+          methodId,
+          value,
+          webhookArg,
+        );
+        expect(result).toBe(txAllowRule);
+        expect(checkWebhook).toHaveBeenCalled();
       });
     });
   });
@@ -374,29 +770,12 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
       const jsonrpc = '2.0';
       const id = 1;
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-        from,
-      };
 
       expect(
         async () => await transactionService.checkAllowedGas(tx, jsonrpc, id),
@@ -436,29 +815,12 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
       const jsonrpc = '2.0';
       const id = 1;
-      const tx = {
-        type,
-        chainId,
-        nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
-        gasPrice,
-        gasLimit,
-        to,
-        value,
-        data,
-        accessList,
-        hash,
-        v,
-        r,
-        s,
-        from,
-      };
 
       await expect(
         transactionService.checkAllowedGas(tx, jsonrpc, id),
@@ -498,6 +860,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
@@ -550,6 +913,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
@@ -610,6 +974,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 
@@ -665,6 +1030,7 @@ describe('TransactionService', () => {
         verseService,
         allowCheckService,
         rateLimitService,
+        webhookService,
         datastoreService,
       );
 

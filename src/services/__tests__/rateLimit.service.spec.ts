@@ -6,6 +6,7 @@ import {
   VerseService,
   AllowCheckService,
   RateLimitService,
+  WebhookService,
   TypeCheckService,
 } from 'src/services';
 import { DatastoreService } from 'src/repositories';
@@ -22,6 +23,7 @@ describe('RateLimitService', () => {
         VerseService,
         AllowCheckService,
         RateLimitService,
+        WebhookService,
         TransactionService,
         DatastoreService,
         TypeCheckService,

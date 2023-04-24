@@ -151,11 +151,17 @@ export class ProxyService {
 
     // transaction other than contract deploy
     const methodId = tx.data.substring(0, 10);
+    const webhookArg = {
+      requestContext,
+      body,
+      tx,
+    };
     const matchedTxAllowRule = await this.txService.getMatchedTxAllowRule(
       tx.from,
       tx.to,
       methodId,
       tx.value,
+      webhookArg,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const result = await this.verseService.postVerseMasterNode(

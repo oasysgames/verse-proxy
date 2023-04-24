@@ -243,6 +243,59 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
 
+#### Contract(Option)
+You cant restrict to transact contract method.
+
+```typescript
+// everyone can only transact to greet and setGreeting to 0x5FbDB2315678afecb367f032d93F642f64180aa3
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
+      contractList: [
+        'greet',
+        'setGreeting(string)',
+      ],
+    },
+  ];
+};
+// everyone can only transact to greet and setGreeting to 0x5FbDB2315678afecb367f032d93F642f64180aa3 and 0x5FbDB2315678afecb367f032d93F642f64180aa4
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3', '0x5FbDB2315678afecb367f032d93F642f64180aa4'],
+      contractList: [
+        'greet',
+        'setGreeting(string)',
+      ],
+    },
+  ];
+};
+```
+
+```typescript
+// if contractList is [], all transaction is allowed.
+export const getTxAllowList = (): Array<TransactionAllow> => {
+  return [
+    {
+      fromList: ['*'],
+      toList: ['0x5FbDB2315678afecb367f032d93F642f64180aa3'],
+      contractList: [],
+    },
+  ];
+};
+```
+
+#### Webhook(Option)
+You can add webhook setting that execute your original transaction restriction in another environment.
+
+This setting allows you to post a request to a specified location before executing a transaction.
+You can then use that request to implement your own request control.
+
+If you set webhook restriction, follow [Webhook](https://github.com/oasysgames/verse-proxy/blob/master/docs/Webhook.md)
+
 #### Transaction access rate limit(Option)
 If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
 
