@@ -28,7 +28,7 @@ export class RateLimitService {
       rateLimit,
     );
 
-    if (txCounter <= 0)
+    if (txCounter < 0)
       throw new JsonrpcError(
         `The number of allowed transacting has been exceeded. Wait ${rateLimit.interval} seconds before transacting.`,
         -32602,

@@ -167,14 +167,6 @@ export class ProxyService {
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
       return result;
 
-    if (this.isUseDatastore && matchedTxAllowRule.rateLimits) {
-      await this.datastoreService.reduceTxCount(
-        tx.from,
-        tx.to,
-        methodId,
-        matchedTxAllowRule.rateLimits,
-      );
-    }
     if (this.isUseDatastore && this.isUseBlockNumberCache) {
       await this.txService.resetBlockNumberCache(
         requestContext,

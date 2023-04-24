@@ -3,8 +3,6 @@ import { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { createHash } from 'crypto';
 import { RequestContext } from 'src/datastore/entities';
-import { TransactionCountCache } from 'src/datastore/entities';
-import { RateLimit } from 'src/config/transactionAllowList';
 
 @Injectable()
 export class CacheService {
@@ -14,20 +12,6 @@ export class CacheService {
     this.processCount = process.env.CLUSTER_PROCESS
       ? parseInt(process.env.CLUSTER_PROCESS, 10)
       : 1;
-  }
-
-  async getTxCount(key: string) {
-    const cache = await this.cacheManager.get<TransactionCountCache>(key);
-    return cache;
-  }
-
-  async setTxCount(key: string, value: TransactionCountCache, ttl: number) {
-    await this.cacheManager.set(key, value, ttl);
-  }
-
-  async resetTxCount(key: string, value: TransactionCountCache) {
-    const ttl = await this.cacheManager.store.ttl(key);
-    await this.cacheManager.set(key, value, ttl);
   }
 
   async getBlockNumber(key: string) {
@@ -48,24 +32,6 @@ export class CacheService {
       return stockCount2;
     }
     return 1;
-  }
-
-  getAllowedTxCountCacheKey(
-    from: string,
-    to: string,
-    methodId: string,
-    rateLimit: RateLimit,
-  ) {
-    const { name, perFrom, perTo, perMethod } = rateLimit;
-
-    const keyArray = [];
-    keyArray.push(name);
-    keyArray.push(perFrom ? `${from}` : '*');
-    keyArray.push(perTo ? `${to}` : '*');
-    keyArray.push(perMethod ? `${methodId}` : '*');
-    const key = keyArray.join(':');
-
-    return key;
   }
 
   getBlockNumberCacheKey(requestContext: RequestContext) {

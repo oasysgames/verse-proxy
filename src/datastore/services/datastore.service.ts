@@ -60,45 +60,6 @@ export class DatastoreService {
     }
   }
 
-  async reduceTxCount(
-    from: string,
-    to: string,
-    methodId: string,
-    rateLimits: RateLimit[],
-  ) {
-    await Promise.all(
-      rateLimits.map(async (rateLimit): Promise<void> => {
-        try {
-          switch (this.datastore) {
-            case 'redis':
-              await this.redisService.reduceTxCount(
-                from,
-                to,
-                methodId,
-                rateLimit,
-              );
-              break;
-            case 'rdb':
-              await this.rdbService.reduceTxCount(
-                from,
-                to,
-                methodId,
-                rateLimit,
-              );
-              break;
-          }
-        } catch (err) {
-          if (err instanceof Error) {
-            console.error(err.message);
-          } else {
-            console.error(err);
-          }
-          return;
-        }
-      }),
-    );
-  }
-
   async getBlockNumber(requestContext: RequestContext) {
     let blockNumberCache = '';
 

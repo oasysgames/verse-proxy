@@ -5,12 +5,9 @@ import { ConfigService } from '@nestjs/config';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
 import { RequestContext } from 'src/datastore/entities';
-import {
-  TransactionCount,
-  BlockNumberCache,
-  TransactionCountCache,
-} from 'src/datastore/entities';
+import { TransactionCount, BlockNumberCache } from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
+import { TxCountInventoryService } from './txCountInventory.service';
 
 @Injectable()
 export class RdbService {
@@ -19,6 +16,7 @@ export class RdbService {
   constructor(
     private configService: ConfigService,
     private cacheService: CacheService,
+    private txCountInventoryService: TxCountInventoryService,
     @InjectRepository(TransactionCount)
     @Optional()
     private txCountRepository: Repository<TransactionCount>,
@@ -39,25 +37,35 @@ export class RdbService {
     }
   }
 
-  async getAllowedTxCountFromRdb(key: string, rateLimit: RateLimit) {
+  async resetAllowedTxCount(key: string, rateLimit: RateLimit) {
     const rateLimitIntervalMs = rateLimit.interval * 1000;
 
     const MAX_RETRIES = 5;
     let retry = true;
     let retryCount = 0;
-    let txCountCache: TransactionCountCache = {
-      value: 0,
-      isDatastoreLimit: false,
-    };
-    let ttl = 0; // milliseconds
 
     while (retry) {
       try {
         const transactionalEntityManager = this.txCountRepository.manager;
-        const newStock = this.cacheService.getTxCountStock(rateLimit.limit);
+        const newStock = this.txCountInventoryService.getTxCountStock(
+          rateLimit.limit,
+        );
 
         await transactionalEntityManager.transaction(
+          'SERIALIZABLE',
           async (transactionManager) => {
+            const txCountInventory =
+              this.txCountInventoryService.getAllowedTxCount(key);
+            if (
+              !this.txCountInventoryService.isNeedTxCountUpdate(
+                txCountInventory,
+                rateLimit,
+              )
+            ) {
+              retry = false;
+              return;
+            }
+
             const txCount = await transactionManager.findOneBy(
               TransactionCount,
               {
@@ -72,11 +80,12 @@ export class RdbService {
               newTxCount.count = newStock;
               newTxCount.created_at = new Date();
               await transactionManager.save(newTxCount);
-              txCountCache = {
+              const newTxCountInventory = {
                 value: newStock,
                 isDatastoreLimit: false,
+                createdAt: new Date(),
               };
-              ttl = rateLimitIntervalMs;
+              this.txCountInventoryService.setTxCount(key, newTxCountInventory);
               retry = false;
               return;
             }
@@ -89,21 +98,30 @@ export class RdbService {
             // It does not have to reset datastore data
             if (rateLimitIntervalMs > counterAge) {
               if (txCount.count + newStock > rateLimit.limit) {
-                txCountCache = {
+                const newTxCountInventory = {
                   value: 0,
                   isDatastoreLimit: true,
+                  createdAt: new Date(),
                 };
-                ttl = createdAt + rateLimitIntervalMs - now;
+                this.txCountInventoryService.setTxCount(
+                  key,
+                  newTxCountInventory,
+                );
                 retry = false;
                 return;
               } else {
                 txCount.count = txCount.count + newStock;
+
                 await transactionManager.save(txCount);
-                txCountCache = {
+                const newTxCountInventory = {
                   value: newStock,
                   isDatastoreLimit: false,
+                  createdAt: new Date(),
                 };
-                ttl = createdAt + rateLimitIntervalMs - now;
+                this.txCountInventoryService.setTxCount(
+                  key,
+                  newTxCountInventory,
+                );
                 retry = false;
                 return;
               }
@@ -113,11 +131,12 @@ export class RdbService {
               txCount.count = newStock;
               txCount.created_at = new Date();
               await transactionManager.save(txCount);
-              txCountCache = {
+              const newTxCountInventory = {
                 value: newStock,
                 isDatastoreLimit: false,
+                createdAt: new Date(),
               };
-              ttl = rateLimitIntervalMs;
+              this.txCountInventoryService.setTxCount(key, newTxCountInventory);
               retry = false;
               return;
             }
@@ -130,8 +149,6 @@ export class RdbService {
         retryCount++;
       }
     }
-    await this.cacheService.setTxCount(key, txCountCache, ttl);
-    return txCountCache.value;
   }
 
   async getAllowedTxCount(
@@ -140,39 +157,25 @@ export class RdbService {
     methodId: string,
     rateLimit: RateLimit,
   ) {
-    const key = this.cacheService.getAllowedTxCountCacheKey(
+    const key = this.txCountInventoryService.getAllowedTxCountCacheKey(
       from,
       to,
       methodId,
       rateLimit,
     );
-    const cache = await this.cacheService.getTxCount(key);
+    let txCountInventory = this.txCountInventoryService.getAllowedTxCount(key);
 
-    if (cache === undefined) {
-      return await this.getAllowedTxCountFromRdb(key, rateLimit);
-    } else {
-      if (cache.value > 0 || cache.isDatastoreLimit) return cache.value;
-      return await this.getAllowedTxCountFromRdb(key, rateLimit);
+    if (
+      this.txCountInventoryService.isNeedTxCountUpdate(
+        txCountInventory,
+        rateLimit,
+      )
+    ) {
+      await this.resetAllowedTxCount(key, rateLimit);
     }
-  }
-
-  async reduceTxCount(
-    from: string,
-    to: string,
-    methodId: string,
-    rateLimit: RateLimit,
-  ) {
-    const key = this.cacheService.getAllowedTxCountCacheKey(
-      from,
-      to,
-      methodId,
-      rateLimit,
-    );
-    const cache = await await this.cacheService.getTxCount(key);
-
-    if (!cache) return;
-    cache.value = cache.value - 1;
-    await this.cacheService.resetTxCount(key, cache);
+    this.txCountInventoryService.reduceAllowedTxCount(key);
+    txCountInventory = this.txCountInventoryService.getAllowedTxCount(key);
+    return txCountInventory ? txCountInventory.value : 0;
   }
 
   async getBlockNumber(requestContext: RequestContext) {
