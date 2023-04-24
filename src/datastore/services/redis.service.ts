@@ -48,7 +48,9 @@ export class RedisService {
         );
         const countFieldValue = redisData[0];
         const createdAtFieldValue = redisData[1];
-        const newStock = this.cacheService.getTxCountStock(rateLimit.limit);
+        const newStock = this.txCountInventoryService.getTxCountStock(
+          rateLimit.limit,
+        );
 
         // datastore value is not set
         if (!(countFieldValue && createdAtFieldValue)) {
