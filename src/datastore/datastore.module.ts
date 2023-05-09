@@ -59,7 +59,7 @@ export class DatastoreModule {
       module: DatastoreModule,
       imports,
       providers,
-      exports: [DatastoreService, ...providers],
+      exports: [DatastoreService],
     };
   }
 }
