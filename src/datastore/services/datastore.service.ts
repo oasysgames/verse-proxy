@@ -22,6 +22,28 @@ export class DatastoreService {
     }
   }
 
+  async getWorkerCount() {
+    let workerCount = 0;
+
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          workerCount = await this.redisService.getWorkerCount();
+          break;
+        case 'rdb':
+          break;
+      }
+      return workerCount;
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return 0;
+    }
+  }
+
   async getAllowedTxCount(
     from: string,
     to: string,
@@ -104,6 +126,25 @@ export class DatastoreService {
         console.error(err);
       }
       return;
+    }
+  }
+
+  async setHeartBeat() {
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          await this.redisService.setHeartBeat();
+          break;
+        case 'rdb':
+          break;
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return 0;
     }
   }
 }

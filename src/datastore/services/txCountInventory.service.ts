@@ -26,7 +26,7 @@ export class TxCountInventoryService {
     );
   }
 
-  async reduceAllowedTxCount(key: string) {
+  reduceAllowedTxCount(key: string) {
     const txCount = this.getAllowedTxCount(key);
     if (!txCount) return;
     txCount.value--;

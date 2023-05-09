@@ -6,7 +6,17 @@ import { RequestContext } from 'src/datastore/entities';
 
 @Injectable()
 export class CacheService {
+  private workerCountKey = 'worker_count';
+
   constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+
+  async getWorkerCount() {
+    return await this.cacheManager.get<number>(this.workerCountKey);
+  }
+
+  async setWorkerCount(value: number) {
+    await this.cacheManager.set(this.workerCountKey, value);
+  }
 
   async getBlockNumber(key: string) {
     return await this.cacheManager.get<string>(key);

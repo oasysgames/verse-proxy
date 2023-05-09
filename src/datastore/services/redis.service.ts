@@ -10,6 +10,7 @@ import { TxCountInventoryService } from './txCountInventory.service';
 @Injectable()
 export class RedisService {
   private blockNumberCacheExpireSec: number;
+  private heartBeatKey = 'heartbeat';
 
   constructor(
     private configService: ConfigService,
@@ -28,6 +29,27 @@ export class RedisService {
     } else {
       this.blockNumberCacheExpireSec = blockNumberCacheExpireSec;
     }
+  }
+
+  async setHeartBeat() {
+    const now = Date.now();
+    await this.redis.zadd(this.heartBeatKey, now, 1);
+  }
+
+  async getWorkerCount() {
+    const workerCount = await this.cacheService.getWorkerCount();
+    if (workerCount) return workerCount;
+
+    const now = Date.now();
+    const interval = 59 * 1000; // todo: inject from constructor
+    const intervalAgo = now - interval;
+    const workerCountFromRedis = await this.redis.zcount(
+      this.heartBeatKey,
+      intervalAgo,
+      now,
+    );
+    await this.cacheService.setWorkerCount(workerCountFromRedis);
+    return workerCountFromRedis;
   }
 
   async resetAllowedTxCount(key: string, rateLimit: RateLimit) {

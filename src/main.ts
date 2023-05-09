@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DatastoreService } from './datastore/services';
 import { AppModule } from 'src/app.module';
 import { json } from 'body-parser';
 import * as _cluster from 'cluster';
@@ -12,6 +13,9 @@ let workerCount = process.env.CLUSTER_PROCESS
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const datastoreService = app.get(DatastoreService);
+  await datastoreService.setHeartBeat();
 
   app.use(
     json({
