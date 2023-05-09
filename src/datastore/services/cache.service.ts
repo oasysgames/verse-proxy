@@ -14,8 +14,8 @@ export class CacheService {
     return await this.cacheManager.get<number>(this.workerCountKey);
   }
 
-  async setWorkerCount(value: number) {
-    await this.cacheManager.set(this.workerCountKey, value);
+  async setWorkerCount(value: number, ttl: number) {
+    await this.cacheManager.set(this.workerCountKey, value, ttl);
   }
 
   async getBlockNumber(key: string) {

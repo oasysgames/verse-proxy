@@ -147,4 +147,23 @@ export class DatastoreService {
       return 0;
     }
   }
+
+  async setWorkerCount() {
+    try {
+      switch (this.datastore) {
+        case 'redis':
+          await this.redisService.setWorkerCountToCache();
+          break;
+        case 'rdb':
+          break;
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error(err);
+      }
+      return 0;
+    }
+  }
 }

@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
+import {
+  HeartbeatMillisecondInterval,
+  workerCountMillisecondInterval,
+} from 'src/constants';
 import { RequestContext } from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
 import { TxCountInventoryService } from './txCountInventory.service';
@@ -36,20 +40,31 @@ export class RedisService {
     await this.redis.zadd(this.heartBeatKey, now, now);
   }
 
-  async getWorkerCount() {
-    const workerCount = await this.cacheService.getWorkerCount();
-    if (workerCount) return workerCount;
-
+  // `setHeartBeat` is executed at regular intervals by a cronjob.
+  // The number of workers is the number of heartbeats counted
+  // from the time before the interval when `setHeartBeat` is executed to the current time.
+  async setWorkerCountToCache() {
     const now = Date.now();
-    const interval = 59 * 1000; // todo: inject from constructor
+    const interval = HeartbeatMillisecondInterval - 1;
     const intervalAgo = now - interval;
-    const workerCountFromRedis = await this.redis.zcount(
+    let workerCount = await this.redis.zcount(
       this.heartBeatKey,
       intervalAgo,
       now,
     );
-    await this.cacheService.setWorkerCount(workerCountFromRedis);
-    return workerCountFromRedis;
+    workerCount = Math.max(workerCount, 1);
+    await this.cacheService.setWorkerCount(
+      workerCount,
+      workerCountMillisecondInterval,
+    );
+    return workerCount;
+  }
+
+  async getWorkerCount() {
+    const workerCount = await this.cacheService.getWorkerCount();
+    if (workerCount) return workerCount;
+
+    return await this.setWorkerCountToCache();
   }
 
   // Calculate the standard value of transaction count inventory
