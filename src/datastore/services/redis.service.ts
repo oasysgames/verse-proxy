@@ -33,7 +33,7 @@ export class RedisService {
 
   async setHeartBeat() {
     const now = Date.now();
-    await this.redis.zadd(this.heartBeatKey, now, 1);
+    await this.redis.zadd(this.heartBeatKey, now, now);
   }
 
   async getWorkerCount() {
@@ -50,6 +50,15 @@ export class RedisService {
     );
     await this.cacheService.setWorkerCount(workerCountFromRedis);
     return workerCountFromRedis;
+  }
+
+  // Calculate the standard value of transaction count inventory
+  // based on the number of workers in the standing proxy
+  async getTxCountStockStandardAmount(limit: number) {
+    const workerCount = await this.getWorkerCount();
+    const txCountStockStandardAmount = Math.floor(limit / (5 * workerCount));
+    if (txCountStockStandardAmount < 1) return 1;
+    return txCountStockStandardAmount;
   }
 
   async resetAllowedTxCount(key: string, rateLimit: RateLimit) {
@@ -70,7 +79,7 @@ export class RedisService {
         );
         const countFieldValue = redisData[0];
         const createdAtFieldValue = redisData[1];
-        const newStock = this.txCountInventoryService.getTxCountStock(
+        const newStock = await this.getTxCountStockStandardAmount(
           rateLimit.limit,
         );
 
