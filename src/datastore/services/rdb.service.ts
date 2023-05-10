@@ -87,6 +87,15 @@ export class RdbService {
     return await this.setWorkerCountToCache();
   }
 
+  // Calculate the standard value of transaction count inventory
+  // based on the number of workers in the standing proxy
+  async getTxCountStockStandardAmount(limit: number) {
+    const workerCount = await this.getWorkerCount();
+    const txCountStockStandardAmount = Math.floor(limit / (5 * workerCount));
+    if (txCountStockStandardAmount < 1) return 1;
+    return txCountStockStandardAmount;
+  }
+
   async resetAllowedTxCount(key: string, rateLimit: RateLimit) {
     const rateLimitIntervalMs = rateLimit.interval * 1000;
 
@@ -97,9 +106,6 @@ export class RdbService {
     while (retry) {
       try {
         const transactionalEntityManager = this.txCountRepository.manager;
-        const newStock = this.txCountInventoryService.getTxCountStock(
-          rateLimit.limit,
-        );
 
         await transactionalEntityManager.transaction(
           'SERIALIZABLE',
@@ -116,6 +122,9 @@ export class RdbService {
               return;
             }
 
+            const newStock = await this.getTxCountStockStandardAmount(
+              rateLimit.limit,
+            );
             const txCount = await transactionManager.findOneBy(
               TransactionCount,
               {
