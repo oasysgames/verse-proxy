@@ -37,7 +37,16 @@ export class RedisService {
 
   async setHeartBeat() {
     const now = Date.now();
-    await this.redis.zadd(this.heartBeatKey, now, now);
+    const pipeline = this.redis.pipeline();
+    pipeline.zadd(this.heartBeatKey, now, now);
+    if (now % 10 === 0) {
+      pipeline.zremrangebyscore(
+        this.heartBeatKey,
+        0,
+        now - HeartbeatMillisecondInterval,
+      );
+    }
+    await pipeline.exec();
   }
 
   // `setHeartBeat` is executed at regular intervals by a cronjob.
