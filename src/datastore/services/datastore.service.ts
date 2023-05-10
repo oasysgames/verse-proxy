@@ -31,6 +31,7 @@ export class DatastoreService {
           workerCount = await this.redisService.getWorkerCount();
           break;
         case 'rdb':
+          workerCount = await this.rdbService.getWorkerCount();
           break;
       }
       return workerCount;
@@ -136,6 +137,7 @@ export class DatastoreService {
           await this.redisService.setHeartBeat();
           break;
         case 'rdb':
+          await this.rdbService.setHeartBeat();
           break;
       }
     } catch (err) {
@@ -155,6 +157,7 @@ export class DatastoreService {
           await this.redisService.setWorkerCountToCache();
           break;
         case 'rdb':
+          await this.rdbService.setWorkerCountToCache();
           break;
       }
     } catch (err) {

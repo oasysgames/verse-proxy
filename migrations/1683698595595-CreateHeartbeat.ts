@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 
 export class CreateHeartbeat1683698595595 implements MigrationInterface {
-  private tableName = 'heartbeats';
+  private tableName = 'heartbeat';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
@@ -15,7 +15,11 @@ export class CreateHeartbeat1683698595595 implements MigrationInterface {
         name: this.tableName,
         columns: [
           new TableColumn({ name: 'id', type: 'serial', isPrimary: true }),
-          new TableColumn({ name: 'created_at', type: 'bigint' }),
+          new TableColumn({
+            name: 'created_at',
+            type: 'bigint',
+            isNullable: false,
+          }),
         ],
       }),
     );

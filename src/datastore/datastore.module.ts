@@ -10,7 +10,7 @@ import { RedisService } from './services/redis.service';
 import { RdbService } from './services/rdb.service';
 import { CacheService } from './services/cache.service';
 import { TxCountInventoryService } from './services/txCountInventory.service';
-import { BlockNumberCache, TransactionCount } from './entities';
+import { BlockNumberCache, TransactionCount, Heartbeat } from './entities';
 
 @Module({})
 export class DatastoreModule {
@@ -42,7 +42,11 @@ export class DatastoreModule {
 
     if (rdbUri) {
       imports.push(
-        TypeOrmModule.forFeature([BlockNumberCache, TransactionCount]),
+        TypeOrmModule.forFeature([
+          BlockNumberCache,
+          TransactionCount,
+          Heartbeat,
+        ]),
       );
       imports.push(
         TypeOrmModule.forRoot({

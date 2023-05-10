@@ -1,11 +1,19 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan, Between } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
+import {
+  HeartbeatMillisecondInterval,
+  workerCountMillisecondInterval,
+} from 'src/constants';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { CacheService } from './cache.service';
 import { RequestContext } from 'src/datastore/entities';
-import { TransactionCount, BlockNumberCache } from 'src/datastore/entities';
+import {
+  TransactionCount,
+  BlockNumberCache,
+  Heartbeat,
+} from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
 import { TxCountInventoryService } from './txCountInventory.service';
 
@@ -17,6 +25,9 @@ export class RdbService {
     private configService: ConfigService,
     private cacheService: CacheService,
     private txCountInventoryService: TxCountInventoryService,
+    @InjectRepository(Heartbeat)
+    @Optional()
+    private heartbeatRepository: Repository<Heartbeat>,
     @InjectRepository(TransactionCount)
     @Optional()
     private txCountRepository: Repository<TransactionCount>,
@@ -35,6 +46,45 @@ export class RdbService {
     } else {
       this.blockNumberCacheExpireSec = blockNumberCacheExpireSec;
     }
+  }
+
+  async setHeartBeat() {
+    const now = Date.now();
+    const entity = new Heartbeat();
+    entity.created_at = now;
+    await this.heartbeatRepository.save(entity);
+    if (now % 10 === 0) {
+      await this.heartbeatRepository.delete({
+        created_at: LessThan(now - HeartbeatMillisecondInterval),
+      });
+    }
+  }
+
+  // `setHeartBeat` is executed at regular intervals by a cronjob.
+  // The number of workers is the number of heartbeats counted
+  // from the time before the interval when `setHeartBeat` is executed to the current time.
+  async setWorkerCountToCache() {
+    const now = Date.now();
+    const interval = HeartbeatMillisecondInterval - 1;
+    const intervalAgo = now - interval;
+    let workerCount = await this.heartbeatRepository.count({
+      where: {
+        created_at: Between(intervalAgo, now),
+      },
+    });
+    workerCount = Math.max(workerCount, 1);
+    await this.cacheService.setWorkerCount(
+      workerCount,
+      workerCountMillisecondInterval,
+    );
+    return workerCount;
+  }
+
+  async getWorkerCount() {
+    const workerCount = await this.cacheService.getWorkerCount();
+    if (workerCount) return workerCount;
+
+    return await this.setWorkerCountToCache();
   }
 
   async resetAllowedTxCount(key: string, rateLimit: RateLimit) {
