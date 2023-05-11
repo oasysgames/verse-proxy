@@ -32,7 +32,7 @@ export class CreateBlockNumberCache1681439356727 implements MigrationInterface {
           }),
           new TableColumn({
             name: 'updated_at',
-            type: 'timestamp',
+            type: 'bigint',
           }),
         ],
         indices: [

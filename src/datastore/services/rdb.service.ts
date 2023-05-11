@@ -246,8 +246,8 @@ export class RdbService {
 
     if (
       !blockNumber ||
-      Date.now() + this.blockNumberCacheExpireSec * 1000 >=
-        blockNumber.updated_at.getTime()
+      Date.now() >=
+        blockNumber.updated_at + this.blockNumberCacheExpireSec * 1000
     ) {
       return '';
     }
@@ -267,13 +267,13 @@ export class RdbService {
     });
     if (entity) {
       entity.value = blockNumber;
-      entity.updated_at = new Date();
+      entity.updated_at = Date.now();
       await this.bnCacheRepository.save(entity);
     } else {
       const newBnCache = new BlockNumberCache();
       newBnCache.name = key;
       newBnCache.value = blockNumber;
-      newBnCache.updated_at = new Date();
+      newBnCache.updated_at = Date.now();
 
       await this.bnCacheRepository.save(newBnCache);
     }
