@@ -21,8 +21,7 @@ export class TxCountInventoryService {
     return (
       txCountInventory === undefined ||
       (txCountInventory.value <= 0 && !txCountInventory.isDatastoreLimit) ||
-      Date.now() >=
-        txCountInventory.createdAt.getTime() + rateLimit.interval * 1000
+      Date.now() >= txCountInventory.createdAt + rateLimit.interval * 1000
     );
   }
 

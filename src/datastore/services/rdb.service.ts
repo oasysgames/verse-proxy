@@ -131,6 +131,7 @@ export class RdbService {
                 name: key,
               },
             );
+            const now = Date.now();
 
             // datastore value is not set
             if (!txCount) {
@@ -142,7 +143,7 @@ export class RdbService {
               const newTxCountInventory = {
                 value: newStock,
                 isDatastoreLimit: false,
-                createdAt: new Date(),
+                createdAt: now,
               };
               this.txCountInventoryService.setTxCount(key, newTxCountInventory);
               retry = false;
@@ -151,7 +152,6 @@ export class RdbService {
 
             // datastore value is set
             const createdAt = txCount.created_at.getTime();
-            const now = Date.now();
             const counterAge = now - createdAt;
 
             // It does not have to reset datastore data
@@ -160,7 +160,7 @@ export class RdbService {
                 const newTxCountInventory = {
                   value: 0,
                   isDatastoreLimit: true,
-                  createdAt: new Date(),
+                  createdAt: now,
                 };
                 this.txCountInventoryService.setTxCount(
                   key,
@@ -175,7 +175,7 @@ export class RdbService {
                 const newTxCountInventory = {
                   value: newStock,
                   isDatastoreLimit: false,
-                  createdAt: new Date(),
+                  createdAt: now,
                 };
                 this.txCountInventoryService.setTxCount(
                   key,
@@ -193,7 +193,7 @@ export class RdbService {
               const newTxCountInventory = {
                 value: newStock,
                 isDatastoreLimit: false,
-                createdAt: new Date(),
+                createdAt: now,
               };
               this.txCountInventoryService.setTxCount(key, newTxCountInventory);
               retry = false;

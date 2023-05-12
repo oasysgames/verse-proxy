@@ -106,10 +106,10 @@ export class RedisService {
         const newStock = await this.getTxCountStockStandardAmount(
           rateLimit.limit,
         );
+        const now = Date.now();
 
         // datastore value is not set
         if (!(countFieldValue && createdAtFieldValue)) {
-          const now = Date.now();
           const multiResult = await this.redis
             .multi()
             .hset(key, countFieldName, newStock, createdAtFieldName, now)
@@ -117,7 +117,7 @@ export class RedisService {
           const newTxCountInventory = {
             value: newStock,
             isDatastoreLimit: false,
-            createdAt: new Date(),
+            createdAt: now,
           };
           const txCountInventory =
             this.txCountInventoryService.getAllowedTxCount(key);
@@ -138,7 +138,6 @@ export class RedisService {
         // datastore value is set
         const redisCount = Number(countFieldValue);
         const createdAt = Number(createdAtFieldValue);
-        const now = Date.now();
         const counterAge = now - createdAt;
 
         // It does not have to reset redis data
@@ -147,7 +146,7 @@ export class RedisService {
             const newTxCountInventory = {
               value: 0,
               isDatastoreLimit: true,
-              createdAt: new Date(),
+              createdAt: now,
             };
             this.txCountInventoryService.setTxCount(key, newTxCountInventory);
             await this.redis.unwatch();
@@ -166,7 +165,7 @@ export class RedisService {
             const newTxCountInventory = {
               value: newStock,
               isDatastoreLimit: false,
-              createdAt: new Date(),
+              createdAt: now,
             };
             const txCountInventory =
               this.txCountInventoryService.getAllowedTxCount(key);
@@ -196,7 +195,7 @@ export class RedisService {
           const newTxCountInventory = {
             value: newStock,
             isDatastoreLimit: false,
-            createdAt: new Date(),
+            createdAt: now,
           };
           const txCountInventory =
             this.txCountInventoryService.getAllowedTxCount(key);
