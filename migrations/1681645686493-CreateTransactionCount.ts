@@ -31,8 +31,7 @@ export class CreateTransactionCount1681645686493 implements MigrationInterface {
           },
           {
             name: 'created_at',
-            type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
+            type: 'bigint',
           },
         ],
         indices: [

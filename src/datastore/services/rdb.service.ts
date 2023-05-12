@@ -138,7 +138,7 @@ export class RdbService {
               const newTxCount = new TransactionCount();
               newTxCount.name = key;
               newTxCount.count = newStock;
-              newTxCount.created_at = new Date();
+              newTxCount.created_at = now;
               await transactionManager.save(newTxCount);
               const newTxCountInventory = {
                 value: newStock,
@@ -151,7 +151,7 @@ export class RdbService {
             }
 
             // datastore value is set
-            const createdAt = txCount.created_at.getTime();
+            const createdAt = txCount.created_at;
             const counterAge = now - createdAt;
 
             // It does not have to reset datastore data
@@ -188,7 +188,7 @@ export class RdbService {
             // It has to reset datastore data
             else {
               txCount.count = newStock;
-              txCount.created_at = new Date();
+              txCount.created_at = now;
               await transactionManager.save(txCount);
               const newTxCountInventory = {
                 value: newStock,

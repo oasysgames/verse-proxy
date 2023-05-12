@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, Index } from 'typeorm';
-import { bigintTransformer } from 'src/datastore/utils';
+import { bigintTransformer } from '../../utils';
 
 @Entity()
 @Index('IDX_created_at', ['created_at'])

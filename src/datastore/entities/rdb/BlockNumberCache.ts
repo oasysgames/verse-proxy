@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, Index, Unique } from 'typeorm';
-import { bigintTransformer } from 'src/datastore/utils';
+import { bigintTransformer } from '../../utils';
 
 @Entity()
 @Unique('UQ_name', ['name'])
