@@ -20,6 +20,7 @@ import { TxCountInventoryService } from './txCountInventory.service';
 @Injectable()
 export class RdbService {
   private blockNumberCacheExpireSec: number;
+  private intervalTimesToCheckWorkerCount: number;
 
   constructor(
     private configService: ConfigService,
@@ -35,6 +36,7 @@ export class RdbService {
     @Optional()
     private bnCacheRepository: Repository<BlockNumberCache>,
   ) {
+    this.intervalTimesToCheckWorkerCount = 3;
     const blockNumberCacheExpireSec =
       this.configService.get<number>('blockNumberCacheExpireSec') || 0;
 
@@ -55,7 +57,10 @@ export class RdbService {
     await this.heartbeatRepository.save(entity);
     if (now % 10 === 0) {
       await this.heartbeatRepository.delete({
-        created_at: LessThan(now - HeartbeatMillisecondInterval),
+        created_at: LessThan(
+          now -
+            this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval,
+        ),
       });
     }
   }
@@ -65,14 +70,17 @@ export class RdbService {
   // from the time before the interval when `setHeartBeat` is executed to the current time.
   async setWorkerCountToCache() {
     const now = Date.now();
-    const interval = HeartbeatMillisecondInterval - 1;
-    const intervalAgo = now - interval;
-    let workerCount = await this.heartbeatRepository.count({
-      where: {
-        created_at: Between(intervalAgo, now),
-      },
-    });
-    workerCount = Math.max(workerCount, 1);
+    const intervalAgo =
+      now - this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval;
+    // counts the number of heartbeats during three Heartbeat cronjob runs and calculates the average number of heartbeats in one interval
+    const workerCountAverage = Math.floor(
+      (await this.heartbeatRepository.count({
+        where: {
+          created_at: Between(intervalAgo, now),
+        },
+      })) / this.intervalTimesToCheckWorkerCount,
+    );
+    const workerCount = Math.max(workerCountAverage, 1);
     await this.cacheService.setWorkerCount(
       workerCount,
       workerCountMillisecondInterval,

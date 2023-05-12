@@ -14,6 +14,7 @@ import { TxCountInventoryService } from './txCountInventory.service';
 @Injectable()
 export class RedisService {
   private blockNumberCacheExpireSec: number;
+  private intervalTimesToCheckWorkerCount: number;
   private heartBeatKey = 'heartbeat';
 
   constructor(
@@ -22,6 +23,7 @@ export class RedisService {
     private txCountInventoryService: TxCountInventoryService,
     @Inject('REDIS') @Optional() private redis: Redis,
   ) {
+    this.intervalTimesToCheckWorkerCount = 3;
     const blockNumberCacheExpireSec =
       this.configService.get<number>('blockNumberCacheExpireSec') || 0;
 
@@ -43,7 +45,8 @@ export class RedisService {
       pipeline.zremrangebyscore(
         this.heartBeatKey,
         0,
-        now - HeartbeatMillisecondInterval,
+        now -
+          this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval,
       );
     }
     await pipeline.exec();
@@ -54,14 +57,14 @@ export class RedisService {
   // from the time before the interval when `setHeartBeat` is executed to the current time.
   async setWorkerCountToCache() {
     const now = Date.now();
-    const interval = HeartbeatMillisecondInterval - 1;
-    const intervalAgo = now - interval;
-    let workerCount = await this.redis.zcount(
-      this.heartBeatKey,
-      intervalAgo,
-      now,
+    const intervalAgo =
+      now - this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval;
+    // counts the number of heartbeats during three Heartbeat cronjob runs and calculates the average number of heartbeats in one interval
+    const workerCountAverage = Math.floor(
+      (await this.redis.zcount(this.heartBeatKey, intervalAgo, now)) /
+        this.intervalTimesToCheckWorkerCount,
     );
-    workerCount = Math.max(workerCount, 1);
+    const workerCount = Math.max(workerCountAverage, 1);
     await this.cacheService.setWorkerCount(
       workerCount,
       workerCountMillisecondInterval,
