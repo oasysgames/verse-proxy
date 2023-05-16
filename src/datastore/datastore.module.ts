@@ -9,7 +9,7 @@ import { DatastoreService } from './services/datastore.service';
 import { RedisService } from './services/redis.service';
 import { RdbService } from './services/rdb.service';
 import { CacheService } from './services/cache.service';
-import { TxCountInventoryService } from './services/txCountInventory.service';
+import { TransactionLimitStockService } from './services/transactionLimitStock.service';
 import { BlockNumberCache, TransactionCount, Heartbeat } from './entities';
 
 @Module({})
@@ -30,7 +30,7 @@ export class DatastoreModule {
     providers.push(RedisService);
     providers.push(RdbService);
     providers.push(CacheService);
-    providers.push(TxCountInventoryService);
+    providers.push(TransactionLimitStockService);
 
     if (redisUri) {
       const redis = new Redis(redisUri);

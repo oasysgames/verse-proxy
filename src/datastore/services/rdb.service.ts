@@ -15,7 +15,7 @@ import {
   Heartbeat,
 } from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
-import { TxCountInventoryService } from './txCountInventory.service';
+import { TransactionLimitStockService } from 'src/datastore/services';
 
 @Injectable()
 export class RdbService {
@@ -25,7 +25,7 @@ export class RdbService {
   constructor(
     private configService: ConfigService,
     private cacheService: CacheService,
-    private txCountInventoryService: TxCountInventoryService,
+    private txLimitStockService: TransactionLimitStockService,
     @InjectRepository(Heartbeat)
     @Optional()
     private heartbeatRepository: Repository<Heartbeat>,
@@ -97,14 +97,14 @@ export class RdbService {
 
   // Calculate the standard value of transaction count inventory
   // based on the number of workers in the standing proxy
-  async getTxCountStockStandardAmount(limit: number) {
+  async getStandardTxLimitStockAmount(limit: number) {
     const workerCount = await this.getWorkerCount();
     const txCountStockStandardAmount = Math.floor(limit / (5 * workerCount));
     if (txCountStockStandardAmount < 1) return 1;
     return txCountStockStandardAmount;
   }
 
-  async resetAllowedTxCount(key: string, rateLimit: RateLimit) {
+  async resetTxLimitStock(key: string, rateLimit: RateLimit) {
     const rateLimitIntervalMs = rateLimit.interval * 1000;
 
     const MAX_RETRIES = 5;
@@ -118,11 +118,10 @@ export class RdbService {
         await transactionalEntityManager.transaction(
           'SERIALIZABLE',
           async (transactionManager) => {
-            const txCountInventory =
-              this.txCountInventoryService.getAllowedTxCount(key);
+            const txLimitStock = this.txLimitStockService.getTxLimitStock(key);
             if (
-              !this.txCountInventoryService.isNeedTxCountUpdate(
-                txCountInventory,
+              !this.txLimitStockService.isNeedTxLimitStockUpdate(
+                txLimitStock,
                 rateLimit,
               )
             ) {
@@ -130,7 +129,7 @@ export class RdbService {
               return;
             }
 
-            const newStock = await this.getTxCountStockStandardAmount(
+            const newStock = await this.getStandardTxLimitStockAmount(
               rateLimit.limit,
             );
             const txCount = await transactionManager.findOneBy(
@@ -148,12 +147,13 @@ export class RdbService {
               newTxCount.count = newStock;
               newTxCount.created_at = now;
               await transactionManager.save(newTxCount);
-              const newTxCountInventory = {
-                value: newStock,
+              const newTxLimitStock = {
+                stock: newStock,
+                counter: 0,
                 isDatastoreLimit: false,
                 createdAt: now,
               };
-              this.txCountInventoryService.setTxCount(key, newTxCountInventory);
+              this.txLimitStockService.setTxLimitStock(key, newTxLimitStock);
               retry = false;
               return;
             }
@@ -165,30 +165,26 @@ export class RdbService {
             // It does not have to reset datastore data
             if (rateLimitIntervalMs > counterAge) {
               if (txCount.count + newStock > rateLimit.limit) {
-                const newTxCountInventory = {
-                  value: 0,
+                const newTxLimitStock = {
+                  stock: 0,
+                  counter: 0,
                   isDatastoreLimit: true,
                   createdAt: now,
                 };
-                this.txCountInventoryService.setTxCount(
-                  key,
-                  newTxCountInventory,
-                );
+                this.txLimitStockService.setTxLimitStock(key, newTxLimitStock);
                 retry = false;
                 return;
               } else {
                 txCount.count = txCount.count + newStock;
 
                 await transactionManager.save(txCount);
-                const newTxCountInventory = {
-                  value: newStock,
+                const newTxLimitStock = {
+                  stock: newStock,
+                  counter: 0,
                   isDatastoreLimit: false,
                   createdAt: now,
                 };
-                this.txCountInventoryService.setTxCount(
-                  key,
-                  newTxCountInventory,
-                );
+                this.txLimitStockService.setTxLimitStock(key, newTxLimitStock);
                 retry = false;
                 return;
               }
@@ -198,12 +194,13 @@ export class RdbService {
               txCount.count = newStock;
               txCount.created_at = now;
               await transactionManager.save(txCount);
-              const newTxCountInventory = {
-                value: newStock,
+              const newTxLimitStock = {
+                stock: newStock,
+                counter: 0,
                 isDatastoreLimit: false,
                 createdAt: now,
               };
-              this.txCountInventoryService.setTxCount(key, newTxCountInventory);
+              this.txLimitStockService.setTxLimitStock(key, newTxLimitStock);
               retry = false;
               return;
             }
@@ -224,25 +221,30 @@ export class RdbService {
     methodId: string,
     rateLimit: RateLimit,
   ) {
-    const key = this.txCountInventoryService.getAllowedTxCountCacheKey(
+    const key = this.txLimitStockService.getTxLimitStockKey(
       from,
       to,
       methodId,
       rateLimit,
     );
-    let txCountInventory = this.txCountInventoryService.getAllowedTxCount(key);
+    let txLimitStock = this.txLimitStockService.getTxLimitStock(key);
 
     if (
-      this.txCountInventoryService.isNeedTxCountUpdate(
-        txCountInventory,
+      this.txLimitStockService.isNeedTxLimitStockUpdate(txLimitStock, rateLimit)
+    ) {
+      await this.resetTxLimitStock(key, rateLimit);
+    } else if (
+      this.txLimitStockService.isSurplusStock(
+        txLimitStock,
         rateLimit,
+        await this.getStandardTxLimitStockAmount(rateLimit.limit),
       )
     ) {
-      await this.resetAllowedTxCount(key, rateLimit);
+      // todo: return surplus stock to datastore
     }
-    this.txCountInventoryService.reduceAllowedTxCount(key);
-    txCountInventory = this.txCountInventoryService.getAllowedTxCount(key);
-    return txCountInventory ? txCountInventory.value : 0;
+    this.txLimitStockService.consumeStock(key);
+    txLimitStock = this.txLimitStockService.getTxLimitStock(key);
+    return txLimitStock ? txLimitStock.stock : 0;
   }
 
   async getBlockNumber(requestContext: RequestContext) {
