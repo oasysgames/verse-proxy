@@ -104,6 +104,65 @@ export class RdbService {
     return txCountStockStandardAmount;
   }
 
+  async returnSurplusTxLimitStock(key: string, rateLimit: RateLimit) {
+    const MAX_RETRIES = 5;
+    let retry = true;
+    let retryCount = 0;
+
+    while (retry) {
+      try {
+        const transactionalEntityManager = this.txCountRepository.manager;
+
+        await transactionalEntityManager.transaction(
+          'SERIALIZABLE',
+          async (transactionManager) => {
+            const txLimitStock = this.txLimitStockService.getTxLimitStock(key);
+            if (
+              !this.txLimitStockService.isSurplusStock(
+                txLimitStock,
+                rateLimit,
+                await this.getStandardTxLimitStockAmount(rateLimit.limit),
+              )
+            ) {
+              retry = false;
+              return;
+            }
+
+            const txCount = await transactionManager.findOneBy(
+              TransactionCount,
+              {
+                name: key,
+              },
+            );
+            if (!txLimitStock || !txCount) {
+              retry = false;
+              return;
+            }
+
+            const standardStock = await this.getStandardTxLimitStockAmount(
+              rateLimit.limit,
+            );
+            const surplusStock = this.txLimitStockService.getSurplusStockAmount(
+              txLimitStock,
+              standardStock,
+            );
+
+            txCount.count -= surplusStock;
+            await transactionManager.save(txCount);
+            txLimitStock.stock -= surplusStock;
+            this.txLimitStockService.setTxLimitStock(key, txLimitStock);
+            retry = false;
+          },
+        );
+      } catch (err) {
+        if (retryCount >= MAX_RETRIES) {
+          throw err;
+        }
+        retryCount++;
+      }
+    }
+  }
+
   async resetTxLimitStock(key: string, rateLimit: RateLimit) {
     const rateLimitIntervalMs = rateLimit.interval * 1000;
 
@@ -240,7 +299,7 @@ export class RdbService {
         await this.getStandardTxLimitStockAmount(rateLimit.limit),
       )
     ) {
-      // todo: return surplus stock to datastore
+      await this.returnSurplusTxLimitStock(key, rateLimit);
     }
     this.txLimitStockService.consumeStock(key);
     txLimitStock = this.txLimitStockService.getTxLimitStock(key);
