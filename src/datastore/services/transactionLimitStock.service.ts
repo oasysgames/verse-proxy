@@ -51,10 +51,9 @@ export class TransactionLimitStockService {
   }
 
   getSurplusStockAmount(
-    txLimitStock: TransactionLimitStock | undefined,
+    txLimitStock: TransactionLimitStock,
     idealStockAmount: number,
   ) {
-    if (!txLimitStock) return 0;
     const leastStockAmount = Math.floor(
       idealStockAmount * this.leastStockAmountRate,
     );
@@ -69,18 +68,18 @@ export class TransactionLimitStockService {
   }
 
   reduceStock(key: string, amount: number) {
-    const txCount = this.getTxLimitStock(key);
-    if (!txCount) return;
-    txCount.stock -= amount;
-    this.inventory[key] = txCount;
+    const txLimitStock = this.getTxLimitStock(key);
+    if (!txLimitStock) return;
+    txLimitStock.stock -= amount;
+    this.inventory[key] = txLimitStock;
   }
 
   consumeStock(key: string) {
-    const txCount = this.getTxLimitStock(key);
-    if (!txCount) return;
-    txCount.stock--;
-    txCount.counter++;
-    this.inventory[key] = txCount;
+    const txLimitStock = this.getTxLimitStock(key);
+    if (!txLimitStock) return;
+    txLimitStock.stock--;
+    txLimitStock.counter++;
+    this.inventory[key] = txLimitStock;
   }
 
   setTxLimitStock(key: string, txLimitStock: TransactionLimitStock) {

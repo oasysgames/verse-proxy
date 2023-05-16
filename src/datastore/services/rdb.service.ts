@@ -15,7 +15,7 @@ import {
   Heartbeat,
 } from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
-import { TransactionLimitStockService } from 'src/datastore/services';
+import { TransactionLimitStockService } from './transactionLimitStock.service';
 
 @Injectable()
 export class RdbService {

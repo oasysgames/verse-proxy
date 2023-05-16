@@ -9,13 +9,17 @@ import {
 } from 'src/constants';
 import { RequestContext } from 'src/datastore/entities';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
-import { TransactionLimitStockService } from 'src/datastore/services';
+import { TransactionLimitStockService } from './transactionLimitStock.service';
 
 @Injectable()
 export class RedisService {
   private blockNumberCacheExpireSec: number;
   private intervalTimesToCheckWorkerCount: number;
   private heartBeatKey = 'heartbeat';
+  private txCountFieldNames = {
+    count: 'count',
+    createdAt: 'created_at',
+  };
 
   constructor(
     private configService: ConfigService,
@@ -88,10 +92,52 @@ export class RedisService {
     return txCountStockStandardAmount;
   }
 
+  async returnSurplusTxLimitStock(key: string, rateLimit: RateLimit) {
+    const countFieldName = this.txCountFieldNames.count;
+
+    const MAX_RETRIES = 5;
+    let retryCount = 0;
+
+    while (true) {
+      try {
+        await this.redis.watch(key);
+        const redisData = await this.redis.hmget(key, countFieldName);
+        const countFieldValue = redisData[0];
+        const txLimitStock = this.txLimitStockService.getTxLimitStock(key);
+        if (!countFieldValue || !txLimitStock) break;
+
+        const redisCount = Number(countFieldValue);
+        const standardStock = await this.getStandardTxLimitStockAmount(
+          rateLimit.limit,
+        );
+
+        const surplusStock = this.txLimitStockService.getSurplusStockAmount(
+          txLimitStock,
+          standardStock,
+        );
+
+        const multiResult = await this.redis
+          .multi()
+          .hset(key, countFieldName, redisCount - surplusStock)
+          .exec();
+        if (!multiResult)
+          throw new Error('Cannot set transaction rate to redis');
+        txLimitStock.stock -= surplusStock;
+        this.txLimitStockService.setTxLimitStock(key, txLimitStock);
+        break;
+      } catch (err) {
+        if (retryCount >= MAX_RETRIES) {
+          throw err;
+        }
+        retryCount++;
+      }
+    }
+  }
+
   async resetTxLimitStock(key: string, rateLimit: RateLimit) {
     const rateLimitIntervalMs = rateLimit.interval * 1000;
-    const countFieldName = 'count';
-    const createdAtFieldName = 'created_at';
+    const countFieldName = this.txCountFieldNames.count;
+    const createdAtFieldName = this.txCountFieldNames.createdAt;
 
     const MAX_RETRIES = 5;
     let retryCount = 0;
@@ -247,7 +293,7 @@ export class RedisService {
         await this.getStandardTxLimitStockAmount(rateLimit.limit),
       )
     ) {
-      // todo: return surplus stock to datastore
+      await this.returnSurplusTxLimitStock(key, rateLimit);
     }
     this.txLimitStockService.consumeStock(key);
     txLimitStock = this.txLimitStockService.getTxLimitStock(key);
