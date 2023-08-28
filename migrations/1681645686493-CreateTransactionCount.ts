@@ -34,12 +34,6 @@ export class CreateTransactionCount1681645686493 implements MigrationInterface {
             type: 'bigint',
           },
         ],
-        indices: [
-          new TableIndex({
-            name: 'IDX_TransactionCount_Name',
-            columnNames: ['name'],
-          }),
-        ],
         uniques: [
           new TableUnique({
             name: 'UQ_TransactionCount_Name',

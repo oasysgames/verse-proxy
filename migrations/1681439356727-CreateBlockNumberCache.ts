@@ -35,12 +35,6 @@ export class CreateBlockNumberCache1681439356727 implements MigrationInterface {
             type: 'bigint',
           }),
         ],
-        indices: [
-          new TableIndex({
-            name: 'IDX_BlockNumberCache_Name',
-            columnNames: ['name'],
-          }),
-        ],
         uniques: [
           new TableUnique({
             name: 'UQ_BlockNumberCache_Name',
