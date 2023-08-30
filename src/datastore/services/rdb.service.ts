@@ -1,9 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, Between } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { RateLimit } from 'src/config/transactionAllowList';
-import { CacheService } from './cache.service';
 import {
   TransactionCount,
   BlockNumberCache,
@@ -14,8 +12,6 @@ import { TransactionLimitStockService } from './transactionLimitStock.service';
 @Injectable()
 export class RdbService {
   constructor(
-    private configService: ConfigService,
-    private cacheService: CacheService,
     private txLimitStockService: TransactionLimitStockService,
     @InjectRepository(Heartbeat)
     @Optional()
@@ -232,7 +228,12 @@ export class RdbService {
   async getBlockNumber(key: string) {
     const blockNumber = await this.bnCacheRepository.findOneBy({ name: key });
 
-    return blockNumber;
+    if (!blockNumber) return null;
+
+    return {
+      blockNumber: blockNumber.value,
+      updatedAt: blockNumber.updated_at,
+    };
   }
 
   async setBlockNumber(key: string, blockNumber: string) {

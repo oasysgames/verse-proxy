@@ -10,6 +10,10 @@ export class RedisService {
     count: 'count',
     createdAt: 'created_at',
   };
+  private blockNumberFieldNames = {
+    blockNumber: 'block_number',
+    updatedAt: 'updated_at',
+  };
 
   constructor(
     private txLimitStockService: TransactionLimitStockService,
@@ -216,11 +220,33 @@ export class RedisService {
   }
 
   async getBlockNumber(key: string) {
-    const blockNumber = await this.redis.get(key);
-    return blockNumber ? blockNumber : null;
+    const blockNumberFieldName = this.blockNumberFieldNames.blockNumber;
+    const updatedAtFieldName = this.blockNumberFieldNames.updatedAt;
+    const blockNumberData = await this.redis.hmget(
+      key,
+      blockNumberFieldName,
+      updatedAtFieldName,
+    );
+    const blockNumberFieldValue = blockNumberData[0];
+    const updatedAtFieldValue = blockNumberData[1];
+    if (!blockNumberFieldValue || !updatedAtFieldValue) return null;
+    const updatedAt = Number(updatedAtFieldValue);
+
+    return {
+      blockNumber: blockNumberFieldValue,
+      updatedAt,
+    };
   }
 
-  async setBlockNumber(key: string, blockNumber: string, expireSec: number) {
-    await this.redis.setex(key, expireSec, blockNumber);
+  async setBlockNumber(key: string, blockNumber: string) {
+    const blockNumberFieldName = this.blockNumberFieldNames.blockNumber;
+    const updatedAtFieldName = this.blockNumberFieldNames.updatedAt;
+    await this.redis.hset(
+      key,
+      blockNumberFieldName,
+      blockNumber,
+      updatedAtFieldName,
+      Date.now(),
+    );
   }
 }

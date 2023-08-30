@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RateLimit } from 'src/config/transactionAllowList';
-import { RequestContext } from 'src/datastore/entities';
+import { RequestContext, BlockNumberData } from 'src/datastore/entities';
 import { RdbService } from './rdb.service';
 import { RedisService } from './redis.service';
 import {
@@ -152,6 +152,7 @@ export class DatastoreService {
 
   async getBlockNumber(requestContext: RequestContext) {
     let blockNumber = '';
+    let blockNumberData: BlockNumberData | null = null;
     const key = this.cacheService.getBlockNumberCacheKey(requestContext);
     const cache = await this.cacheService.getBlockNumber(key);
     if (cache) return cache;
@@ -159,20 +160,20 @@ export class DatastoreService {
     try {
       switch (this.datastore) {
         case 'redis':
-          blockNumber = (await this.redisService.getBlockNumber(key)) ?? '';
+          blockNumberData = await this.redisService.getBlockNumber(key);
           break;
         case 'rdb':
-          const blockNumberData = await this.rdbService.getBlockNumber(key);
-          if (
-            !blockNumberData ||
-            Date.now() >=
-              blockNumberData.updated_at + this.blockNumberCacheExpireSec * 1000
-          ) {
-            blockNumber = '';
-            break;
-          }
-          blockNumber = blockNumberData.value;
+          blockNumberData = await this.rdbService.getBlockNumber(key);
           break;
+      }
+      if (
+        !blockNumberData ||
+        Date.now() >=
+          blockNumberData.updatedAt + this.blockNumberCacheExpireSec * 1000
+      ) {
+        blockNumber = '';
+      } else {
+        blockNumber = blockNumberData.blockNumber;
       }
       if (blockNumber)
         await this.cacheService.setBlockNumber(
@@ -205,11 +206,7 @@ export class DatastoreService {
       const key = this.cacheService.getBlockNumberCacheKey(requestContext);
       switch (this.datastore) {
         case 'redis':
-          await this.redisService.setBlockNumber(
-            key,
-            blockNumber,
-            this.blockNumberCacheExpireSec,
-          );
+          await this.redisService.setBlockNumber(key, blockNumber);
           break;
         case 'rdb':
           await this.rdbService.setBlockNumber(key, blockNumber);
