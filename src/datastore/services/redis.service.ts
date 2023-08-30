@@ -2,9 +2,10 @@ import { Injectable, Inject, Optional } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { TransactionLimitStockService } from './transactionLimitStock.service';
+import { Datastore } from 'src/datastore/entities';
 
 @Injectable()
-export class RedisService {
+export class RedisService implements Datastore {
   private heartBeatKey = 'heartbeat';
   private txCountFieldNames = {
     count: 'count',

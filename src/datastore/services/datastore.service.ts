@@ -11,17 +11,18 @@ import {
 import { CacheService } from './cache.service';
 import { TransactionLimitStockService } from './transactionLimitStock.service';
 import { blockNumberCacheExpireSecLimit } from 'src/datastore/consts';
+import { Datastore } from 'src/datastore/entities';
 
 @Injectable()
 export class DatastoreService {
-  private datastore: string;
+  private datastore: Datastore;
   private blockNumberCacheExpireSec: number;
   private intervalTimesToCheckWorkerCount: number;
 
   constructor(
     private configService: ConfigService,
-    private redisService: RedisService,
-    private rdbService: RdbService,
+    redisService: RedisService,
+    rdbService: RdbService,
     private cacheService: CacheService,
     private txLimitStockService: TransactionLimitStockService,
   ) {
@@ -32,9 +33,9 @@ export class DatastoreService {
     const rdbUri = process.env.RDB_URI;
 
     if (redisUri) {
-      this.datastore = 'redis';
+      this.datastore = redisService;
     } else if (rdbUri) {
-      this.datastore = 'rdb';
+      this.datastore = rdbService;
     }
 
     if (blockNumberCacheExpireSec > blockNumberCacheExpireSecLimit) {
@@ -82,59 +83,29 @@ export class DatastoreService {
       const getStandardTxLimitStockAmount = async (limit: number) => {
         return await this.getStandardTxLimitStockAmount(limit);
       };
-      switch (this.datastore) {
-        case 'redis':
-          if (
-            this.txLimitStockService.isNeedTxLimitStockUpdate(
-              txLimitStock,
-              rateLimit,
-            )
-          ) {
-            await this.redisService.resetTxLimitStock(
-              key,
-              rateLimit,
-              getStandardTxLimitStockAmount,
-            );
-          } else if (
-            this.txLimitStockService.isSurplusStock(
-              txLimitStock,
-              rateLimit,
-              await this.getStandardTxLimitStockAmount(rateLimit.limit),
-            )
-          ) {
-            await this.redisService.returnSurplusTxLimitStock(
-              key,
-              rateLimit,
-              getStandardTxLimitStockAmount,
-            );
-          }
-          break;
-        case 'rdb':
-          if (
-            this.txLimitStockService.isNeedTxLimitStockUpdate(
-              txLimitStock,
-              rateLimit,
-            )
-          ) {
-            await this.rdbService.resetTxLimitStock(
-              key,
-              rateLimit,
-              getStandardTxLimitStockAmount,
-            );
-          } else if (
-            this.txLimitStockService.isSurplusStock(
-              txLimitStock,
-              rateLimit,
-              await this.getStandardTxLimitStockAmount(rateLimit.limit),
-            )
-          ) {
-            await this.rdbService.returnSurplusTxLimitStock(
-              key,
-              rateLimit,
-              getStandardTxLimitStockAmount,
-            );
-          }
-          break;
+      if (
+        this.txLimitStockService.isNeedTxLimitStockUpdate(
+          txLimitStock,
+          rateLimit,
+        )
+      ) {
+        await this.datastore.resetTxLimitStock(
+          key,
+          rateLimit,
+          getStandardTxLimitStockAmount,
+        );
+      } else if (
+        this.txLimitStockService.isSurplusStock(
+          txLimitStock,
+          rateLimit,
+          await this.getStandardTxLimitStockAmount(rateLimit.limit),
+        )
+      ) {
+        await this.datastore.returnSurplusTxLimitStock(
+          key,
+          rateLimit,
+          getStandardTxLimitStockAmount,
+        );
       }
       this.txLimitStockService.consumeStock(key);
       txLimitStock = this.txLimitStockService.getTxLimitStock(key);
@@ -158,14 +129,7 @@ export class DatastoreService {
     if (cache) return cache;
 
     try {
-      switch (this.datastore) {
-        case 'redis':
-          blockNumberData = await this.redisService.getBlockNumber(key);
-          break;
-        case 'rdb':
-          blockNumberData = await this.rdbService.getBlockNumber(key);
-          break;
-      }
+      blockNumberData = await this.datastore.getBlockNumber(key);
       if (
         !blockNumberData ||
         Date.now() >=
@@ -204,14 +168,7 @@ export class DatastoreService {
   async setBlockNumber(requestContext: RequestContext, blockNumber: string) {
     try {
       const key = this.cacheService.getBlockNumberCacheKey(requestContext);
-      switch (this.datastore) {
-        case 'redis':
-          await this.redisService.setBlockNumber(key, blockNumber);
-          break;
-        case 'rdb':
-          await this.rdbService.setBlockNumber(key, blockNumber);
-          break;
-      }
+      await this.datastore.setBlockNumber(key, blockNumber);
       await this.cacheService.setBlockNumber(
         key,
         blockNumber,
@@ -234,22 +191,7 @@ export class DatastoreService {
       const refreshTimestamp =
         now -
         this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval;
-      switch (this.datastore) {
-        case 'redis':
-          await this.redisService.setHeartBeat(
-            refreshMultiple,
-            now,
-            refreshTimestamp,
-          );
-          break;
-        case 'rdb':
-          await this.rdbService.setHeartBeat(
-            refreshMultiple,
-            now,
-            refreshTimestamp,
-          );
-          break;
-      }
+      await this.datastore.setHeartBeat(refreshMultiple, now, refreshTimestamp);
     } catch (err) {
       if (err instanceof Error) {
         console.error(err.message);
@@ -260,6 +202,8 @@ export class DatastoreService {
     }
   }
 
+  // Counts the number of heartbeats during `intervalTimesToCheckWorkerCount` Heartbeat cronjob runs
+  // and calculates the average number of heartbeats in one interval
   async setWorkerCount() {
     let workerCountAverage = 0;
     try {
@@ -267,23 +211,10 @@ export class DatastoreService {
       const intervalAgo =
         now -
         this.intervalTimesToCheckWorkerCount * HeartbeatMillisecondInterval;
-      // counts the number of heartbeats during `intervalTimesToCheckWorkerCount` Heartbeat cronjob runs and calculates the average number of heartbeats in one interval
-      switch (this.datastore) {
-        case 'redis':
-          workerCountAverage = Math.floor(
-            (await this.redisService.getWorkerCountInInterval(
-              intervalAgo,
-              now,
-            )) / this.intervalTimesToCheckWorkerCount,
-          );
-          break;
-        case 'rdb':
-          workerCountAverage = Math.floor(
-            (await this.rdbService.getWorkerCountInInterval(intervalAgo, now)) /
-              this.intervalTimesToCheckWorkerCount,
-          );
-          break;
-      }
+      workerCountAverage = Math.floor(
+        (await this.datastore.getWorkerCountInInterval(intervalAgo, now)) /
+          this.intervalTimesToCheckWorkerCount,
+      );
       const workerCount = Math.max(workerCountAverage, 1);
       await this.cacheService.setWorkerCount(
         workerCount,

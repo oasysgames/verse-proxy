@@ -6,11 +6,12 @@ import {
   TransactionCount,
   BlockNumberCache,
   Heartbeat,
+  Datastore,
 } from 'src/datastore/entities';
 import { TransactionLimitStockService } from './transactionLimitStock.service';
 
 @Injectable()
-export class RdbService {
+export class RdbService implements Datastore {
   constructor(
     private txLimitStockService: TransactionLimitStockService,
     @InjectRepository(Heartbeat)
