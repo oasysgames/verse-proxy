@@ -42,6 +42,7 @@
     "ioredis": "^5.3.1",
     "mysql2": "^3.2.0",
     "nestjs-real-ip": "^2.2.0",
+    "pg": "^8.11.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",

@@ -5,6 +5,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import configuration from '../config/configuration';
+import { getRdbDatabaseType } from 'src/config/rdb';
 import { DatastoreService } from './services/datastore.service';
 import { RedisService } from './services/redis.service';
 import { RdbService } from './services/rdb.service';
@@ -41,6 +42,7 @@ export class DatastoreModule {
     }
 
     if (rdbUri) {
+      const dataSourceType = getRdbDatabaseType(rdbUri);
       imports.push(
         TypeOrmModule.forFeature([
           BlockNumberCache,
@@ -50,7 +52,7 @@ export class DatastoreModule {
       );
       imports.push(
         TypeOrmModule.forRoot({
-          type: 'mysql',
+          type: dataSourceType,
           url: rdbUri,
           synchronize: false,
           logging: false,
