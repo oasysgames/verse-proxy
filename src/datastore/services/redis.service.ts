@@ -48,10 +48,12 @@ export class RedisService implements Datastore {
     const MAX_RETRIES = 5;
     let retryCount = 0;
 
+    const redisClient = this.redis.duplicate();
+
     while (true) {
       try {
-        await this.redis.watch(key);
-        const redisData = await this.redis.hmget(key, countFieldName);
+        await redisClient.watch(key);
+        const redisData = await redisClient.hmget(key, countFieldName);
         const countFieldValue = redisData[0];
         const txLimitStock = this.txLimitStockService.getTxLimitStock(key);
         if (!countFieldValue || !txLimitStock) break;
@@ -66,7 +68,7 @@ export class RedisService implements Datastore {
           standardStock,
         );
 
-        const multiResult = await this.redis
+        const multiResult = await redisClient
           .multi()
           .hset(key, countFieldName, redisCount - surplusStock)
           .exec();
@@ -96,10 +98,12 @@ export class RedisService implements Datastore {
     const MAX_RETRIES = 5;
     let retryCount = 0;
 
+    const redisClient = this.redis.duplicate();
+
     while (true) {
       try {
-        await this.redis.watch(key);
-        const redisData = await this.redis.hmget(
+        await redisClient.watch(key);
+        const redisData = await redisClient.hmget(
           key,
           countFieldName,
           createdAtFieldName,
@@ -111,7 +115,7 @@ export class RedisService implements Datastore {
 
         // datastore value is not set
         if (!(countFieldValue && createdAtFieldValue)) {
-          const multiResult = await this.redis
+          const multiResult = await redisClient
             .multi()
             .hset(key, countFieldName, newStock, createdAtFieldName, now)
             .exec();
@@ -151,10 +155,10 @@ export class RedisService implements Datastore {
               createdAt: now,
             };
             this.txLimitStockService.setTxLimitStock(key, newTxLimitStock);
-            await this.redis.unwatch();
+            await redisClient.unwatch();
             break;
           } else {
-            const multiResult = await this.redis
+            const multiResult = await redisClient
               .multi()
               .hset(
                 key,
@@ -187,7 +191,7 @@ export class RedisService implements Datastore {
         }
         // It has to reset redis data
         else {
-          const multiResult = await this.redis
+          const multiResult = await redisClient
             .multi()
             .hset(key, countFieldName, newStock, createdAtFieldName, now)
             .exec();
