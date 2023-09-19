@@ -9,7 +9,7 @@ import {
   RequestContext,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 
 @Injectable()
 export class ProxyService {
@@ -25,9 +25,10 @@ export class ProxyService {
     private readonly datastoreService: DatastoreService,
   ) {
     this.isUseBlockNumberCache = !!this.configService.get<number>(
-      'blockNumberCacheExpire',
+      'blockNumberCacheExpireSec',
     );
-    this.isUseDatastore = !!this.configService.get<string>('datastore');
+    this.isUseDatastore =
+      this.configService.get<boolean>('isUseDatastore') ?? false;
     this.allowedMethods = this.configService.get<RegExp[]>(
       'allowedMethods',
     ) ?? [/^.*$/];
@@ -151,12 +152,7 @@ export class ProxyService {
 
     // transaction other than contract deploy
     const methodId = tx.data.substring(0, 10);
-    const matchedTxAllowRule = await this.txService.getMatchedTxAllowRule(
-      tx.from,
-      tx.to,
-      methodId,
-      tx.value,
-    );
+    await this.txService.checkTxAllowRule(tx.from, tx.to, methodId, tx.value);
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
     const result = await this.verseService.postVerseMasterNode(
       requestContext.headers,
@@ -165,17 +161,7 @@ export class ProxyService {
 
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
       return result;
-    const txHash = result.data.result;
 
-    if (this.isUseDatastore && matchedTxAllowRule.rateLimit) {
-      await this.datastoreService.setTransactionHistory(
-        tx.from,
-        tx.to,
-        methodId,
-        txHash,
-        matchedTxAllowRule.rateLimit,
-      );
-    }
     if (this.isUseDatastore && this.isUseBlockNumberCache) {
       await this.txService.resetBlockNumberCache(
         requestContext,

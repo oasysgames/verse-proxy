@@ -20,7 +20,7 @@ export interface TransactionAllow {
   fromList: Array<string>;
   toList: Array<string>;
   value?: ComparisonOperation;
-  rateLimit?: RateLimit;
+  rateLimits?: RateLimit[];
 }
 
 export const getTxAllowList = (): Array<TransactionAllow> => {

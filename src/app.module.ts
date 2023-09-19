@@ -1,5 +1,6 @@
-import { CacheModule, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
 import {
@@ -10,7 +11,8 @@ import {
   TypeCheckService,
   RateLimitService,
 } from './services';
-import { DatastoreService } from './repositories';
+import { WorkerCountService, HeartbeatService } from './jobs';
+import { DatastoreModule } from './datastore/datastore.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -18,8 +20,9 @@ import configuration from './config/configuration';
     ConfigModule.forRoot({
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
     HttpModule,
-    CacheModule.register(),
+    DatastoreModule.register(),
   ],
   controllers: [ProxyController],
   providers: [
@@ -28,8 +31,9 @@ import configuration from './config/configuration';
     ProxyService,
     AllowCheckService,
     TypeCheckService,
-    DatastoreService,
     RateLimitService,
+    WorkerCountService,
+    HeartbeatService,
   ],
 })
 export class AppModule {}

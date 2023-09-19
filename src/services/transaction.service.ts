@@ -17,7 +17,7 @@ import { VerseService } from './verse.service';
 import { AllowCheckService } from './allowCheck.service';
 import { RateLimitService } from './rateLimit.service';
 import { TypeCheckService } from './typeCheck.service';
-import { DatastoreService } from 'src/repositories';
+import { DatastoreService } from 'src/datastore/services';
 
 @Injectable()
 export class TransactionService {
@@ -44,13 +44,13 @@ export class TransactionService {
     }
   }
 
-  async getMatchedTxAllowRule(
+  async checkTxAllowRule(
     from: string,
     to: string,
     methodId: string,
     value: BigNumber,
-  ): Promise<TransactionAllow> {
-    let matchedTxAllowRule;
+  ): Promise<void> {
+    let isAllow = false;
 
     for (const condition of this.txAllowList) {
       const fromCheck = this.allowCheckService.isIncludedAddress(
@@ -69,22 +69,19 @@ export class TransactionService {
       );
 
       if (fromCheck && toCheck && valueCheck) {
-        if (condition.rateLimit)
-          await this.rateLimitService.checkRateLimit(
+        if (condition.rateLimits)
+          await this.rateLimitService.checkRateLimits(
             from,
             to,
             methodId,
-            condition.rateLimit,
+            condition.rateLimits,
           );
-        matchedTxAllowRule = condition;
+        isAllow = true;
         break;
       }
     }
 
-    if (!matchedTxAllowRule)
-      throw new JsonrpcError('transaction is not allowed', -32602);
-
-    return matchedTxAllowRule;
+    if (!isAllow) throw new JsonrpcError('transaction is not allowed', -32602);
   }
 
   async checkAllowedGas(
@@ -135,7 +132,7 @@ export class TransactionService {
     jsonrpc: JsonrpcVersion,
     id: JsonrpcId,
   ): Promise<VerseRequestResponse> {
-    const blockNumberCache = await this.datastoreService.getBlockNumberCache(
+    const blockNumberCache = await this.datastoreService.getBlockNumber(
       requestContext,
     );
 
@@ -180,7 +177,7 @@ export class TransactionService {
     const res = await this.getLatestBlockNumber(jsonrpc, id);
 
     if (this.typeCheckService.isJsonrpcBlockNumberSuccessResponse(res.data)) {
-      await this.datastoreService.setBlockNumberCache(
+      await this.datastoreService.setBlockNumber(
         requestContext,
         res.data.result,
       );
