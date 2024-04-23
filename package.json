@@ -28,13 +28,16 @@
     "@nestjs/config": "^2.2.0",
     "@nestjs/core": "^9.0.0",
     "@nestjs/platform-express": "^9.0.0",
+    "@nestjs/platform-socket.io": "^9.0.0",
+    "@nestjs/websockets": "^9.0.0",
     "body-parser": "^1.20.2",
     "ethers": "^5.7.1",
     "ioredis": "^5.3.1",
     "nestjs-real-ip": "^2.2.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",
