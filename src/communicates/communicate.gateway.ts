@@ -7,7 +7,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway()
 export class CommunicateGateway
@@ -36,6 +36,16 @@ export class CommunicateGateway
     return {
       event: 'pong',
       data,
+    };
+  }
+
+  @SubscribeMessage('execute')
+  executeCommand(client: Socket, data: { method: string; data: string }) {
+    this.logger.log(`Message execute received from client id: ${client.id}`);
+    this.logger.debug(`Payload: ${data}`);
+    return {
+      event: 'executed',
+      data: { method: data.method, response: data.data },
     };
   }
 }

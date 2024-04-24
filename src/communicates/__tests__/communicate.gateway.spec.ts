@@ -50,4 +50,21 @@ describe('Communicate gateway', () => {
 
     ioClient.disconnect();
   });
+
+  it(`Should emit "executed" on "execute"`, async () => {
+    ioClient.connect();
+    ioClient.emit('execute', { method: 'eth_getBlockNumbers', data: '' });
+    await new Promise<void>((resolve) => {
+      ioClient.on('connect', () => {
+        console.log('Connected');
+      });
+      ioClient.on('executed', (data) => {
+        expect(data.method).toBe('eth_getBlockNumbers');
+        expect(data.response).toBe('');
+        resolve();
+      });
+    });
+
+    ioClient.disconnect();
+  });
 });
