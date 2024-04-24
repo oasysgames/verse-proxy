@@ -2,6 +2,8 @@ import { INestApplication, Logger } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { CommunicateGateway } from '../communicate.gateway';
 import { Socket, io } from 'socket.io-client';
+import { CommunicateService } from '../communicate.service';
+import { ConfigService } from '@nestjs/config';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
@@ -18,7 +20,11 @@ describe('Communicate gateway', () => {
   let ioClient: Socket;
 
   beforeAll(async () => {
-    app = await createNestApp(CommunicateGateway);
+    app = await createNestApp(
+      CommunicateGateway,
+      CommunicateService,
+      ConfigService,
+    );
     gateway = app.get<CommunicateGateway>(CommunicateGateway);
     ioClient = io('http://localhost:3000', {
       autoConnect: false,
@@ -53,13 +59,13 @@ describe('Communicate gateway', () => {
 
   it(`Should emit "executed" on "execute"`, async () => {
     ioClient.connect();
-    ioClient.emit('execute', { method: 'eth_getBlockNumbers', data: '' });
+    ioClient.emit('execute', { method: 'eth_chainId', data: '' });
     await new Promise<void>((resolve) => {
       ioClient.on('connect', () => {
         console.log('Connected');
       });
       ioClient.on('executed', (data) => {
-        expect(data.method).toBe('eth_getBlockNumbers');
+        expect(data.method).toBe('eth_chainId');
         expect(data.response).toBe('');
         resolve();
       });
