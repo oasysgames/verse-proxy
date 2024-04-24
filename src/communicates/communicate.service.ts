@@ -13,14 +13,20 @@ export class CommunicateService {
   }
 
   async sendRequest(method: string, data: string): Promise<string> {
-    this.checkMethod(method);
+    const err = this.checkMethod(method);
+    if (err) {
+      return err;
+    }
     return data;
   }
-  checkMethod(method: string) {
+  checkMethod(method: string): string | null {
     const checkMethod = this.allowedMethods.some((allowedMethod) => {
       return allowedMethod.test(method);
     });
-    if (!checkMethod)
-      throw new WebsocketError(`${method} is not allowed`, -32601);
+    if (!checkMethod) {
+      return `Method ${method} is not allowed`;
+    } else {
+      return null;
+    }
   }
 }

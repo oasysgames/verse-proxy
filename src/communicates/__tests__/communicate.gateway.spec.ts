@@ -3,10 +3,12 @@ import { Test } from '@nestjs/testing';
 import { CommunicateGateway } from '../communicate.gateway';
 import { Socket, io } from 'socket.io-client';
 import { CommunicateService } from '../communicate.service';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import configuration from '../../config/configuration';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
+    imports: [ConfigModule.forRoot({ load: [configuration] })],
     providers: gateways,
   }).compile();
   testingModule.useLogger(new Logger());
@@ -26,11 +28,14 @@ describe('Communicate gateway', () => {
       ConfigService,
     );
     gateway = app.get<CommunicateGateway>(CommunicateGateway);
+    app.listen(3000);
+  });
+
+  beforeEach(async () => {
     ioClient = io('http://localhost:3000', {
       autoConnect: false,
       transports: ['websocket', 'pooling'],
     });
-    app.listen(3000);
   });
 
   afterAll(async () => {
@@ -67,6 +72,23 @@ describe('Communicate gateway', () => {
       ioClient.on('executed', (data) => {
         expect(data.method).toBe('eth_chainId');
         expect(data.response).toBe('');
+        resolve();
+      });
+    });
+
+    ioClient.disconnect();
+  });
+
+  it(`Should throw "method not allowed" on "execute"`, async () => {
+    ioClient.connect();
+    ioClient.emit('execute', { method: 'bnb_chainId', data: '' });
+    await new Promise<void>((resolve) => {
+      ioClient.on('connect', () => {
+        console.log('Connected');
+      });
+      ioClient.on('executed', (data) => {
+        expect(data.method).toBe('bnb_chainId');
+        expect(data.response).toBe('Method bnb_chainId is not allowed');
         resolve();
       });
     });
