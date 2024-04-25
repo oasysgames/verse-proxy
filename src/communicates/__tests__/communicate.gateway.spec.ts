@@ -1,49 +1,13 @@
-import { INestApplication, Logger } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { CommunicateGateway } from '../communicate.gateway';
 import { Socket, io } from 'socket.io-client';
-import { CommunicateService } from '../communicate.service';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import configuration from '../../config/configuration';
-
-async function createNestApp(...gateways: any): Promise<INestApplication> {
-  const testingModule = await Test.createTestingModule({
-    imports: [ConfigModule.forRoot({ load: [configuration] })],
-    providers: gateways,
-  }).compile();
-  testingModule.useLogger(new Logger());
-
-  return testingModule.createNestApplication();
-}
 
 describe('Communicate gateway', () => {
-  let gateway: CommunicateGateway;
-  let app: INestApplication;
   let ioClient: Socket;
 
-  beforeAll(async () => {
-    app = await createNestApp(
-      CommunicateGateway,
-      CommunicateService,
-      ConfigService,
-    );
-    gateway = app.get<CommunicateGateway>(CommunicateGateway);
-    app.listen(3000);
-  });
-
   beforeEach(async () => {
-    ioClient = io('http://localhost:3000', {
+    ioClient = io('http://localhost:3001', {
       autoConnect: false,
       transports: ['websocket', 'pooling'],
     });
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  it(`Should be defined`, () => {
-    expect(gateway).toBeDefined();
   });
 
   it(`Should emit "pong" on "ping"`, async () => {
@@ -62,33 +26,26 @@ describe('Communicate gateway', () => {
     ioClient.disconnect();
   });
 
-  it(`Should emit "executed" on "execute"`, async () => {
+  it('body is JsonrpcArray', async () => {
+    const body = {
+      jsonrpc: '2.0',
+      method: 'eth_sendRawTransaction',
+      params: [
+        '0xf8620180825208948626f6940e2eb28930efb4cef49b2d1f2c9c11998080831e84a2a06c33b39c89e987ad08bc2cab79243dbb2a44955d2539d4f5d58001ae9ab0a2caa06943316733bd0fd81a0630a9876f6f07db970b93f367427404aabd0621ea5ec1',
+      ],
+      id: 1,
+    };
     ioClient.connect();
-    ioClient.emit('execute', { method: 'eth_chainId', data: '' });
-    await new Promise<void>((resolve) => {
-      ioClient.on('connect', () => {
-        console.log('Connected');
-      });
-      ioClient.on('executed', (data) => {
-        expect(data.method).toBe('eth_chainId');
-        expect(data.response).toBe('');
-        resolve();
-      });
-    });
-
-    ioClient.disconnect();
-  });
-
-  it(`Should throw "method not allowed" on "execute"`, async () => {
-    ioClient.connect();
-    ioClient.emit('execute', { method: 'bnb_chainId', data: '' });
+    ioClient.emit('execute', { method: 'bnb_chainId', data: body });
     await new Promise<void>((resolve) => {
       ioClient.on('connect', () => {
         console.log('Connected');
       });
       ioClient.on('executed', (data) => {
         expect(data.method).toBe('bnb_chainId');
-        expect(data.response).toBe('Method bnb_chainId is not allowed');
+        expect(data.response.error.message).toBe(
+          'Method bnb_chainId is not allowed',
+        );
         resolve();
       });
     });

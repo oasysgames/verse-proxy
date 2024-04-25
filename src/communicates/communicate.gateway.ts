@@ -9,6 +9,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { CommunicateService } from './communicate.service';
+import { JsonrpcRequestBody } from 'src/entities';
 
 @WebSocketGateway()
 export class CommunicateGateway
@@ -43,16 +44,21 @@ export class CommunicateGateway
   }
 
   @SubscribeMessage('execute')
-  async executeCommand(client: Socket, data: { method: string; data: string }) {
+  async executeCommand(client: Socket, data: JsonrpcRequestBody) {
     this.logger.log(`Message execute received from client id: ${client.id}`);
     this.logger.debug(`Payload: ${data}`);
+
+    const requestContext = {
+      ip: client.conn.remoteAddress,
+      headers: client.handshake.headers,
+    };
     const response = await this.communicateService.sendRequest(
-      data.method,
-      data.data,
+      requestContext,
+      data,
     );
     return {
       event: 'executed',
-      data: { method: data.method, response: response },
+      data: { method: data.method, response: response.data },
     };
   }
 }
