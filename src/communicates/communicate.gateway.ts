@@ -5,6 +5,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsResponse,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -34,7 +35,7 @@ export class CommunicateGateway
   }
 
   @SubscribeMessage('ping')
-  pingMessage(client: any, data: any) {
+  pingMessage(client: any, data: any): WsResponse {
     this.logger.log(`Message received from client id: ${client.id}`);
     this.logger.debug(`Payload: ${data}`);
     return {
@@ -44,9 +45,12 @@ export class CommunicateGateway
   }
 
   @SubscribeMessage('execute')
-  async executeCommand(client: Socket, data: JsonrpcRequestBody) {
+  async executeCommand(
+    client: Socket,
+    data: JsonrpcRequestBody,
+  ): Promise<WsResponse> {
     this.logger.log(`Message execute received from client id: ${client.id}`);
-    this.logger.debug(`Payload: ${data}`);
+    this.logger.debug(`Payload: ${JSON.stringify(data)}`);
 
     const requestContext = {
       ip: client.conn.remoteAddress,
