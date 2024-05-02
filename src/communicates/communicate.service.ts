@@ -75,7 +75,6 @@ export class CommunicateService {
             message: err.message,
           },
         };
-        console.error(err.message);
         return {
           status,
           data,

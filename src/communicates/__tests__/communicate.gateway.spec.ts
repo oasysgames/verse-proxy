@@ -1,13 +1,57 @@
+import { CacheModule, INestApplication, Logger } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
+import { CommunicateGateway } from '../communicate.gateway';
+import { CommunicateService } from '../communicate.service';
+import { ConfigModule } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
+import configuration from '../../config/configuration';
+import { DatastoreService } from 'src/repositories';
+import { VerseService, AllowCheckService, TransactionService, ProxyService, TypeCheckService, RateLimitService } from 'src/services';
+import { HttpModule } from '@nestjs/axios';
+
+async function createNestApp(...gateways: any): Promise<INestApplication> {
+  const testingModule = await Test.createTestingModule({
+    imports: [
+      ConfigModule.forRoot({ load: [configuration] }),
+      HttpModule,
+      CacheModule.register(),
+    ],
+    providers: gateways,
+  }).compile();
+  testingModule.useLogger(new Logger());
+  return testingModule.createNestApplication();
+}
 
 describe('Communicate gateway', () => {
+  let gateway: CommunicateGateway;
+  let app: INestApplication;
   let ioClient: Socket;
+
+  beforeAll(async () => {
+    app = await createNestApp(
+      CommunicateGateway,
+      CommunicateService,
+      VerseService,
+      AllowCheckService,
+      TransactionService,
+      ProxyService,
+      TypeCheckService,
+      DatastoreService,
+      RateLimitService,
+    );
+    gateway = app.get<CommunicateGateway>(CommunicateGateway);
+    app.listen(3001);
+  });
 
   beforeEach(async () => {
     ioClient = io('http://localhost:3001', {
       autoConnect: false,
       transports: ['websocket', 'pooling'],
     });
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   it(`Should emit "pong" on "ping"`, async () => {
@@ -53,55 +97,29 @@ describe('Communicate gateway', () => {
     ioClient.disconnect();
   });
 
-  // it('executed method net_version', async () => {
-  //   const body = {
-  //     jsonrpc: '2.0',
-  //     method: 'net_version',
-  //     params: [],
-  //     id: 1,
-  //   };
+  it('executed method net_version', async () => {
+    const body = {
+      jsonrpc: '2.0',
+      method: 'net_version',
+      params: [],
+      id: 1,
+    };
 
-  //   ioClient.connect();
-  //   ioClient.emit('execute', body);
-  //   await new Promise<void>((resolve) => {
-  //     ioClient.on('connect', () => {
-  //       console.log('Connected');
-  //     });
-  //     ioClient.on('executed', (data) => {
-  //       expect(data.method).toBe('bnb_chainId');
-  //       expect(data.response.error.message).toBe(
-  //         'Method bnb_chainId is not allowed',
-  //       );
-  //       resolve();
-  //     });
-  //   });
+    ioClient.connect();
+    ioClient.emit('execute', body);
+    await new Promise<void>((resolve) => {
+      ioClient.on('connect', () => {
+        console.log('Connected');
+      });
+      ioClient.on('executed', (data) => {
+        expect(data.method).toBe('net_version');
+        expect(data.response.result).toBe(
+          '12345',
+        );
+        resolve();
+      });
+    });
 
-  //   ioClient.disconnect();
-  //   // const res = {
-  //   //   send: () => {
-  //   //     return;
-  //   //   },
-  //   //   status: (code: number) => res,
-  //   // } as Response;
-
-  //   // jest
-  //   //   .spyOn(typeCheckService, 'isJsonrpcArrayRequestBody')
-  //   //   .mockReturnValue(false);
-  //   // jest.spyOn(typeCheckService, 'isJsonrpcRequestBody').mockReturnValue(true);
-  //   // const handleBatchRequestMock = jest.spyOn(
-  //   //   proxyService,
-  //   //   'handleBatchRequest',
-  //   // );
-  //   // const handleSingleRequestMock = jest.spyOn(
-  //   //   proxyService,
-  //   //   'handleSingleRequest',
-  //   // );
-
-  //   // const controller = moduleRef.get<ProxyController>(ProxyController);
-  //   // expect(async () =>
-  //   //   controller.handler(isUseReadNode, requestContext, body, res),
-  //   // ).not.toThrow();
-  //   // expect(handleBatchRequestMock).not.toHaveBeenCalled();
-  //   // expect(handleSingleRequestMock).toHaveBeenCalled();
-  // });
+    ioClient.disconnect();
+  });
 });
