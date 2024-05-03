@@ -12,6 +12,8 @@ import {
 } from './services';
 import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
+import { CommunicateGateway } from './communicates/communicate.gateway';
+import { CommunicateService } from './communicates/communicate.service';
 
 @Module({
   imports: [
@@ -23,6 +25,8 @@ import configuration from './config/configuration';
   ],
   controllers: [ProxyController],
   providers: [
+    CommunicateGateway,
+    CommunicateService,
     VerseService,
     TransactionService,
     ProxyService,
