@@ -1,13 +1,20 @@
 import { CacheModule, INestApplication, Logger } from '@nestjs/common';
-import { Socket, io } from 'socket.io-client';
 import { CommunicateGateway } from '../communicate.gateway';
 import { CommunicateService } from '../communicate.service';
 import { ConfigModule } from '@nestjs/config';
 import { Test } from '@nestjs/testing';
 import configuration from '../../config/configuration';
 import { DatastoreService } from 'src/repositories';
-import { VerseService, AllowCheckService, TransactionService, ProxyService, TypeCheckService, RateLimitService } from 'src/services';
+import {
+  VerseService,
+  AllowCheckService,
+  TransactionService,
+  ProxyService,
+  TypeCheckService,
+  RateLimitService,
+} from 'src/services';
 import { HttpModule } from '@nestjs/axios';
+import * as WebSocket from 'ws';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
@@ -23,9 +30,8 @@ async function createNestApp(...gateways: any): Promise<INestApplication> {
 }
 
 describe('Communicate gateway', () => {
-  let gateway: CommunicateGateway;
   let app: INestApplication;
-  let ioClient: Socket;
+  let client: WebSocket;
 
   beforeAll(async () => {
     app = await createNestApp(
@@ -38,36 +44,26 @@ describe('Communicate gateway', () => {
       TypeCheckService,
       DatastoreService,
       RateLimitService,
+      CommunicateGateway,
     );
-    gateway = app.get<CommunicateGateway>(CommunicateGateway);
-    app.listen(3001);
-  });
-
-  beforeEach(async () => {
-    ioClient = io('http://localhost:3001', {
-      autoConnect: false,
-      transports: ['websocket', 'pooling'],
-    });
+    app.listen(3000);
+    client = new WebSocket('ws://localhost:3001');
   });
 
   afterAll(async () => {
+    if (client.readyState === client.OPEN) {
+      client.close();
+    }
     await app.close();
   });
 
-  it(`Should emit "pong" on "ping"`, async () => {
-    ioClient.connect();
-    ioClient.emit('ping', 'Hello World!');
-    await new Promise<void>((resolve) => {
-      ioClient.on('connect', () => {
-        console.log('Connected');
-      });
-      ioClient.on('pong', (data) => {
-        expect(data).toBe('Hello World!');
-        resolve();
-      });
+  it(`Should emit "pong" on "ping"`, (done) => {
+    client.on('open', () => {
+      client.ping();
     });
-
-    ioClient.disconnect();
+    client.on('pong', () => {
+      done();
+    });
   });
 
   it('execute method is not allowed', async () => {
@@ -79,22 +75,17 @@ describe('Communicate gateway', () => {
       ],
       id: 1,
     };
-    ioClient.connect();
-    ioClient.emit('execute', body);
-    await new Promise<void>((resolve) => {
-      ioClient.on('connect', () => {
-        console.log('Connected');
-      });
-      ioClient.on('executed', (data) => {
-        expect(data.method).toBe('bnb_chainId');
-        expect(data.response.error.message).toBe(
-          'Method bnb_chainId is not allowed',
-        );
-        resolve();
-      });
-    });
 
-    ioClient.disconnect();
+    client.on('open', async () => {
+      client.send(JSON.stringify(body));
+    });
+    client.addListener('message', (message) => {
+      const data = JSON.parse(message.toString());
+      expect(data.method).toBe('bnb_chainId');
+      expect(data.response.error.message).toBe(
+        'Method bnb_chainId is not allowed',
+      );
+    });
   });
 
   it('executed method net_version', async () => {
@@ -105,21 +96,13 @@ describe('Communicate gateway', () => {
       id: 1,
     };
 
-    ioClient.connect();
-    ioClient.emit('execute', body);
-    await new Promise<void>((resolve) => {
-      ioClient.on('connect', () => {
-        console.log('Connected');
-      });
-      ioClient.on('executed', (data) => {
-        expect(data.method).toBe('net_version');
-        expect(data.response.result).toBe(
-          '12345',
-        );
-        resolve();
-      });
+    client.on('open', async () => {
+      client.send(JSON.stringify(body));
     });
-
-    ioClient.disconnect();
+    client.addListener('message', (message) => {
+      const data = JSON.parse(message.toString());
+      expect(data.method).toBe('net_version');
+      expect(data.response.result).toBe('12345');
+    });
   });
 });

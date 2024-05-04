@@ -16,7 +16,6 @@ export class CommunicateGateway {
 
     this.wss.on('connection', (ws: WebSocket, req: any) => {
       ws.on('message', async (message: string) => {
-        console.log(`Received message: ${message}`);
         if (message === 'ping') {
           return ws.send('pong');
         }
@@ -34,7 +33,7 @@ export class CommunicateGateway {
           return ws.send(
             JSON.stringify({
               method: data.method,
-              response,
+              response: response.data,
             }),
           );
         } catch (error) {
