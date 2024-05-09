@@ -24,4 +24,5 @@ export default () => ({
   ],
   inheritHostHeader: true,
   wsPort: process.env.WS_PORT,
+  nodeSocket: process.env.NODE_SOCKET,
 });

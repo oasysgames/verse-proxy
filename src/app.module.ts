@@ -13,7 +13,7 @@ import {
 import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
 import { CommunicateGateway } from './communicates/communicate.gateway';
-import { CommunicateService } from './communicates/communicate.service';
+import { WebSocketService } from './services/webSocket.sevice';
 
 @Module({
   imports: [
@@ -25,8 +25,8 @@ import { CommunicateService } from './communicates/communicate.service';
   ],
   controllers: [ProxyController],
   providers: [
+    WebSocketService,
     CommunicateGateway,
-    CommunicateService,
     VerseService,
     TransactionService,
     ProxyService,

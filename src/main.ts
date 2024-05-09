@@ -4,6 +4,7 @@ import { AppModule } from 'src/app.module';
 import { json } from 'body-parser';
 import * as _cluster from 'cluster';
 import { cpus } from 'os';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 const cluster = _cluster as unknown as _cluster.Cluster;
 let workerCount = process.env.CLUSTER_PROCESS
@@ -12,7 +13,7 @@ let workerCount = process.env.CLUSTER_PROCESS
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.use(
     json({
       limit: process.env.MAX_BODY_BYTE_SIZE

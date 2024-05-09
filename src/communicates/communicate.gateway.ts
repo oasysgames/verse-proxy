@@ -1,49 +1,116 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as WebSocket from 'ws';
-import { CommunicateService } from './communicate.service';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
+} from '@nestjs/websockets';
+import { Server } from 'ws';
+import * as WebSocket from 'ws';
+import { WebSocketService } from 'src/services/webSocket.sevice';
+import {
+  CONNECTION_IS_CLOSED,
+  ESocketError,
+  INVALID_JSON_REQUEST,
+  METHOD_IS_NOT_ALLOWED,
+} from 'src/constant/exception.constant';
+import { TypeCheckService } from 'src/services';
 
-@Injectable()
-export class CommunicateGateway {
-  private wss: WebSocket.Server;
-  private readonly logger = new Logger(CommunicateGateway.name);
+@WebSocketGateway()
+export class CommunicateGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  @WebSocketServer() server: Server;
+  private logger: Logger = new Logger('AppGateway');
+  private allowedMethods: RegExp[];
 
   constructor(
-    private readonly communicateService: CommunicateService,
     private readonly configService: ConfigService,
+    private readonly typeCheckService: TypeCheckService,
+    private readonly webSocketService: WebSocketService,
   ) {
-    this.wss = new WebSocket.Server({ port: this.configService.get('wsPort') });
+    this.allowedMethods = this.configService.get<RegExp[]>(
+      'allowedMethods',
+    ) ?? [/^.*$/];
+  }
 
-    this.wss.on('connection', (ws: WebSocket, req: any) => {
-      ws.on('message', async (message: string) => {
-        if (message === 'ping') {
-          return ws.send('pong');
+  async handleDisconnect(): Promise<void> {
+    this.logger.log(`Client disconneted`);
+    this.webSocketService.close();
+  }
+
+  async handleConnection(client: WebSocket): Promise<void> {
+    this.logger.log(`Client connected`);
+    // connect to node's websocket
+    const url = this.configService.get<string>('nodeSocket')!;
+    this.webSocketService.connect(url);
+
+    // listen to message from verse proxy websocket
+    client.on('message', (data) => {
+      const dataString = data.toString();
+      // for test connection
+      if (dataString == 'ping') {
+        return client.send('pong');
+      }
+
+      // check if server is connect to node or not
+      if (!this.webSocketService.isConnected()) {
+        client.send(CONNECTION_IS_CLOSED);
+        client.close();
+      }
+      try {
+        const jsonData = this.checkValidJson(dataString);
+        this.checkMethod(jsonData.method);
+        this.webSocketService.send(data.toString());
+      } catch (e) {
+        // if input not a valid json object or method is not  then send message to client and close connect
+        switch (e.message) {
+          case ESocketError.INVALID_JSON_REQUEST:
+            client.send(INVALID_JSON_REQUEST);
+            break;
+          case ESocketError.METHOD_IS_NOT_ALLOWED:
+            client.send(METHOD_IS_NOT_ALLOWED);
+            break;
+          case ESocketError.CONNECTION_IS_CLOSED:
+            client.send(CONNECTION_IS_CLOSED);
+            break;
         }
-
-        try {
-          const data = JSON.parse(message);
-          const requestContext = {
-            ip: req.connection.remoteAddress || '',
-            headers: req.headers,
-          };
-          const response = await this.communicateService.sendRequest(
-            requestContext,
-            data,
-          );
-          return ws.send(
-            JSON.stringify({
-              method: data.method,
-              response: response.data,
-            }),
-          );
-        } catch (error) {
-          console.error('Error parsing message:', error);
-        }
-      });
-
-      ws.on('close', () => {
-        this.logger.log('disconnected');
-      });
+        client.close();
+      }
     });
+
+    // listen to message return from node's websocket
+    this.webSocketService.on((data: any) => {
+      const dataString = data.toString();
+      client.send(data);
+
+      // close connection if node's websocket return error
+      if (
+        this.typeCheckService.isJsonrpcErrorResponse(
+          JSON.parse(dataString.toString()),
+        )
+      ) {
+        client.close();
+      }
+    });
+  }
+
+  checkValidJson(input: string) {
+    try {
+      const json = JSON.parse(input);
+      return json;
+    } catch {
+      throw new Error(ESocketError.INVALID_JSON_REQUEST);
+    }
+  }
+
+  checkMethod(method: string) {
+    const checkMethod = this.allowedMethods.some((allowedMethod) => {
+      return allowedMethod.test(method);
+    });
+    if (!checkMethod) {
+      throw new Error(ESocketError.METHOD_IS_NOT_ALLOWED);
+    }
   }
 }
