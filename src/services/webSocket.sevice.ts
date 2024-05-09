@@ -52,6 +52,6 @@ export class WebSocketService {
     if (this.socket.readyState != this.socket.OPEN) {
       return false;
     }
-    return true
+    return true;
   }
 }
