@@ -23,6 +23,5 @@ export default () => ({
     /^eth_.*Filter$/,
   ],
   inheritHostHeader: true,
-  wsPort: process.env.WS_PORT,
   nodeSocket: process.env.NODE_SOCKET,
 });
