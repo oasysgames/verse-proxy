@@ -51,7 +51,7 @@ describe('Communicate gateway', () => {
   // });
 
   it(`Should emit "pong" on "ping"`, (done) => {
-    done()
+    done();
   });
 
   // it(`Should emit "pong" on "ping"`, (done) => {

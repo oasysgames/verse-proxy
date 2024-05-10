@@ -21,6 +21,8 @@ export default () => ({
     /^eth_maxPriorityFeePerGas$/,
     /^eth_feeHistory$/,
     /^eth_.*Filter$/,
+    /^eth_unsubscribe$/,
+    /^eth_subscribe$/,
   ],
   inheritHostHeader: true,
   nodeSocket: process.env.NODE_SOCKET,
