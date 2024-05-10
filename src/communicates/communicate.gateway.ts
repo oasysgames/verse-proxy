@@ -64,7 +64,7 @@ export class CommunicateGateway
         this.checkMethod(jsonData.method);
         this.webSocketService.send(data.toString());
       } catch (e) {
-        // if input not a valid json object or method is not  then send message to client and close connect
+        // if input not a valid json object or method is not allowed then send message to client and close connect
         switch (e.message) {
           case ESocketError.INVALID_JSON_REQUEST:
             client.send(INVALID_JSON_REQUEST);

@@ -49,6 +49,6 @@ export class WebSocketService {
   }
 
   isConnected() {
-    return this.socket.readyState == this.socket.OPEN
+    return this.socket.readyState != this.socket.OPEN
   }
 }

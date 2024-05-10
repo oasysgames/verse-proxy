@@ -21,6 +21,10 @@ Details are described later.
 - `src/config/configuration.ts`
 - `src/config/transactionAllowList.ts`
 
+### 3. Set configuration variables
+- Create file `.env` refer to `.env.example`
+- Change value 
+
 ### 3. Set up npm
 ```bash
 $ npm install
