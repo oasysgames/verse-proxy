@@ -23,15 +23,15 @@ Details are described later.
 
 ### 3. Set configuration variables
 - Create file `.env` refer to `.env.example`
-- Change value 
+- Update those variables with corrected values from your side
 
-### 3. Set up npm
+### 4. Set up npm
 ```bash
 $ npm install
 $ npm build
 ```
 
-### 4. Run app
+### 5. Run app
 
 ```bash
 # development
