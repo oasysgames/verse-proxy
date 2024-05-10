@@ -54,7 +54,7 @@ export class CommunicateGateway
         return client.send('pong');
       }
 
-      // check if server is connect to node or not
+      // check if server is connected to node or not
       if (!this.webSocketService.isConnected()) {
         client.send(CONNECTION_IS_CLOSED);
         client.close();
