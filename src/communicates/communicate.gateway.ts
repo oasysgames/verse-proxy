@@ -19,7 +19,11 @@ import {
   TRANSACTION_IS_INVALID,
   TRANSACTION_NOT_FOUND,
 } from 'src/constant/exception.constant';
-import { RateLimitService, TransactionService, TypeCheckService, VerseService } from 'src/services';
+import {
+  TransactionService,
+  TypeCheckService,
+  VerseService,
+} from 'src/services';
 import { JsonrpcError, JsonrpcRequestBody } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
 
@@ -75,9 +79,8 @@ export class CommunicateGateway
         if (!result) {
           this.webSocketService.send(data.toString());
         } else {
-          client.send(JSON.stringify(result.data))
+          client.send(JSON.stringify(result.data));
         }
-
       } catch (e) {
         // if input not a valid json object or method is not allowed then send message to client and close connect
         switch (e.message) {
@@ -96,7 +99,7 @@ export class CommunicateGateway
           case ESocketError.TRANSACTION_IS_INVALID:
             client.send(TRANSACTION_IS_INVALID);
             break;
-          default: 
+          default:
             if (e instanceof JsonrpcError) {
               const data = {
                 jsonrpc: JSONRPC,
@@ -106,7 +109,7 @@ export class CommunicateGateway
                   message: e.message,
                 },
               };
-              client.send(JSON.stringify(data))
+              client.send(JSON.stringify(data));
             }
             break;
         }
@@ -121,15 +124,10 @@ export class CommunicateGateway
       client.send(data);
 
       // close connection if node's websocket return error
-      const dataTx = JSON.parse(dataString.toString())
-      if (
-        this.typeCheckService.isJsonrpcErrorResponse(
-          dataTx,
-        )
-      ) {
+      const dataTx = JSON.parse(dataString.toString());
+      if (this.typeCheckService.isJsonrpcErrorResponse(dataTx)) {
         client.close();
       }
-
     });
   }
 
@@ -142,9 +140,7 @@ export class CommunicateGateway
     }
   }
 
-  async sendTransaction(
-    body: JsonrpcRequestBody,
-  ) {
+  async sendTransaction(body: JsonrpcRequestBody) {
     const rawTx = body.params ? body.params[0] : undefined;
     if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
 
@@ -156,10 +152,7 @@ export class CommunicateGateway
     if (!tx.to) {
       this.txService.checkContractDeploy(tx.from);
       await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.postVerseMasterNode(
-        {},
-        body,
-      );
+      const result = await this.verseService.postVerseMasterNode({}, body);
       return result;
     }
 
@@ -172,10 +165,7 @@ export class CommunicateGateway
       tx.value,
     );
     await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.postVerseMasterNode(
-      {},
-      body,
-    );
+    const result = await this.verseService.postVerseMasterNode({}, body);
 
     if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
       return result;
@@ -198,8 +188,8 @@ export class CommunicateGateway
       return allowedMethod.test(request.method);
     });
 
-    if (request.method == 'eth_sendRawTransaction') 
-      return await this.sendTransaction(request)
+    if (request.method == 'eth_sendRawTransaction')
+      return await this.sendTransaction(request);
 
     if (!checkMethod) {
       throw new Error(ESocketError.METHOD_IS_NOT_ALLOWED);

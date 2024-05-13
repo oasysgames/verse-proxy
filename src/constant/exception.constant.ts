@@ -43,8 +43,8 @@ export const TRANSACTION_IS_INVALID = `{
     }
 }`;
 
-export const JSONRPC = "2.0"
-export const ID = null
+export const JSONRPC = '2.0';
+export const ID = null;
 
 export enum ESocketError {
   INVALID_JSON_REQUEST = 'INVALID_JSON_REQUEST',
