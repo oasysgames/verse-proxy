@@ -21,7 +21,6 @@ export class WebSocketService {
 
     this.socket.on('close', () => {
       this.logger.log('WebSocket connection closed.');
-      // throw new Error(ESocketError.CONNECTION_IS_CLOSED);
     });
   }
 

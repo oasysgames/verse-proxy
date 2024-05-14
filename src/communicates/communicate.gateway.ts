@@ -65,13 +65,15 @@ export class CommunicateGateway
       const dataString = data.toString();
       // for test connection
       if (dataString == 'ping') {
-        return client.send('pong');
+        client.send('pong')
+        return;
       }
 
       // check if server is connected to node or not
       if (!this.webSocketService.isConnected()) {
         client.send(CONNECTION_IS_CLOSED);
         client.close();
+        return;
       }
       try {
         const jsonData = this.checkValidJson(dataString);
