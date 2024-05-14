@@ -7,7 +7,13 @@ import { HttpModule } from '@nestjs/axios';
 import * as WebSocket from 'ws';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { DatastoreService } from 'src/repositories';
-import { AllowCheckService, RateLimitService, TransactionService, TypeCheckService, VerseService } from 'src/services';
+import {
+  AllowCheckService,
+  RateLimitService,
+  TransactionService,
+  TypeCheckService,
+  VerseService,
+} from 'src/services';
 import { WebSocketService } from 'src/services/webSocket.sevice';
 async function createNestApp(): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
@@ -16,7 +22,17 @@ async function createNestApp(): Promise<INestApplication> {
       HttpModule,
       CacheModule.register(),
     ],
-    providers: [CommunicateGateway, ConfigService, WebSocketService, TransactionService, VerseService, DatastoreService, TypeCheckService, AllowCheckService, RateLimitService ],
+    providers: [
+      CommunicateGateway,
+      ConfigService,
+      WebSocketService,
+      TransactionService,
+      VerseService,
+      DatastoreService,
+      TypeCheckService,
+      AllowCheckService,
+      RateLimitService,
+    ],
   }).compile();
   testingModule.useLogger(new Logger());
   const app = testingModule.createNestApplication();
@@ -29,23 +45,23 @@ describe('Communicate gateway', () => {
   let ws: WebSocket;
 
   beforeAll(async () => {
-    app = await createNestApp(); 
-    await app.listen(3000);  
-    await new Promise(async (resolve,reject) => {   
+    app = await createNestApp();
+    await app.listen(3000);
+    await new Promise(async (resolve, reject) => {
       ws = new WebSocket('ws://localhost:3000');
-      ws.on('open', resolve)
-      ws.on('error', reject)
-    })
-  })
+      ws.on('open', resolve);
+      ws.on('error', reject);
+    });
+  });
 
   afterAll(async () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
       await new Promise<void>((resolve) => ws.on('close', resolve));
     }
-    await app.close()
-  })
-  
+    await app.close();
+  });
+
   test('should emit "pong" on "ping"', async () => {
     await new Promise<void>((resolve, reject) => {
       ws.once('message', async (data) => {
@@ -58,14 +74,14 @@ describe('Communicate gateway', () => {
       });
       ws.send('ping');
     });
-  })
+  });
 
   it('execute method eth_getBlockByNumber', async () => {
     const body = {
-      "method": "eth_getBlockByNumber",
-      "params": ["0x548", true],
-      "id": 1,
-      "jsonrpc": "2.0"
+      method: 'eth_getBlockByNumber',
+      params: ['0x548', true],
+      id: 1,
+      jsonrpc: '2.0',
     };
     await new Promise<void>((resolve, reject) => {
       ws.once('message', async (message) => {
@@ -73,11 +89,11 @@ describe('Communicate gateway', () => {
           const data = JSON.parse(message.toString());
           expect(data.result).not.toBeNull();
           resolve();
-        }catch (error) {
+        } catch (error) {
           reject(error);
         }
-      })
+      });
       ws.send(JSON.stringify(body));
-    })
-  })
+    });
+  });
 });

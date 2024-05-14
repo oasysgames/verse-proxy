@@ -65,7 +65,7 @@ export class CommunicateGateway
       const dataString = data.toString();
       // for test connection
       if (dataString == 'ping') {
-        client.send('pong')
+        client.send('pong');
         return;
       }
 
