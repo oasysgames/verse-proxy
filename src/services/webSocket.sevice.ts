@@ -68,7 +68,9 @@ export class WebSocketService {
   private reconnect() {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const timeout = Math.min(1000 * 2 ** this.reconnectAttempts, 30000); // Exponential backoff, max 30 seconds
-      this.logger.log(`Attempting to reconnect in ${timeout / 1000} seconds...`);
+      this.logger.log(
+        `Attempting to reconnect in ${timeout / 1000} seconds...`,
+      );
       setTimeout(() => {
         this.reconnectAttempts++;
         this.connect();
