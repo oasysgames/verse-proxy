@@ -43,7 +43,7 @@ async function createNestApp(): Promise<INestApplication> {
 describe('Communicate gateway', () => {
   let app: INestApplication;
   let ws: WebSocket;
-  let subscriptionId: string
+  let subscriptionId: string;
 
   beforeAll(async () => {
     app = await createNestApp();
@@ -53,17 +53,17 @@ describe('Communicate gateway', () => {
   beforeEach(async () => {
     await new Promise((resolve, reject) => {
       ws = new WebSocket('ws://localhost:3000');
-      ws.on('open', resolve)
-      ws.on('error', reject)
-    })
-  })
+      ws.on('open', resolve);
+      ws.on('error', reject);
+    });
+  });
 
   afterEach(async () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
       await new Promise<void>((resolve) => ws.on('close', resolve));
     }
-  })
+  });
 
   afterAll(async () => {
     await app.close();
@@ -80,8 +80,7 @@ describe('Communicate gateway', () => {
     await new Promise<void>((resolve, reject) => {
       ws.once('message', async (message) => {
         try {
-
-          const dataString = message.toString()
+          const dataString = message.toString();
           const data = JSON.parse(dataString);
           expect(data.error.message).toBe(
             'the method eth_getBlockByNumbers does not exist/is not available',
@@ -115,11 +114,10 @@ describe('Communicate gateway', () => {
     });
   });
 
-
   it('execute method eth_subscribe', async () => {
     const body = {
       method: 'eth_subscribe',
-      params: ["newPendingTransactions"],
+      params: ['newPendingTransactions'],
       id: 1,
       jsonrpc: '2.0',
     };
@@ -164,7 +162,9 @@ describe('Communicate gateway', () => {
       method: 'eth_sendRawTransaction',
 
       // rawTransaction will not work on your local node, try to create it yourself
-      params: ["0xf8aa01843b9aca0082854e945fbdb2315678afecb367f032d93f642f64180aa380b84440c10f19000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000de0b6b3a7640000826095a08e05a3b4b48dc980b7dae6968d38d1c6886a500dca4f34c626b453ce78ff2114a02c0fe207c532a7e8d3108067a752befb184427333e7bf51439b6c18713f824b1"],
+      params: [
+        '0xf8aa01843b9aca0082854e945fbdb2315678afecb367f032d93f642f64180aa380b84440c10f19000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000de0b6b3a7640000826095a08e05a3b4b48dc980b7dae6968d38d1c6886a500dca4f34c626b453ce78ff2114a02c0fe207c532a7e8d3108067a752befb184427333e7bf51439b6c18713f824b1',
+      ],
       id: 1,
       jsonrpc: '2.0',
     };
@@ -187,7 +187,9 @@ describe('Communicate gateway', () => {
       method: 'eth_sendRawTransaction',
 
       // rawTransaction will not work on your local node, try to create it yourself
-      params: ["0xf8aa02843b9aca0082854e945fbdb2315678afecb367f032d93f642f64180aa380b84440c10f19000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000de0b6b3a7640000826095a043611213754798611c821566d2a99f8a657865a80c4e7d04b3a0755d737cd539a077dd8f4becf0b82a98cb50a8d9b6e3384c5dadf39b6d7f7d87dc5dd35083b46a"],
+      params: [
+        '0xf8aa02843b9aca0082854e945fbdb2315678afecb367f032d93f642f64180aa380b84440c10f19000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000de0b6b3a7640000826095a043611213754798611c821566d2a99f8a657865a80c4e7d04b3a0755d737cd539a077dd8f4becf0b82a98cb50a8d9b6e3384c5dadf39b6d7f7d87dc5dd35083b46a',
+      ],
       id: 1,
       jsonrpc: '2.0',
     };
@@ -196,7 +198,9 @@ describe('Communicate gateway', () => {
         try {
           const data = JSON.parse(message.toString());
           expect(data.error).toBeDefined();
-          expect(data.error.message).toBe("The number of allowed transacting has been exceeded. Wait 30000 seconds before transacting.");
+          expect(data.error.message).toBe(
+            'The number of allowed transacting has been exceeded. Wait 30000 seconds before transacting.',
+          );
           resolve();
         } catch (error) {
           reject(error);

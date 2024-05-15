@@ -2,18 +2,30 @@ import * as WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
 import { ESocketError } from 'src/constant/exception.constant';
 import { defer } from 'src/shared/utils';
+import { ConfigService } from '@nestjs/config';
 type Listener = (data: any) => void;
 @Injectable()
 export class WebSocketService {
   private socket: WebSocket;
   private eventListeners: Listener[] = [];
   private logger: Logger = new Logger('WebSocketService');
+  private url: string
+  private reconnectAttempts: number = 0;
+  private maxReconnectAttempts: number = 10;
 
-  connect(url: string) {
-    this.socket = new WebSocket(url);
+  constructor(
+    private readonly configService: ConfigService,
+  ) {
+
+    this.url = this.configService.get<string>('nodeSocket')!;
+  }
+
+  connect() {
+    this.socket = new WebSocket(this.url);
 
     this.socket.on('open', () => {
       this.logger.log('WebSocket connection established.');
+      this.reconnectAttempts = 0;
     });
 
     this.socket.on('message', (data) => {
@@ -22,6 +34,7 @@ export class WebSocketService {
 
     this.socket.on('close', () => {
       this.logger.log('WebSocket connection closed.');
+      this.reconnect();
     });
   }
 
@@ -50,5 +63,18 @@ export class WebSocketService {
 
   isConnected() {
     return this.socket.readyState == this.socket.OPEN;
+  }
+
+  private reconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      const timeout = Math.min(1000 * 2 ** this.reconnectAttempts, 30000); // Exponential backoff, max 30 seconds
+      this.logger.log(`Attempting to reconnect in ${timeout / 1000} seconds...`);
+      setTimeout(() => {
+        this.reconnectAttempts++;
+        this.connect();
+      }, timeout);
+    } else {
+      this.logger.error('Max reconnect attempts reached. Giving up.');
+    }
   }
 }

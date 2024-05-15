@@ -49,8 +49,7 @@ export class CommunicateGateway
   }
 
   afterInit() {
-    const url = this.configService.get<string>('nodeSocket')!;
-    this.webSocketService.connect(url);
+    this.webSocketService.connect();
   }
 
   async handleDisconnect(): Promise<void> {

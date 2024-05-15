@@ -26,15 +26,15 @@ export interface TransactionAllow {
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
-      fromList: [''],
+      fromList: ['*'],
       toList: ['*'],
 
       // for unit test only
       rateLimit: {
         name: 'unit_test',
         interval: 30000,
-        limit: 1
-      }
+        limit: 1,
+      },
     },
   ];
 };
