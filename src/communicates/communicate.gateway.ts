@@ -29,8 +29,7 @@ import { DatastoreService } from 'src/repositories';
 
 @WebSocketGateway()
 export class CommunicateGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
   private allowedMethods: RegExp[];
@@ -49,16 +48,18 @@ export class CommunicateGateway
     ) ?? [/^.*$/];
   }
 
-  async handleDisconnect(client: WebSocket): Promise<void> {
+  afterInit() {
+    const url = this.configService.get<string>('nodeSocket')!;
+    this.webSocketService.connect(url);
+  }
+
+  async handleDisconnect(): Promise<void> {
     this.logger.log(`Client disconneted`);
-    this.webSocketService.close();
   }
 
   async handleConnection(client: WebSocket): Promise<void> {
     this.logger.log(`Client connected`);
     // connect to node's websocket
-    const url = this.configService.get<string>('nodeSocket')!;
-    this.webSocketService.connect(url);
 
     // listen to message from verse proxy websocket
     client.on('message', async (data) => {
