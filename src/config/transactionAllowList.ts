@@ -30,11 +30,6 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
       toList: ['*'],
 
       // for unit test only
-      rateLimit: {
-        name: 'unit_test',
-        interval: 30000,
-        limit: 1,
-      },
     },
   ];
 };

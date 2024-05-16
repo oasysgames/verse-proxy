@@ -29,8 +29,7 @@ import { DatastoreService } from 'src/repositories';
 
 @WebSocketGateway()
 export class CommunicateGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
   private allowedMethods: RegExp[];
@@ -73,7 +72,6 @@ export class CommunicateGateway
       // check if server is connected to node or not
       if (!this.webSocketService.isConnected()) {
         client.send(CONNECTION_IS_CLOSED);
-        client.close();
         return;
       }
       try {
@@ -116,21 +114,12 @@ export class CommunicateGateway
             }
             break;
         }
-        client.close();
       }
     });
 
     // listen to message return from node's websocket
     this.webSocketService.on(async (data: any) => {
-      const dataString = data.toString();
-
       client.send(data);
-
-      // close connection if node's websocket return error
-      const dataTx = JSON.parse(dataString.toString());
-      if (this.typeCheckService.isJsonrpcErrorResponse(dataTx)) {
-        client.close();
-      }
     });
   }
 

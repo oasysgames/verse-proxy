@@ -41,13 +41,13 @@ REDIS_URI=redis://localhost:6373
 MAXRECONNECTATTEMPTS: 10
 ```
 
-### 5. Set up npm
+### 6. Set up npm
 ```bash
 $ npm install
 $ npm build
 ```
 
-### 6. Run app
+### 7. Run app
 
 ```bash
 # development

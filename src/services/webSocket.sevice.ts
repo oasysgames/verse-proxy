@@ -10,12 +10,13 @@ export class WebSocketService {
   private eventListeners: Listener[] = [];
   private logger: Logger = new Logger('WebSocketService');
   private url: string;
-  private reconnectAttempts: number = 0;
+  private reconnectAttempts = 0;
   private maxReconnectAttempts: number;
 
   constructor(private readonly configService: ConfigService) {
     this.url = this.configService.get<string>('nodeSocket')!;
-    this.maxReconnectAttempts = +this.configService.get<string>('reconnectAttempts')!
+    this.maxReconnectAttempts =
+      +this.configService.get<string>('reconnectAttempts')!;
   }
 
   connect() {
