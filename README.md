@@ -25,13 +25,29 @@ Details are described later.
 - Create file `.env` refer to `.env.example`
 - Update those variables with corrected values from your side
 
-### 4. Set up npm
+### 4. Set up redis server
+- Verse-Proxy use redis as a database to read and write data, so in order to run this proxy you will need start a redis server and pass url to `REDIS_URI`
+- also Verse-Proxy need to know which database you would use which can be config using `DATASTORE`
+For example: 
+```
+DATASTORE=redis
+REDIS_URI=redis://localhost:6373
+```
+
+### 5. Handle disconnect from node's websocket
+- `MAXRECONNECTATTEMPTS` specifies the maximum number of attempts the Verse-proxy will make to reconnect to a node's websocket.
+**example**: 
+```
+MAXRECONNECTATTEMPTS: 10
+```
+
+### 5. Set up npm
 ```bash
 $ npm install
 $ npm build
 ```
 
-### 5. Run app
+### 6. Run app
 
 ```bash
 # development

@@ -26,4 +26,5 @@ export default () => ({
   ],
   inheritHostHeader: true,
   nodeSocket: process.env.NODE_SOCKET,
+  maxReconnectAttempts: process.env.MAXRECONNECTATTEMPTS,
 });

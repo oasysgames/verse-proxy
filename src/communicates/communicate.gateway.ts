@@ -29,7 +29,8 @@ import { DatastoreService } from 'src/repositories';
 
 @WebSocketGateway()
 export class CommunicateGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
   private allowedMethods: RegExp[];
