@@ -14,13 +14,12 @@ export class WebSocketService {
   private maxReconnectAttempts: number;
 
   constructor(private readonly configService: ConfigService) {
-    this.url = this.configService.get<string>('nodeSocket')!;
     this.maxReconnectAttempts =
       +this.configService.get<string>('reconnectAttempts')!;
   }
 
-  connect() {
-    this.socket = new WebSocket(this.url);
+  connect(url: string) {
+    this.socket = new WebSocket(url);
 
     this.socket.on('open', () => {
       this.logger.log('WebSocket connection established.');
@@ -33,7 +32,7 @@ export class WebSocketService {
 
     this.socket.on('close', () => {
       this.logger.log('WebSocket connection closed.');
-      this.reconnect();
+      this.reconnect(url);
     });
   }
 
@@ -61,10 +60,13 @@ export class WebSocketService {
   }
 
   isConnected() {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      return false;
+    }
     return this.socket.readyState == this.socket.OPEN;
   }
 
-  private reconnect() {
+  private reconnect(url: string) {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       const timeout = Math.min(1000 * 2 ** this.reconnectAttempts, 30000); // Exponential backoff, max 30 seconds
       this.logger.log(
@@ -72,7 +74,7 @@ export class WebSocketService {
       );
       setTimeout(() => {
         this.reconnectAttempts++;
-        this.connect();
+        this.connect(url);
       }, timeout);
     } else {
       this.logger.error('Max reconnect attempts reached. Giving up.');

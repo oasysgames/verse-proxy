@@ -26,30 +26,25 @@ import {
 } from 'src/services';
 import { JsonrpcError, JsonrpcRequestBody } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
+import { CommunicateService } from 'src/services/communicate.service';
 
 @WebSocketGateway()
 export class CommunicateGateway
   implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
-  private allowedMethods: RegExp[];
-  private isUseDatastore: boolean;
+  private isUseReadNode: boolean
   constructor(
     private readonly configService: ConfigService,
-    private readonly typeCheckService: TypeCheckService,
     private readonly webSocketService: WebSocketService,
-    private readonly txService: TransactionService,
-    private verseService: VerseService,
-    private readonly datastoreService: DatastoreService,
-  ) {
-    this.isUseDatastore = !!this.configService.get<string>('datastore');
-    this.allowedMethods = this.configService.get<RegExp[]>(
-      'allowedMethods',
-    ) ?? [/^.*$/];
-  }
+    private readonly communicateService: CommunicateService,
+  ) { }
 
   afterInit() {
-    this.webSocketService.connect();
+    this.isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
+    let url = this.configService.get<string>('nodeSocket')!;
+    if (url)
+      this.webSocketService.connect(url);
   }
 
   async handleDisconnect(): Promise<void> {
@@ -68,15 +63,15 @@ export class CommunicateGateway
         client.send('pong');
         return;
       }
-
       // check if server is connected to node or not
-      if (!this.webSocketService.isConnected()) {
+      if (!this.webSocketService || !this.webSocketService.isConnected()) {
         client.send(CONNECTION_IS_CLOSED);
         return;
       }
+
       try {
         const jsonData = this.checkValidJson(dataString);
-        const result = await this.checkMethod(jsonData as JsonrpcRequestBody);
+        const result = await this.communicateService.send(this.isUseReadNode, jsonData as JsonrpcRequestBody);
         if (!result) {
           this.webSocketService.send(data.toString());
         } else {
@@ -129,62 +124,6 @@ export class CommunicateGateway
       return json;
     } catch {
       throw new Error(ESocketError.INVALID_JSON_REQUEST);
-    }
-  }
-
-  async sendTransaction(body: JsonrpcRequestBody) {
-    const rawTx = body.params ? body.params[0] : undefined;
-    if (!rawTx) throw new JsonrpcError('rawTransaction is not found', -32602);
-
-    const tx = this.txService.parseRawTx(rawTx);
-
-    if (!tx.from) throw new JsonrpcError('transaction is invalid', -32602);
-
-    // contract deploy transaction
-    if (!tx.to) {
-      this.txService.checkContractDeploy(tx.from);
-      await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-      const result = await this.verseService.postVerseMasterNode({}, body);
-      return result;
-    }
-
-    // transaction other than contract deploy
-    const methodId = tx.data.substring(0, 10);
-    const matchedTxAllowRule = await this.txService.getMatchedTxAllowRule(
-      tx.from,
-      tx.to,
-      methodId,
-      tx.value,
-    );
-    await this.txService.checkAllowedGas(tx, body.jsonrpc, body.id);
-    const result = await this.verseService.postVerseMasterNode({}, body);
-
-    if (!this.typeCheckService.isJsonrpcTxSuccessResponse(result.data))
-      return result;
-    const txHash = result.data.result;
-
-    if (this.isUseDatastore && matchedTxAllowRule.rateLimit) {
-      await this.datastoreService.setTransactionHistory(
-        tx.from,
-        tx.to,
-        methodId,
-        txHash,
-        matchedTxAllowRule.rateLimit,
-      );
-    }
-    return result;
-  }
-
-  async checkMethod(request: JsonrpcRequestBody) {
-    const checkMethod = this.allowedMethods.some((allowedMethod) => {
-      return allowedMethod.test(request.method);
-    });
-
-    if (request.method == 'eth_sendRawTransaction')
-      return await this.sendTransaction(request);
-
-    if (!checkMethod) {
-      throw new Error(ESocketError.METHOD_IS_NOT_ALLOWED);
     }
   }
 }

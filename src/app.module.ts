@@ -14,6 +14,7 @@ import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
 import { CommunicateGateway } from './communicates/communicate.gateway';
 import { WebSocketService } from './services/webSocket.sevice';
+import { CommunicateService } from './services/communicate.service';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { WebSocketService } from './services/webSocket.sevice';
     TypeCheckService,
     DatastoreService,
     RateLimitService,
+    CommunicateService,
   ],
 })
-export class AppModule {}
+export class AppModule { }
