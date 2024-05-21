@@ -31,7 +31,7 @@ Details are described later.
 For example: 
 ```
 DATASTORE=redis
-REDIS_URI=redis://localhost:6373
+REDIS_URI=redis://localhost:6379
 ```
 
 ### 5. Handle disconnect from node's websocket

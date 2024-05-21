@@ -38,4 +38,4 @@ import { CommunicateService } from './services/communicate.service';
     CommunicateService,
   ],
 })
-export class AppModule { }
+export class AppModule {}
