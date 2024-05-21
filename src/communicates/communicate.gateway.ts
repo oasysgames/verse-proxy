@@ -30,21 +30,21 @@ import { CommunicateService } from 'src/services/communicate.service';
 
 @WebSocketGateway()
 export class CommunicateGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
-  private isUseReadNode: boolean
+  private isUseReadNode: boolean;
   constructor(
     private readonly configService: ConfigService,
     private readonly webSocketService: WebSocketService,
     private readonly communicateService: CommunicateService,
-  ) { }
+  ) {}
 
   afterInit() {
     this.isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
-    let url = this.configService.get<string>('nodeSocket')!;
-    if (url)
-      this.webSocketService.connect(url);
+    const url = this.configService.get<string>('nodeSocket')!;
+    if (url) this.webSocketService.connect(url);
   }
 
   async handleDisconnect(): Promise<void> {
@@ -71,7 +71,10 @@ export class CommunicateGateway
 
       try {
         const jsonData = this.checkValidJson(dataString);
-        const result = await this.communicateService.send(this.isUseReadNode, jsonData as JsonrpcRequestBody);
+        const result = await this.communicateService.send(
+          this.isUseReadNode,
+          jsonData as JsonrpcRequestBody,
+        );
         if (!result) {
           this.webSocketService.send(data.toString());
         } else {

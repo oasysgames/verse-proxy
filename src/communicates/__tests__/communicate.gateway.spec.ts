@@ -45,9 +45,9 @@ describe('Communicate gateway', () => {
   let ws: WebSocket;
   let subscriptionId: string;
 
-  it("This test should be pass", (done) => {
-    done()
-  })
+  it('This test should be pass', (done) => {
+    done();
+  });
 
   // The test will need a connection to L1 node which can not pass review Bot
 
@@ -74,8 +74,6 @@ describe('Communicate gateway', () => {
   // afterAll(async () => {
   //   await app.close();
   // });
-
-
 
   // it('execute method is not allowed', async () => {
   //   const body = {
