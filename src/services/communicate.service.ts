@@ -2,12 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
-import {
-  JsonrpcRequestBody,
-  VerseRequestResponse,
-  JsonrpcError,
-  RequestContext,
-} from 'src/entities';
+import { JsonrpcRequestBody, JsonrpcError } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
 import { DatastoreService } from 'src/repositories';
 

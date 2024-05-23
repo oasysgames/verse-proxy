@@ -19,13 +19,7 @@ import {
   TRANSACTION_IS_INVALID,
   TRANSACTION_NOT_FOUND,
 } from 'src/constant/exception.constant';
-import {
-  TransactionService,
-  TypeCheckService,
-  VerseService,
-} from 'src/services';
 import { JsonrpcError, JsonrpcRequestBody } from 'src/entities';
-import { DatastoreService } from 'src/repositories';
 import { CommunicateService } from 'src/services/communicate.service';
 
 @WebSocketGateway()

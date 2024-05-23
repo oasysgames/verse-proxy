@@ -1,7 +1,5 @@
 import * as WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
-import { ESocketError } from 'src/constant/exception.constant';
-import { defer } from 'src/shared/utils';
 import { ConfigService } from '@nestjs/config';
 type Listener = (data: any) => void;
 @Injectable()
