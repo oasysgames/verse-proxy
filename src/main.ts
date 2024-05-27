@@ -5,6 +5,9 @@ import { json } from 'body-parser';
 import * as _cluster from 'cluster';
 import { cpus } from 'os';
 import { WsAdapter } from '@nestjs/platform-ws';
+import configuration from './config/configuration';
+
+const config = configuration();
 
 const cluster = _cluster as unknown as _cluster.Cluster;
 let workerCount = process.env.CLUSTER_PROCESS
@@ -12,16 +15,12 @@ let workerCount = process.env.CLUSTER_PROCESS
   : 1;
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useWebSocketAdapter(new WsAdapter(app));
-  app.use(
-    json({
-      limit: process.env.MAX_BODY_BYTE_SIZE
-        ? parseInt(process.env.MAX_BODY_BYTE_SIZE, 10)
-        : 524288,
-    }),
-  );
+  const app = await NestFactory.create(AppModule, {
+    logger: [process.env.NODE_ENV === 'development' ? 'debug' : 'log'],
+  });
+  app.use(json({ limit: config.maxBodySize }));
   app.useGlobalPipes(new ValidationPipe());
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.enableCors({
     origin: '*',
     allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept',

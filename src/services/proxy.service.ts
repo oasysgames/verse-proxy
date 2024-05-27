@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { VerseService } from './verse.service';
 import { TransactionService } from './transaction.service';
@@ -9,13 +9,16 @@ import {
   RequestContext,
 } from 'src/entities';
 import { TypeCheckService } from './typeCheck.service';
+import { WSClient } from './websocket.service';
 import { DatastoreService } from 'src/repositories';
 
 @Injectable()
 export class ProxyService {
   private isUseBlockNumberCache: boolean;
   private isUseDatastore: boolean;
+  private isUseReadNode: boolean;
   private allowedMethods: RegExp[];
+  private wsMethods: RegExp;
 
   constructor(
     private configService: ConfigService,
@@ -28,41 +31,72 @@ export class ProxyService {
       'blockNumberCacheExpire',
     );
     this.isUseDatastore = !!this.configService.get<string>('datastore');
+    this.isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
     this.allowedMethods = this.configService.get<RegExp[]>(
       'allowedMethods',
     ) ?? [/^.*$/];
+    this.wsMethods =
+      this.configService.get<RegExp>('wsMethods') ??
+      /^eth_(subscribe|unsubscribe)$/;
+  }
+
+  async proxy(
+    requestContext: RequestContext,
+    body: any,
+    opts?: { forceUseMasterNode?: boolean; ws?: WSClient },
+  ): Promise<VerseRequestResponse> {
+    const isUseReadNode =
+      opts?.forceUseMasterNode === true ? false : this.isUseReadNode;
+
+    if (this.typeCheckService.isJsonrpcRequestBody(body)) {
+      return await this.handleSingleRequest(
+        isUseReadNode,
+        requestContext,
+        body,
+        opts?.ws,
+      );
+    }
+    if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
+      return await this.handleBatchRequest(
+        isUseReadNode,
+        requestContext,
+        body,
+        opts?.ws,
+      );
+    }
+    throw new ForbiddenException(`invalid request`);
   }
 
   async handleSingleRequest(
     isUseReadNode: boolean,
     requestContext: RequestContext,
     body: JsonrpcRequestBody,
-    callback: (result: VerseRequestResponse) => void,
-  ) {
-    const result = await this.send(isUseReadNode, requestContext, body);
-    callback(result);
+    ws?: WSClient,
+  ): Promise<VerseRequestResponse> {
+    if (ws && this.wsMethods.test(body.method)) {
+      return { status: 0, data: await ws.sendToServer(body) };
+    }
+    return await this.send(isUseReadNode, requestContext, body);
   }
 
   async handleBatchRequest(
     isUseReadNode: boolean,
     requestContext: RequestContext,
     body: Array<JsonrpcRequestBody>,
-    callback: (result: VerseRequestResponse) => void,
-  ) {
+    ws?: WSClient,
+  ): Promise<VerseRequestResponse> {
     const results = await Promise.all(
-      body.map(async (verseRequest): Promise<any> => {
-        const result = await this.send(
+      body.map(async (x) => {
+        const result = await this.handleSingleRequest(
           isUseReadNode,
           requestContext,
-          verseRequest,
+          x,
+          ws,
         );
         return result.data;
       }),
     );
-    callback({
-      status: 200,
-      data: results,
-    });
+    return { status: 200, data: results };
   }
 
   async send(

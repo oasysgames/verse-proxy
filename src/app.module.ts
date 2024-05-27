@@ -2,6 +2,7 @@ import { CacheModule, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { ProxyController } from './controllers';
+import { WSGateway } from './gateways';
 import {
   ProxyService,
   TransactionService,
@@ -9,12 +10,10 @@ import {
   AllowCheckService,
   TypeCheckService,
   RateLimitService,
+  WSClientManagerService,
 } from './services';
 import { DatastoreService } from './repositories';
 import configuration from './config/configuration';
-import { CommunicateGateway } from './communicates/communicate.gateway';
-import { WebSocketService } from './services/webSocket.sevice';
-import { CommunicateService } from './services/communicate.service';
 
 @Module({
   imports: [
@@ -26,8 +25,6 @@ import { CommunicateService } from './services/communicate.service';
   ],
   controllers: [ProxyController],
   providers: [
-    WebSocketService,
-    CommunicateGateway,
     VerseService,
     TransactionService,
     ProxyService,
@@ -35,7 +32,8 @@ import { CommunicateService } from './services/communicate.service';
     TypeCheckService,
     DatastoreService,
     RateLimitService,
-    CommunicateService,
+    WSGateway,
+    WSClientManagerService,
   ],
 })
 export class AppModule {}

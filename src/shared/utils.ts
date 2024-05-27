@@ -12,3 +12,17 @@ export const defer = <TResolve = unknown, TReject = unknown>() => {
 
   return { promise, resolve, reject };
 };
+
+/**
+ * Returns a random string
+ */
+const asciis = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+export const randomStr = (len: number): string => {
+  let id = '';
+  let counter = 0;
+  while (counter < len) {
+    id += asciis.charAt(Math.floor(Math.random() * asciis.length));
+    counter += 1;
+  }
+  return id;
+};

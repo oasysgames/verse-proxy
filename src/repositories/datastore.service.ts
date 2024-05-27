@@ -29,6 +29,11 @@ export class DatastoreService {
     this.blockNumberCacheExpire = blockNumberCacheExpire;
   }
 
+  // for testing
+  close() {
+    this.redis.disconnect();
+  }
+
   async setTransactionHistory(
     from: string,
     to: string,
