@@ -3,8 +3,14 @@ import * as WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getClientIp } from '@supercharge/request-ip';
-import { JsonrpcId, JsonrpcRequestBody, RequestContext } from 'src/entities';
-import { INVALID_JSON_REQUEST, customRpcError, randomStr } from 'src/shared';
+import {
+  INVALID_JSON_REQUEST,
+  JsonrpcId,
+  JsonrpcRequestBody,
+  RequestContext,
+  customRpcError,
+} from 'src/entities';
+import { randomStr } from 'src/shared';
 import { ProxyService } from './proxy.service';
 
 // https://developer.mozilla.org/docs/Web/API/CloseEvent/code

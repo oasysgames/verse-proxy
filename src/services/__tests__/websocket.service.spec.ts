@@ -19,7 +19,8 @@ import {
 } from 'src/services';
 import { WSClientManagerService } from 'src/services';
 import { WSGateway } from 'src/gateways';
-import { customRpcError, randomStr } from 'src/shared';
+import { randomStr } from 'src/shared';
+import { customRpcError } from 'src/entities';
 
 jest.mock('@supercharge/request-ip');
 jest.mock('src/shared/utils');

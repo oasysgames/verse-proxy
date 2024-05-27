@@ -28,8 +28,6 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
     {
       fromList: ['*'],
       toList: ['*'],
-
-      // for unit test only
     },
   ];
 };
