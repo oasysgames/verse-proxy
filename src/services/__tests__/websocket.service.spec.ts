@@ -1,12 +1,13 @@
 import { IncomingMessage } from 'http';
 import { INestApplication } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import configuration from '../../config/configuration';
 import { HttpModule } from '@nestjs/axios';
 import * as WebSocket from 'ws';
 import { WsAdapter } from '@nestjs/platform-ws';
 import { getClientIp } from '@supercharge/request-ip';
+import { when } from 'jest-when';
 import { DatastoreService } from 'src/repositories';
 import {
   AllowCheckService,
@@ -43,8 +44,6 @@ describe('WebSocket Service', () => {
   let app: INestApplication;
   let datastore: DatastoreService;
   let proxy: ProxyService;
-  let manager: WSClientManagerService;
-
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
@@ -61,17 +60,24 @@ describe('WebSocket Service', () => {
         TypeCheckService,
         DatastoreService,
         RateLimitService,
-        WSGateway,
-        WSClientManagerService,
       ],
     }).compile();
 
     app = moduleRef.createNestApplication();
     app.useWebSocketAdapter(new WsAdapter(app));
 
-    manager = moduleRef.get<WSClientManagerService>(WSClientManagerService);
     proxy = moduleRef.get<ProxyService>(ProxyService);
     datastore = moduleRef.get<DatastoreService>(DatastoreService);
+  });
+
+  let manager: WSClientManagerService;
+  beforeAll(() => {
+    const config = moduleRef.get<ConfigService>(ConfigService);
+    when(jest.spyOn(config, 'get'))
+      .calledWith('verseWSUrl' as any)
+      .mockReturnValue('dummy');
+
+    manager = new WSClientManagerService(config, proxy);
   });
 
   beforeEach(() => {
