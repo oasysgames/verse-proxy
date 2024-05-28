@@ -357,6 +357,3 @@ To send requests to the master node, the request endpoint should be `/master`.
 MetaMask makes a lot of requests for block number information in order to always show the latest information.  
 To reduce access, we cache the block number information for a certain amount of time.  
 For detailed information, refer to [Reduce MetaMask Access](/docs/MetamaskAccess.md).
-```
-
-This version maintains the original structure and details in markdown format, suitable for inclusion in a `.md` file.
