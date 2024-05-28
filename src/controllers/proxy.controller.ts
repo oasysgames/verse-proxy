@@ -1,25 +1,12 @@
-import {
-  Controller,
-  Post,
-  Headers,
-  Body,
-  ForbiddenException,
-  Res,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Controller, Post, Headers, Body, Res } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http';
 import { RealIP } from 'nestjs-real-ip';
 import { Response } from 'express';
-import { ProxyService, TypeCheckService } from 'src/services';
-import { VerseRequestResponse, RequestContext } from 'src/entities';
+import { ProxyService } from 'src/services';
 
 @Controller()
 export class ProxyController {
-  constructor(
-    private configService: ConfigService,
-    private readonly typeCheckService: TypeCheckService,
-    private readonly proxyService: ProxyService,
-  ) {}
+  constructor(private readonly proxyService: ProxyService) {}
 
   @Post()
   async post(
@@ -28,12 +15,11 @@ export class ProxyController {
     @Body() body: any,
     @Res() res: Response,
   ) {
-    const requestContext = {
-      ip,
-      headers,
-    };
-    const isUseReadNode = !!this.configService.get<string>('verseReadNodeUrl');
-    await this.handler(isUseReadNode, requestContext, body, res);
+    const { status, data } = await this.proxyService.proxy(
+      { ip, headers },
+      body,
+    );
+    res.status(status).send(data);
   }
 
   @Post('master')
@@ -43,41 +29,11 @@ export class ProxyController {
     @Body() body: any,
     @Res() res: Response,
   ) {
-    const requestContext = {
-      ip,
-      headers,
-    };
-    const isUseReadNode = false;
-    await this.handler(isUseReadNode, requestContext, body, res);
-  }
-
-  async handler(
-    isUseReadNode: boolean,
-    requestContext: RequestContext,
-    body: any,
-    res: Response,
-  ) {
-    const callback = (result: VerseRequestResponse) => {
-      const { status, data } = result;
-      res.status(status).send(data);
-    };
-
-    if (this.typeCheckService.isJsonrpcArrayRequestBody(body)) {
-      await this.proxyService.handleBatchRequest(
-        isUseReadNode,
-        requestContext,
-        body,
-        callback,
-      );
-    } else if (this.typeCheckService.isJsonrpcRequestBody(body)) {
-      await this.proxyService.handleSingleRequest(
-        isUseReadNode,
-        requestContext,
-        body,
-        callback,
-      );
-    } else {
-      throw new ForbiddenException(`invalid request`);
-    }
+    const { status, data } = await this.proxyService.proxy(
+      { ip, headers },
+      body,
+      { forceUseMasterNode: true },
+    );
+    res.status(status).send(data);
   }
 }

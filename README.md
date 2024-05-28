@@ -21,13 +21,26 @@ Details are described later.
 - `src/config/configuration.ts`
 - `src/config/transactionAllowList.ts`
 
-### 3. Set up npm
+### 3. Set configuration variables
+- Create file `.env` refer to `.env.example`
+- Update those variables with corrected values from your side
+
+### 4. Set up redis server
+- Verse-Proxy use redis as a database to read and write data, so in order to run this proxy you will need start a redis server and pass url to `REDIS_URI`
+- also Verse-Proxy need to know which database you would use which can be config using `DATASTORE`
+For example: 
+```
+DATASTORE=redis
+REDIS_URI=redis://localhost:6379
+```
+
+### 5. Set up npm
 ```bash
 $ npm install
 $ npm build
 ```
 
-### 4. Run app
+### 6. Run app
 
 ```bash
 # development
@@ -57,7 +70,7 @@ $ npm run test:cov
 #### 1. Set Environment Variables
 ```bash
 export PORT=[YOUR_PROXY_PORT]
-export VERSE_URL=[YOUR_VERSE_URL]
+export VERSE_MASTER_NODE_URL=[YOUR_VERSE_HTTP_URL]
 ```
 
 #### 2. Set allow list config
@@ -293,9 +306,18 @@ It will send read-transactions to the read-node and write-transactions to the ma
 
 You can set Master-Verse-Node and Read-Verse-node by the environment variable.
 ```bash
-VERSE_MASTER_NODE_URL=[YOUR_VERSE_URL]
-VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_URL]
+VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_HTTP_URL]
 ```
+
+### WebSocket Proxy
+The WebSocket proxy is an experimental feature. To enable it, add the WebSocket rpc url of the your Verse node to the following environment variable and then restart the proxy.
+```bash
+VERSE_WS_URL=[YOUR_VERSE_WEBSOCKET_URL]
+```
+
+In the WebSocket proxy feature, only the `eth_subscribe` and `eth_unsubscribe` methods are proxied to the Verse node. All other methods are internally routed to the HTTP proxy feature. This means that if the `VERSE_READ_NODE_URL` environment variable is configured, read-transactions are proxied to the replica node, while write-transactions are proxied to the master node.
+
+**For the question of whether to choose a master node or a reader node**, please make your selection considering replication latency. Since latency is typically only a few tens of milliseconds, it is generally recommended to use the reader node.
 
 ### Check Master-Verse-Node
 To check the behavior of requests to the Master-Verse-Node, an endpoint named `/master` is provided.

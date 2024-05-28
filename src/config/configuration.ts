@@ -4,6 +4,7 @@ export default () => ({
     process.env.VERSE_URL ||
     'http://localhost:8545',
   verseReadNodeUrl: process.env.VERSE_READ_NODE_URL,
+  verseWSUrl: process.env.VERSE_WS_URL,
   blockNumberCacheExpire: process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC
     ? parseInt(process.env.BLOCK_NUMBER_CACHE_EXPIRE_SEC, 10)
     : undefined,
@@ -23,4 +24,7 @@ export default () => ({
     /^eth_.*Filter$/,
   ],
   inheritHostHeader: true,
+  maxBodySize: parseInt(process.env.MAX_BODY_BYTE_SIZE || '524288', 10),
+  wsMethods: /^eth_(subscribe|unsubscribe)$/,
+  wsGCInterval: parseInt(process.env.WS_GC_INTERVAL || '60000', 10),
 });

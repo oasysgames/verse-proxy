@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
 import { BigNumber } from 'ethers';
 import { AccessList } from 'ethers/lib/utils';
+import { when } from 'jest-when';
 import {
   TransactionService,
   VerseService,
@@ -10,6 +11,7 @@ import {
   AllowCheckService,
   RateLimitService,
   TypeCheckService,
+  WSClient,
 } from 'src/services';
 import { JsonrpcError } from 'src/entities';
 import { DatastoreService } from 'src/repositories';
@@ -100,138 +102,230 @@ describe('ProxyService', () => {
     jest.spyOn(console, 'error');
   });
 
-  describe('handleSingleRequest', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('successful', async () => {
-      const method = 'eth_call';
-      const isUseReadNode = true;
-      const ip = '127.0.0.1';
-      const headers = { host: 'localhost' };
-      const requestContext = {
-        ip,
-        headers,
-      };
-      const body = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: method,
-        params: [tx, 'latest'],
-      };
-      const callback = jest.fn();
-
-      const verseStatus = 200;
-      const verseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '0x',
-      };
-      const postResponse = {
-        status: verseStatus,
-        data: verseData,
-      };
-
-      const proxyService = new ProxyService(
-        configService,
-        typeCheckService,
-        verseService,
-        txService,
-        datastoreService,
-      );
-
-      const send = jest
-        .spyOn(proxyService, 'send')
-        .mockResolvedValue(postResponse);
-
-      await proxyService.handleSingleRequest(
-        isUseReadNode,
-        requestContext,
-        body,
-        callback,
-      );
-      expect(send).toHaveBeenCalledWith(isUseReadNode, requestContext, body);
-      expect(callback).toHaveBeenCalledWith(postResponse);
-    });
+  beforeEach(() => {
+    jest.resetAllMocks();
   });
 
-  describe('handleBatchRequest', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
+  describe('proxy', () => {
+    const ip = '127.0.0.1';
+    const headers = { host: 'localhost' };
+    const requestContext = { ip, headers };
 
-    it('successful', async () => {
-      const isUseReadNode = true;
-      const ip = '127.0.0.1';
-      const headers = { host: 'localhost' };
-      const requestContext = {
-        ip,
-        headers,
-      };
-      const body = [
-        {
-          jsonrpc: '2.0',
-          method: 'net_version',
-          params: [],
-          id: 1,
-        },
-        {
-          jsonrpc: '2.0',
-          method: 'net_version',
-          params: [],
-          id: 1,
-        },
-      ];
-      const callback = jest.fn();
-
-      const verseStatus = 200;
-      const verseData = {
-        jsonrpc: '2.0',
-        id: 1,
-        result: '999999',
-      };
-      const postResponse = {
-        status: verseStatus,
-        data: verseData,
-      };
-      const results = [
-        {
-          jsonrpc: '2.0',
-          id: 1,
-          result: '999999',
-        },
-        {
-          jsonrpc: '2.0',
-          id: 1,
-          result: '999999',
-        },
-      ];
-      const callbackArg = {
-        status: verseStatus,
-        data: results,
-      };
-
-      const proxyService = new ProxyService(
+    let proxyService: ProxyService;
+    beforeAll(() => {
+      proxyService = new ProxyService(
         configService,
         typeCheckService,
         verseService,
         txService,
         datastoreService,
       );
+    });
 
-      const send = jest
+    it('single request', async () => {
+      const request = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [tx, 'latest'],
+      };
+      const response = {
+        status: 200,
+        data: {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x',
+        },
+      };
+
+      const sendSpy = jest
         .spyOn(proxyService, 'send')
-        .mockResolvedValue(postResponse);
+        .mockResolvedValue(response);
 
-      await proxyService.handleBatchRequest(
-        isUseReadNode,
+      const ret = await proxyService.proxy(requestContext, request);
+
+      expect(sendSpy).toHaveBeenCalledWith(false, requestContext, request);
+      expect(ret).toEqual(response);
+    });
+
+    it('batch request', async () => {
+      const request = [
+        {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'net_version',
+          params: [],
+        },
+        {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'eth_chainId',
+          params: [],
+        },
+      ];
+      const response = [
+        {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 1,
+            result: '1',
+          },
+        },
+        {
+          status: 200,
+          data: {
+            jsonrpc: '2.0',
+            id: 2,
+            result: '0x2',
+          },
+        },
+      ];
+
+      const sendSpy = jest
+        .spyOn(proxyService, 'send')
+        .mockResolvedValueOnce(response[0])
+        .mockResolvedValueOnce(response[1]);
+
+      const ret = await proxyService.proxy(requestContext, request);
+
+      expect(sendSpy).toBeCalledTimes(2);
+      expect(sendSpy).toHaveBeenNthCalledWith(
+        1,
+        false,
         requestContext,
-        body,
-        callback,
+        request[0],
       );
-      expect(send).toHaveBeenCalledTimes(2);
-      expect(callback).toHaveBeenCalledWith(callbackArg);
+      expect(sendSpy).toHaveBeenNthCalledWith(
+        2,
+        false,
+        requestContext,
+        request[1],
+      );
+      expect(ret).toEqual({ status: 200, data: response.map((x) => x.data) });
+    });
+
+    it('invalid request', async () => {
+      await expect(proxyService.proxy(requestContext, {})).rejects.toThrow(
+        'invalid request',
+      );
+    });
+
+    it('from websocket client', async () => {
+      const request = [
+        {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_subscribe',
+          params: [],
+        },
+        {
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'net_version',
+          params: [],
+        },
+        {
+          jsonrpc: '2.0',
+          id: 3,
+          method: 'eth_unsubscribe',
+          params: [],
+        },
+      ];
+      const response = [
+        {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0xe040d9bb2e399683ef39e40e3fadfcad',
+        },
+        {
+          jsonrpc: '2.0',
+          id: 2,
+          result: '1',
+        },
+        {
+          jsonrpc: '2.0',
+          id: 3,
+          result: true,
+        },
+      ];
+
+      const wsSpy = jest
+        .fn()
+        .mockResolvedValueOnce(response[0])
+        .mockResolvedValueOnce(response[2]);
+      const sendSpy = jest
+        .spyOn(proxyService, 'send')
+        .mockResolvedValueOnce({ status: 200, data: response[1] });
+
+      const ret = await proxyService.proxy(requestContext, request, {
+        ws: { sendToServer: wsSpy } as unknown as WSClient,
+      });
+
+      expect(wsSpy).toBeCalledTimes(2);
+      expect(wsSpy).toHaveBeenNthCalledWith(1, request[0]);
+      expect(wsSpy).toHaveBeenNthCalledWith(2, request[2]);
+      expect(sendSpy).toBeCalledTimes(1);
+      expect(sendSpy).toHaveBeenNthCalledWith(
+        1,
+        false,
+        requestContext,
+        request[1],
+      );
+      expect(ret).toEqual({ status: 200, data: response });
+    });
+
+    describe('switching between master node and reader node', () => {
+      const request = {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [tx, 'latest'],
+      };
+      const response = {
+        status: 200,
+        data: {
+          jsonrpc: '2.0',
+          id: 1,
+          result: '0x',
+        },
+      };
+
+      let proxyService: ProxyService;
+      beforeAll(() => {
+        when(jest.spyOn(configService, 'get'))
+          .calledWith('verseReadNodeUrl' as any)
+          .mockReturnValue('https://replica.example.com/');
+        proxyService = new ProxyService(
+          configService,
+          typeCheckService,
+          verseService,
+          txService,
+          datastoreService,
+        );
+      });
+
+      it('using reader node', async () => {
+        const sendSpy = jest
+          .spyOn(proxyService, 'send')
+          .mockResolvedValueOnce(response);
+
+        await proxyService.proxy(requestContext, request);
+
+        expect(sendSpy).toHaveBeenCalledWith(true, requestContext, request);
+      });
+
+      it('using master node', async () => {
+        const sendSpy = jest
+          .spyOn(proxyService, 'send')
+          .mockResolvedValueOnce(response);
+
+        await proxyService.proxy(requestContext, request, {
+          forceUseMasterNode: true,
+        });
+
+        expect(sendSpy).toHaveBeenCalledWith(false, requestContext, request);
+      });
     });
   });
 

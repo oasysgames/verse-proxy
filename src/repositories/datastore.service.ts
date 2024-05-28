@@ -5,14 +5,16 @@ import { createHash } from 'crypto';
 import { RateLimit } from 'src/config/transactionAllowList';
 import { RequestContext } from 'src/entities';
 
+type DATASTORE = '' | 'redis';
+
 @Injectable()
 export class DatastoreService {
-  private datastore: string;
+  private datastore: DATASTORE;
   private redis: Redis;
   private blockNumberCacheExpire: number;
 
   constructor(private configService: ConfigService) {
-    this.datastore = this.configService.get<string>('datastore') ?? '';
+    this.datastore = this.configService.get<DATASTORE>('datastore') ?? '';
     if (this.datastore === 'redis' && process.env.REDIS_URI) {
       this.redis = new Redis(process.env.REDIS_URI);
     }
@@ -27,6 +29,13 @@ export class DatastoreService {
       );
     }
     this.blockNumberCacheExpire = blockNumberCacheExpire;
+  }
+
+  // for testing
+  close() {
+    if (this.datastore === 'redis') {
+      this.redis.disconnect();
+    }
   }
 
   async setTransactionHistory(
