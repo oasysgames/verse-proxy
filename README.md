@@ -1,4 +1,5 @@
 # Verse-Proxy
+
 This is proxy to control access allow list to verse layer.  
 Verse-Proxy is made by [Nest](https://github.com/nestjs/nest).  
 
@@ -11,30 +12,47 @@ Verse-Proxy can control following items.
 ## Verse Proxy Build Steps
 
 ### 1. Git clone
+
 ```bash
 git clone git@github.com:oasysgames/verse-proxy.git
 ```
 
 ### 2. Set access allow list
+
 Set access allow list at following file.  
 Details are described later.
 - `src/config/configuration.ts`
 - `src/config/transactionAllowList.ts`
 
 ### 3. Set configuration variables
+
 - Create file `.env` refer to `.env.example`
 - Update those variables with corrected values from your side
 
 ### 4. Set up redis server
+
 - Verse-Proxy use redis as a database to read and write data, so in order to run this proxy you will need start a redis server and pass url to `REDIS_URI`
 - also Verse-Proxy need to know which database you would use which can be config using `DATASTORE`
+
 For example: 
-```
+
+```env
 DATASTORE=redis
 REDIS_URI=redis://localhost:6379
 ```
 
-### 5. Set up npm
+### 5. Handle disconnect from node's websocket
+
+- `MAXRECONNECTATTEMPTS` specifies the maximum number of attempts the Verse-proxy will make to reconnect to a node's websocket.
+
+**example**: 
+
+```env
+MAXRECONNECTATTEMPTS=10
+```
+
+### 6. Set up npm
+
 ```bash
 $ npm install
 $ npm build
@@ -67,16 +85,20 @@ $ npm run test:cov
 ```
 
 ### Deploy
+
 #### 1. Set Environment Variables
+
 ```bash
 export PORT=[YOUR_PROXY_PORT]
 export VERSE_MASTER_NODE_URL=[YOUR_VERSE_HTTP_URL]
 ```
 
 #### 2. Set allow list config
+
 You have to download your allow list config to `$PWD/src/config`.
 
 #### 3. Start container
+
 ```bash
 # chose image version and pull image
 docker pull ghcr.io/oasysgames/verse-proxy:v1.0.0
@@ -88,13 +110,17 @@ docker run --name verse-proxy -d -p $PORT:$PORT -v $PWD/src/config:/usr/src/app/
 ## Control items
 
 ### Set allowed header
+
 You can set whether you inherit proxy request's host header on verse request at `src/config/configuration.ts`.
+
 ```typescript
 inheritHostHeader: true,
 ```
 
 ### Set allowed verse request methods
+
 You can set allowed verse request methods by regex at `src/config/configuration.ts`.
+
 ```typescript
 allowedMethods: [
   /^net_version$/,
@@ -114,12 +140,14 @@ allowedMethods: [
 
 Default allowedMethods feature are following.  
 - It allows methods that may be requested by users
-- It prohibits the methods of executing a transaction with the authority of verse-geth(e.g. eth_sendTransaction)
+- It prohibits the methods of executing a transaction with the authority of verse-geth (e.g., `eth_sendTransaction`)
 
 ### Set transaction allow list
+
 You can set allowed transaction list at `src/config/transactionAllowList.ts`.
 
 #### from, to
+
 You can control the from and to of a transaction.
 
 ```typescript
@@ -151,8 +179,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// ! is exception_pattern.
-
+// '!' is exception pattern.
 // 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to be transacted.
 // But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a are allowed to be transacted.
 export const getTxAllowList = (): Array<TransactionAllow> => {
@@ -165,7 +192,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 
 // Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a.
-// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a.
+// Everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
@@ -175,9 +202,9 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
   ];
 };
 
-// Multiple Setting is enabled.
+// Multiple settings are enabled.
 // Everyone are not allowed to transact to 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
-// everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
+// Everyone are allowed to transact to any address other than 0xaf395754eB6F542742784cE7702940C60465A46a and 0xaf395754eB6F542742784cE7702940C60465A46c.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
@@ -192,7 +219,7 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 ```
 
 ```typescript
-// You can not set setting with normal_address and exception_pattern.
+// You cannot set settings with normal address and exception pattern.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
@@ -231,18 +258,19 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 };
 ```
 
-#### Value(Option)
+#### Value (Option)
+
 You can control the token value of a transaction.
 
 ```typescript
-// Only transactions with more than 1000000000000000000unit values are allowed.
+// Only transactions with more than 1000000000000000000 unit values are allowed.
 export const getTxAllowList = (): Array<TransactionAllow> => {
   return [
     {
       fromList: ['*'],
       toList: ['*'],
       value: { gt: '1000000000000000000' },
-      },
+    },
   ];
 };
 ```
@@ -256,75 +284,79 @@ export const getTxAllowList = (): Array<TransactionAllow> => {
 |  lt  |  txValue < condition is allowed  |
 |  lte  |  txValue <= condition is allowed  |
 
-#### Transaction access rate limit(Option)
-If you set transaction access rate limit, follow [Transaction access rate limit](/docs/RateLimit.md)
+#### Transaction access rate limit (Option)
 
-### Set contract deployer
-You can control deployer of a verse at `src/config/transactionAllowList.ts`.
+If you set transaction access rate limit, follow [Transaction access rate limit](/docs/
+
+RateLimit.md).  
+If you want to deny all transaction access, set `false`.
+
+### Deploy allow list
+
+You can control who can deploy contract.
 
 ```typescript
-// Only 0xaf395754eB6F542742784cE7702940C60465A46a can deploy
+// Only addresses contained in the array are allowed to deploy contract.
 export const getDeployAllowList = (): Array<string> => {
   return ['0xaf395754eB6F542742784cE7702940C60465A46a'];
 };
+```
 
-// wild card
-// Everyone can deploy
+```typescript
+// '*' is wildcard.
 export const getDeployAllowList = (): Array<string> => {
   return ['*'];
 };
+```
 
-// exception_pattern
-// any address other than 0xaf395754eB6F542742784cE7702940C60465A46c can deploy.
+```typescript
+// '!' is exception pattern.
+// 0xaf395754eB6F542742784cE7702940C60465A46a are not allowed to deploy contract.
+// But any address other than 0xaf395754eB6F542742784cE7702940C60465A46a are allowed to deploy contract.
 export const getDeployAllowList = (): Array<string> => {
-  return ['!0xaf395754eB6F542742784cE7702940C60465A46c'];
+  return ['!0xaf395754eB6F542742784cE7702940C60465A46a'];
 };
 ```
 
-## Batch Request
-You can execute batch requests to the proxy.
+### Handle large batch request
 
-If you want to make many transaction batch requests, change the parse limit in the body by environment variable.
-The default body parse limit is 512kb.
+You can set the body parser size limit by configuring MAX_BODY_BYTE_SIZE in `.env` to handle large batch requests.  
+Default is 1mb.
 
-```bash
-MAX_BODY_BYTE_SIZE=1048576 # 1048576 byte is 1MB.
+```env
+MAX_BODY_BYTE_SIZE=1048576 # 1MB
 ```
 
-## Multi Processing
-If you want to build proxy in multi-process, set worker count to environment variables.
-The default worker count is 1.
+### Set worker processes
 
-```bash
+You can set the number of worker processes to use.  
+Default is 1.  
+When setting the number of worker processes, make sure you have a sufficient server resource, otherwise it will affect the performance.  
+Setting the value too high may cause resource exhaustion and crashes.
+
+```env
 CLUSTER_PROCESS=4
 ```
 
-## Master-Verse-Node and Read-Verse-node
-You can create a verse and its replica to reduce the access load on the verse.
-A verse can be set on the master-node and a replica on the read-node in a proxy.
-It will send read-transactions to the read-node and write-transactions to the master-node.
+### Set master and read nodes
 
-You can set Master-Verse-Node and Read-Verse-node by the environment variable.
-```bash
-VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_HTTP_URL]
+Verse-proxy supports master and read nodes to distribute the load.
+
+```env
+VERSE_MASTER_NODE_URL=[YOUR_VERSE_URL]
+VERSE_READ_NODE_URL=[YOUR_VERSE_REPLICA_URL]
 ```
 
-### WebSocket Proxy
-The WebSocket proxy is an experimental feature. To enable it, add the WebSocket rpc url of the your Verse node to the following environment variable and then restart the proxy.
-```bash
-VERSE_WS_URL=[YOUR_VERSE_WEBSOCKET_URL]
+#### Request to master node endpoint
+
+The master node endpoint is `/master`.  
+To send requests to the master node, the request endpoint should be `/master`.
+
+## Reduce MetaMask Access
+
+MetaMask makes a lot of requests for block number information in order to always show the latest information.  
+To reduce access, we cache the block number information for a certain amount of time.  
+For detailed information, refer to [Reduce MetaMask Access](/docs/MetamaskAccess.md).
 ```
 
-In the WebSocket proxy feature, only the `eth_subscribe` and `eth_unsubscribe` methods are proxied to the Verse node. All other methods are internally routed to the HTTP proxy feature. This means that if the `VERSE_READ_NODE_URL` environment variable is configured, read-transactions are proxied to the replica node, while write-transactions are proxied to the master node.
-
-**For the question of whether to choose a master node or a reader node**, please make your selection considering replication latency. Since latency is typically only a few tens of milliseconds, it is generally recommended to use the reader node.
-
-### Check Master-Verse-Node
-To check the behavior of requests to the Master-Verse-Node, an endpoint named `/master` is provided.
-
-All transactions sent to `/master` are sent to the Master-Verse-Node.
-
-## Reduce Metamask Access
-By returning the cache of blockNumber to the metamask, the number of accesses to the metamask can be reduced.
-For more detail, check the following doc.
-[Reduce Metamask Access](/docs/MetamaskAccess.md)
+This version maintains the original structure and details in markdown format, suitable for inclusion in a `.md` file.
