@@ -1,3 +1,4 @@
+import type { AccessList } from 'ethers';
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import * as request from 'supertest';
@@ -102,8 +103,7 @@ describe('single request', () => {
   const valueAmount = '1000000000000';
   const value = BigInt(valueAmount);
   const data = '0x';
-  // const accessList = [] as AccessList;
-  const accessList = [] as any;
+  const accessList = [] as AccessList;
   const hash =
     '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
   const v = 0;
@@ -183,12 +183,12 @@ describe('single request', () => {
         type,
         chainId,
         nonce,
-        maxPriorityFeePerGas,
-        maxFeePerGas,
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        maxFeePerGas: maxFeePerGas.toString(),
         gasPrice,
-        gasLimit,
+        gasLimit: gasLimit.toString(),
         to,
-        value,
+        value: value.toString(),
         data,
         accessList,
         hash,
@@ -2652,7 +2652,7 @@ describe('batch request', () => {
   const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
   const value = BigInt('1000000000000');
   const data = '0x';
-  const accessList = [] as any;
+  const accessList = [] as AccessList;
   const hash =
     '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
   const v = 0;
