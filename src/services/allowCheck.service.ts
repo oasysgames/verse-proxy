@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ComparisonOperation } from 'src/config/transactionAllowList';
-import { BigNumber } from 'ethers';
 import {
   getDeployAllowList,
   getUnlimitedTxRateAddresses,
@@ -70,7 +69,7 @@ export class AllowCheckService {
 
   isAllowedValue(
     valueCondition: ComparisonOperation | undefined,
-    value: BigNumber,
+    value: bigint,
   ): boolean {
     if (valueCondition === undefined) return true;
     if (Object.keys(valueCondition).length === 0) return true;
@@ -79,26 +78,27 @@ export class AllowCheckService {
     for (const key in valueCondition) {
       switch (key) {
         case 'eq':
-          if (valueCondition.eq && !value.eq(valueCondition.eq))
+          if (valueCondition.eq && !(value === BigInt(valueCondition.eq)))
             isAllow = false;
           break;
         case 'nq':
-          if (valueCondition.nq && value.eq(valueCondition.nq)) isAllow = false;
+          if (valueCondition.nq && value === BigInt(valueCondition.nq))
+            isAllow = false;
           break;
         case 'gt':
-          if (valueCondition.gt && value.lte(valueCondition.gt))
+          if (valueCondition.gt && value <= BigInt(valueCondition.gt))
             isAllow = false;
           break;
         case 'gte':
-          if (valueCondition.gte && value.lt(valueCondition.gte))
+          if (valueCondition.gte && value < BigInt(valueCondition.gte))
             isAllow = false;
           break;
         case 'lt':
-          if (valueCondition.lt && value.gte(valueCondition.lt))
+          if (valueCondition.lt && value >= BigInt(valueCondition.lt))
             isAllow = false;
           break;
         case 'lte':
-          if (valueCondition.lte && value.gt(valueCondition.lte))
+          if (valueCondition.lte && value > BigInt(valueCondition.lte))
             isAllow = false;
           break;
         default: // key is not invalid(e.g. leq)

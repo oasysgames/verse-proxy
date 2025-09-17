@@ -1,10 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import * as request from 'supertest';
-import { BigNumber } from 'ethers';
-import { AccessList } from 'ethers/lib/utils';
 import { of } from 'rxjs';
-import { AxiosResponse, AxiosRequestConfig } from 'axios';
+import { AxiosResponse /* AxiosRequestConfig */ } from 'axios';
 import { AppModule } from 'src/app.module';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -38,7 +36,7 @@ const getHttpServiceMock = (mockRes: HttpServiceMockRes) => {
       (
         url: string,
         data?: any,
-        config?: AxiosRequestConfig<any> | undefined,
+        /*config?: AxiosRequestConfig<any> | undefined,*/
       ) => {
         switch (data.method) {
           case 'eth_sendRawTransaction':
@@ -96,15 +94,16 @@ describe('single request', () => {
   const type = 2;
   const chainId = 5;
   const nonce = 3;
-  const maxPriorityFeePerGas = BigNumber.from('1500000000');
-  const maxFeePerGas = BigNumber.from('1500000018');
+  const maxPriorityFeePerGas = BigInt('1500000000');
+  const maxFeePerGas = BigInt('1500000018');
   const gasPrice = undefined;
-  const gasLimit = BigNumber.from('21000');
+  const gasLimit = BigInt('21000');
   const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
   const valueAmount = '1000000000000';
-  const value = BigNumber.from(valueAmount);
+  const value = BigInt(valueAmount);
   const data = '0x';
-  const accessList = [] as AccessList;
+  // const accessList = [] as AccessList;
+  const accessList = [] as any;
   const hash =
     '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
   const v = 0;
@@ -428,7 +427,7 @@ describe('single request', () => {
         httpServiceMockRes,
         configServiceMockRes,
       );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
       return await request(app.getHttpServer())
         .post('/')
@@ -539,7 +538,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -649,7 +648,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -751,7 +750,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -864,7 +863,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -975,7 +974,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1086,7 +1085,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1189,7 +1188,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
         return await request(app.getHttpServer())
           .post('/')
@@ -1307,7 +1306,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1429,7 +1428,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1551,7 +1550,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
@@ -1665,7 +1664,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -1779,7 +1778,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
@@ -1904,7 +1903,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2024,7 +2023,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2144,7 +2143,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2264,7 +2263,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(10);
@@ -2376,7 +2375,7 @@ describe('single request', () => {
           httpServiceMockRes,
           configServiceMockRes,
         );
-        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+        jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
         jest
           .spyOn(datastoreService, 'getTransactionHistoryCount')
           .mockResolvedValue(0);
@@ -2501,7 +2500,7 @@ describe('single request', () => {
         httpServiceMockRes,
         configServiceMockRes,
       );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(0);
@@ -2613,7 +2612,7 @@ describe('single request', () => {
         httpServiceMockRes,
         configServiceMockRes,
       );
-      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+      jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
       jest
         .spyOn(datastoreService, 'getTransactionHistoryCount')
         .mockResolvedValue(10);
@@ -2629,7 +2628,6 @@ describe('single request', () => {
 
 describe('batch request', () => {
   let txService: TransactionService;
-  let datastoreService: DatastoreService;
   let moduleFixture: TestingModule;
   let app: INestApplication;
 
@@ -2647,14 +2645,14 @@ describe('batch request', () => {
   const type = 2;
   const chainId = 5;
   const nonce = 3;
-  const maxPriorityFeePerGas = BigNumber.from('1500000000');
-  const maxFeePerGas = BigNumber.from('1500000018');
+  const maxPriorityFeePerGas = BigInt('1500000000');
+  const maxFeePerGas = BigInt('1500000018');
   const gasPrice = undefined;
-  const gasLimit = BigNumber.from('21000');
+  const gasLimit = BigInt('21000');
   const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
-  const value = BigNumber.from('1000000000000');
+  const value = BigInt('1000000000000');
   const data = '0x';
-  const accessList = [] as AccessList;
+  const accessList = [] as any;
   const hash =
     '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
   const v = 0;
@@ -2708,7 +2706,6 @@ describe('batch request', () => {
     moduleFixture = await testingModuleBuilder.compile();
 
     txService = moduleFixture.get<TransactionService>(TransactionService);
-    datastoreService = moduleFixture.get<DatastoreService>(DatastoreService);
 
     jest.spyOn(console, 'error').mockImplementation();
 
@@ -2978,7 +2975,7 @@ describe('batch request', () => {
       httpServiceMockRes,
       configServiceMockRes,
     );
-    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
     return await request(app.getHttpServer())
       .post('/')
@@ -3113,7 +3110,7 @@ describe('batch request', () => {
       httpServiceMockRes,
       configServiceMockRes,
     );
-    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
     return await request(app.getHttpServer())
       .post('/')
@@ -3235,7 +3232,7 @@ describe('batch request', () => {
       httpServiceMockRes,
       configServiceMockRes,
     );
-    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx);
+    jest.spyOn(txService, 'parseRawTx').mockReturnValue(tx as any);
 
     return await request(app.getHttpServer())
       .post('/')

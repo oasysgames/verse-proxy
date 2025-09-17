@@ -19,7 +19,6 @@ import {
   WSClient,
 } from 'src/services';
 import { WSClientManagerService } from 'src/services';
-import { WSGateway } from 'src/gateways';
 import { randomStr } from 'src/shared';
 import { customRpcError } from 'src/entities';
 

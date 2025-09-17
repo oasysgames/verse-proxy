@@ -1,4 +1,3 @@
-import { BigNumber } from 'ethers';
 import { ComparisonOperation } from 'src/config/transactionAllowList';
 import { AllowCheckService } from 'src/services';
 
@@ -179,7 +178,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       eq: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -189,7 +188,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       eq: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -199,7 +198,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       nq: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -209,7 +208,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       nq: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -219,7 +218,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gt: '900000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -229,7 +228,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gt: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -239,7 +238,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gt: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -249,7 +248,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gte: '900000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -259,7 +258,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gte: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -269,7 +268,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       gte: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -279,7 +278,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lt: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -289,7 +288,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lt: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -299,7 +298,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lt: '900000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -309,7 +308,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lte: '1000000000000000000',
     };
-    const value = BigNumber.from('900000000000000000');
+    const value = BigInt('900000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -319,7 +318,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lte: '1000000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -329,7 +328,7 @@ describe('isAllowedValue', () => {
     const valueCondition: ComparisonOperation = {
       lte: '900000000000000000',
     };
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -339,7 +338,7 @@ describe('isAllowedValue', () => {
     const valueCondition = {
       leq: '900000000000000000',
     } as ComparisonOperation;
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(false);
@@ -347,7 +346,7 @@ describe('isAllowedValue', () => {
 
   test('value is empty object', () => {
     const valueCondition = {};
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);
@@ -355,7 +354,7 @@ describe('isAllowedValue', () => {
 
   test('value is not set', () => {
     const valueCondition = undefined;
-    const value = BigNumber.from('1000000000000000000');
+    const value = BigInt('1000000000000000000');
 
     const result = allowCheckService.isAllowedValue(valueCondition, value);
     expect(result).toBe(true);

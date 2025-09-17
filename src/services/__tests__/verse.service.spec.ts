@@ -3,8 +3,6 @@ import { HttpModule, HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { of } from 'rxjs';
 import { AxiosResponse } from 'axios';
-import { BigNumber } from 'ethers';
-import { AccessList } from 'ethers/lib/utils';
 import { VerseService } from 'src/services';
 import { JsonrpcError } from 'src/entities';
 
@@ -56,14 +54,14 @@ describe('VerseService', () => {
     const type = 2;
     const chainId = 5;
     const nonce = 3;
-    const maxPriorityFeePerGas = BigNumber.from('1500000000');
-    const maxFeePerGas = BigNumber.from('1500000018');
+    const maxPriorityFeePerGas = BigInt('1500000000');
+    const maxFeePerGas = BigInt('1500000018');
     const gasPrice = undefined;
-    const gasLimit = BigNumber.from('21000');
+    const gasLimit = BigInt('21000');
     const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
-    const value = BigNumber.from('1000000000000');
+    const value = BigInt('1000000000000');
     const data = '0x';
-    const accessList = [] as AccessList;
+    const accessList = [] as any;
     const hash =
       '0xc6092b487b9e86b4ea22bf5e73cc0172ca37e938971e26aa70ec66f7be9dfcfc';
     const v = 0;
