@@ -78,7 +78,7 @@ export class AllowCheckService {
     for (const key in valueCondition) {
       switch (key) {
         case 'eq':
-          if (valueCondition.eq && !(value === BigInt(valueCondition.eq)))
+          if (valueCondition.eq && value !== BigInt(valueCondition.eq))
             isAllow = false;
           break;
         case 'nq':
