@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ethers, Transaction } from 'ethers';
+import { Transaction } from 'ethers';
 import {
   EthEstimateGasParams,
   JsonrpcRequestBody,
@@ -93,23 +93,23 @@ export class TransactionService {
     id: JsonrpcId,
   ): Promise<void> {
     const ethCallParams: EthEstimateGasParams = {
-      nonce: ethers.toBeHex(BigInt(tx.nonce)),
-      gas: ethers.toBeHex(tx.gasLimit),
-      value: ethers.toBeHex(tx.value),
+      nonce: this.toBeHex(tx.nonce),
+      gas: this.toBeHex(tx.gasLimit),
+      value: this.toBeHex(tx.value),
       data: tx.data,
-      chainId: ethers.toBeHex(BigInt(tx.chainId)),
+      chainId: this.toBeHex(tx.chainId),
     };
 
-    if (tx.type) ethCallParams['type'] = ethers.toBeHex(BigInt(tx.type));
+    if (tx.type) ethCallParams['type'] = this.toBeHex(tx.type);
     if (tx.from) ethCallParams['from'] = tx.from;
     if (tx.to) ethCallParams['to'] = tx.to;
-    if (tx.gasPrice) ethCallParams['gasPrice'] = ethers.toBeHex(tx.gasPrice);
+    if (tx.gasPrice) ethCallParams['gasPrice'] = this.toBeHex(tx.gasPrice);
     if (tx.maxPriorityFeePerGas)
-      ethCallParams['maxPriorityFeePerGas'] = ethers.toBeHex(
+      ethCallParams['maxPriorityFeePerGas'] = this.toBeHex(
         tx.maxPriorityFeePerGas,
       );
     if (tx.maxFeePerGas)
-      ethCallParams['maxFeePerGas'] = ethers.toBeHex(tx.maxFeePerGas);
+      ethCallParams['maxFeePerGas'] = this.toBeHex(tx.maxFeePerGas);
     if (tx.accessList) ethCallParams['accessList'] = tx.accessList;
 
     const params = [ethCallParams];
@@ -120,7 +120,6 @@ export class TransactionService {
       method: 'eth_estimateGas',
       params: params,
     };
-
     const { data } = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcErrorResponse(data)) {
       const { code, message } = data.error;
@@ -189,5 +188,19 @@ export class TransactionService {
 
   parseRawTx(rawTx: string): Transaction {
     return Transaction.from(rawTx);
+  }
+
+  // Avoid using `ethers.toBeHex` — it can cause parse errors.
+  // Example: 0x01 -> error, but 0x1 -> valid
+  //
+  // Error: invalid argument 0: json: cannot unmarshal hex number
+  // with leading zero digits into Go struct field
+  // TransactionArgs.nonce of type hexutil.Uint64
+  toBeHex(v: string | bigint | number): string {
+    if (typeof v === 'bigint') return '0x' + v.toString(16);
+    if (typeof v === 'number') return '0x' + v.toString(16);
+    if (v.startsWith('0x')) return v; // if v is hex string
+    if (!/^\d+$/.test(v)) throw new Error(`failed to convert ${v} to hex`); // assert number string
+    return '0x' + BigInt(v).toString(16);
   }
 }
