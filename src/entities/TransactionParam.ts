@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import type { AccessList } from 'ethers';
 
 export interface EthEstimateGasParams {
   type?: string;
@@ -11,6 +11,6 @@ export interface EthEstimateGasParams {
   gasPrice?: string;
   maxPriorityFeePerGas?: string;
   maxFeePerGas?: string;
-  accessList?: ethers.utils.AccessList;
+  accessList?: AccessList;
   chainId: string;
 }

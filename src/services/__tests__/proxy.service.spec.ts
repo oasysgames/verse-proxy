@@ -1,8 +1,7 @@
+import type { AccessList } from 'ethers';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
-import { BigNumber } from 'ethers';
-import { AccessList } from 'ethers/lib/utils';
 import { when } from 'jest-when';
 import {
   TransactionService,
@@ -19,12 +18,12 @@ import { DatastoreService } from 'src/repositories';
 const type = 2;
 const chainId = 5;
 const nonce = 3;
-const maxPriorityFeePerGas = BigNumber.from('1500000000');
-const maxFeePerGas = BigNumber.from('1500000018');
+const maxPriorityFeePerGas = BigInt('1500000000');
+const maxFeePerGas = BigInt('1500000018');
 const gasPrice = undefined;
-const gasLimit = BigNumber.from('21000');
+const gasLimit = BigInt('21000');
 const to = '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199';
-const value = BigNumber.from('1000000000000');
+const value = BigInt('1000000000000');
 const data = '0x';
 const accessList = [] as AccessList;
 const hash =
@@ -1042,7 +1041,7 @@ describe('ProxyService', () => {
       });
       const parseRawTx = jest
         .spyOn(txService, 'parseRawTx')
-        .mockReturnValue(tx);
+        .mockReturnValue(tx as any);
       const checkContractDeploy = jest.spyOn(txService, 'checkContractDeploy');
       const versePost = jest
         .spyOn(verseService, 'postVerseMasterNode')
@@ -1149,7 +1148,7 @@ describe('ProxyService', () => {
       });
       const parseRawTx = jest
         .spyOn(txService, 'parseRawTx')
-        .mockReturnValue(invalidTx);
+        .mockReturnValue(invalidTx as any);
       const checkContractDeploy = jest.spyOn(txService, 'checkContractDeploy');
       const versePost = jest
         .spyOn(verseService, 'postVerseMasterNode')
@@ -1242,7 +1241,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(contractDeployTx);
+          .mockReturnValue(contractDeployTx as any);
         const checkContractDeploy = jest
           .spyOn(txService, 'checkContractDeploy')
           .mockImplementation(() => {
@@ -1338,7 +1337,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(contractDeployTx);
+          .mockReturnValue(contractDeployTx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1433,7 +1432,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(contractDeployTx);
+          .mockReturnValue(contractDeployTx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1513,7 +1512,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(contractDeployTx);
+          .mockReturnValue(contractDeployTx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1599,7 +1598,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1696,7 +1695,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1781,7 +1780,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1873,7 +1872,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -1960,7 +1959,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -2050,7 +2049,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',
@@ -2133,7 +2132,7 @@ describe('ProxyService', () => {
         });
         const parseRawTx = jest
           .spyOn(txService, 'parseRawTx')
-          .mockReturnValue(tx);
+          .mockReturnValue(tx as any);
         const checkContractDeploy = jest.spyOn(
           txService,
           'checkContractDeploy',

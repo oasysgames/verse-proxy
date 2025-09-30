@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ethers, BigNumber, Transaction } from 'ethers';
+import { Transaction, toQuantity } from 'ethers';
 import {
   EthEstimateGasParams,
   JsonrpcRequestBody,
@@ -48,7 +48,7 @@ export class TransactionService {
     from: string,
     to: string,
     methodId: string,
-    value: BigNumber,
+    value: bigint,
   ): Promise<TransactionAllow> {
     let matchedTxAllowRule;
 
@@ -93,25 +93,23 @@ export class TransactionService {
     id: JsonrpcId,
   ): Promise<void> {
     const ethCallParams: EthEstimateGasParams = {
-      nonce: ethers.utils.hexValue(BigNumber.from(tx.nonce)),
-      gas: ethers.utils.hexValue(tx.gasLimit),
-      value: ethers.utils.hexValue(tx.value),
+      nonce: toQuantity(tx.nonce),
+      gas: toQuantity(tx.gasLimit),
+      value: toQuantity(tx.value),
       data: tx.data,
-      chainId: ethers.utils.hexValue(BigNumber.from(tx.chainId)),
+      chainId: toQuantity(tx.chainId),
     };
 
-    if (tx.type)
-      ethCallParams['type'] = ethers.utils.hexValue(BigNumber.from(tx.type));
+    if (tx.type) ethCallParams['type'] = toQuantity(tx.type);
     if (tx.from) ethCallParams['from'] = tx.from;
     if (tx.to) ethCallParams['to'] = tx.to;
-    if (tx.gasPrice)
-      ethCallParams['gasPrice'] = ethers.utils.hexValue(tx.gasPrice);
+    if (tx.gasPrice) ethCallParams['gasPrice'] = toQuantity(tx.gasPrice);
     if (tx.maxPriorityFeePerGas)
-      ethCallParams['maxPriorityFeePerGas'] = ethers.utils.hexValue(
+      ethCallParams['maxPriorityFeePerGas'] = toQuantity(
         tx.maxPriorityFeePerGas,
       );
     if (tx.maxFeePerGas)
-      ethCallParams['maxFeePerGas'] = ethers.utils.hexValue(tx.maxFeePerGas);
+      ethCallParams['maxFeePerGas'] = toQuantity(tx.maxFeePerGas);
     if (tx.accessList) ethCallParams['accessList'] = tx.accessList;
 
     const params = [ethCallParams];
@@ -122,7 +120,6 @@ export class TransactionService {
       method: 'eth_estimateGas',
       params: params,
     };
-
     const { data } = await this.verseService.postVerseMasterNode(headers, body);
     if (this.typeCheckService.isJsonrpcErrorResponse(data)) {
       const { code, message } = data.error;
@@ -189,7 +186,7 @@ export class TransactionService {
     throw new JsonrpcError('can not get blockNumber', -32603);
   }
 
-  parseRawTx(rawTx: string): ethers.Transaction {
-    return ethers.utils.parseTransaction(rawTx);
+  parseRawTx(rawTx: string): Transaction {
+    return Transaction.from(rawTx);
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "verse-layer-proxy",
-  "version": "0.0.1",
+  "version": "2.2.3",
   "description": "",
   "author": "",
   "private": true,
@@ -35,7 +35,7 @@
     "@nestjs/platform-ws": "^9.0.0",
     "@nestjs/websockets": "^9.0.0",
     "body-parser": "^1.20.2",
-    "ethers": "^5.7.1",
+    "ethers": "^6.14.4",
     "ioredis": "^5.3.1",
     "jest-websocket-mock": "^2.5.0",
     "nestjs-real-ip": "^2.2.0",
